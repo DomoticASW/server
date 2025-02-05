@@ -1,0 +1,25 @@
+// https://github.com/tsconfig/bases/blob/main/bases/node-lts.json
+{
+    "$schema": "https://json.schemastore.org/tsconfig",
+    "display": "Node LTS (22)",
+    "_version": "22.0.0",
+    "compilerOptions": {
+        "lib": [
+            "es2023",
+            "dom"
+        ],
+        "module": "node16",
+        "target": "es2022",
+        "strict": true,
+        "esModuleInterop": true,
+        "skipLibCheck": true,
+        "moduleResolution": "node16",
+        "outDir": "dist"
+    },
+    "include": [
+        "src/**/*"
+    ],
+    "exclude": [
+        "**/*.spec.ts"
+    ]
+}
