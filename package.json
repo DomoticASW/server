@@ -5,7 +5,7 @@
   "main": "dist/index.js",
   "scripts": {
     "start": "tsc && node .",
-    "lint": "eslint src",
+    "lint": "eslint",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Alessandro Venturini, Corrado Stortini, Marco Raggini, Francesco Carlucci",
