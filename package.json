@@ -4,7 +4,9 @@
   "description": "DomoticASW server",
   "main": "src/index.ts",
   "scripts": {
-    "start": "tsc && nodemon",
+    "start": "npm run build-client && tsc && nodemon",
+    "build-client": "[ -d client/dist ] || npm run rebuild-client",
+    "rebuild-client": "cd client && npm install && npm run build",
     "lint": "eslint",
     "test": "jest"
   },
