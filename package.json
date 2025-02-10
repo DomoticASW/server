@@ -20,6 +20,7 @@
     "globals": "^15.14.0",
     "jest": "^29.5.14",
     "nodemon": "^3.1.9",
+    "semantic-release-preconfigured-conventional-commits": "^1.1.122",
     "ts-jest": "^29.2.5",
     "ts-node": "^10.9.2",
     "typescript": "^5.7.3",
