@@ -27,6 +27,8 @@
     "typescript-eslint": "^8.23.0"
   },
   "dependencies": {
+    "@commitlint/cli": "^19.7.1",
+    "@commitlint/config-conventional": "^19.7.1",
     "express": "^4.17.21"
   }
 }
