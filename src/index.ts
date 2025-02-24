@@ -1,13 +1,6 @@
-import express from 'express';
-const app = express();
-const port = 3000;
+import { HTTPServerAdapter } from "./adapters/HTTPServerAdapter.js";
+import { NotificationsServiceImpl } from "./domain/notifications/NotificationService.js";
 
-app.get('/api', (req, res) => {
-  res.send('Hello World!');
-});
 
-app.use(express.static('client/dist'))
-
-app.listen(port, () => {
-  return console.log(`Express is listening at http://localhost:${port}`);
-});
+const notificationService = new NotificationsServiceImpl()
+new HTTPServerAdapter(3000, notificationService)
