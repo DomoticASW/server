@@ -1,3 +1,6 @@
 import { HTTPServerAdapter } from "./adapters/HTTPServerAdapter.js";
+import { NotificationsServiceImpl } from "./domain/notifications/NotificationService.js";
 
-new HTTPServerAdapter(3000)
+
+const notificationService = new NotificationsServiceImpl()
+new HTTPServerAdapter(3000, notificationService)

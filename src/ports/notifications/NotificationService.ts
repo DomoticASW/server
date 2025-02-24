@@ -1,27 +1,21 @@
-import { Result } from 'option-t/plain_result';
-import { DeviceNotFoundError, InvalidTokenError, UserNotFoundError } from '../Errors.js'
+export interface NotificationsService {
+    subscribeForDeviceOfflineNotifications(
+        token: string,
+        deviceId: string
+    ): DeviceNotFoundError | InvalidTokenError | null;
 
-export interface NotificationsService extends DeviceStatusChangesSubscriber {
-  subscribeForDeviceOfflineNotifications(
-      token: Token,
-      deviceId: DeviceId
-  ): Result<undefined, DeviceNotFoundError | InvalidTokenError>
+    unsubscribeForDeviceOfflineNotifications(
+        token: string,
+        deviceId: string
+    ): DeviceNotFoundError | InvalidTokenError | null;
 
-  unsubscribeForDeviceOfflineNotifications(
-      token: Token,
-      deviceId: DeviceId
-  ): Result<undefined, DeviceNotFoundError | InvalidTokenError>
-
-  sendNotification(
-      email: Email,
-      message: string
-  ): Result<undefined, UserNotFoundError>
+    sendNotification(
+        userId: string,
+        message: string
+    ): UserNotFoundError | null;
 }
 
-type DeviceStatusChangesSubscriber = object
+export class DeviceNotFoundError extends Error { }
+export class InvalidTokenError extends Error { }
+export class UserNotFoundError extends Error { }
 
-export type Token = string
-
-export type Email = string
-
-export type DeviceId = string
