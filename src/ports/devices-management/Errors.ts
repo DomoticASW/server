@@ -1,0 +1,11 @@
+export class InvalidValueError extends Error { }
+export class InvalidInputError extends Error { }
+export class DeviceNotFound extends Error { }
+export class DeviceActionError extends Error { }
+export class DeviceActionNotFound extends Error { }
+export class DevicePropertyNotFound extends Error { }
+export class DeviceGroupNameAlreadyInUseError extends Error { }
+export class DeviceGroupNotFoundError extends Error { }
+export class DeviceNotFoundError extends Error { }
+export class DeviceUnreachableError extends Error { }
+export class NotDeviceEventError extends Error { }
