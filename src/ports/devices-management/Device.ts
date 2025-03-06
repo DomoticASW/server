@@ -38,6 +38,9 @@ export interface DeviceAction<T> {
     id: DeviceActionId;
     name: string;
     description?: string;
+
+    inputTypeConstraints: TypeConstraints<T>;
+
     // TODO: package private ???
     execute(input: T): InvalidInputError | DeviceActionError | undefined;
 }
