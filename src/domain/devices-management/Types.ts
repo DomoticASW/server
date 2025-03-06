@@ -1,27 +1,109 @@
-import { Result } from "option-t/plain_result";
 import { InvalidValueError } from "../../ports/devices-management/Errors.js";
-import { Type } from "../../ports/devices-management/Types.js";
-import { Brand } from "../../utils/Brand.js";
+import { TypeConstraints, Type } from "../../ports/devices-management/Types.js";
 
-export type TypeConstraints<T> = Enum | IntRange | DoubleRange | None<T>
+abstract class TypeConstraintsImpl<T> implements TypeConstraints<T> {
+    type: Type;
 
-interface TypeConstraint<T> {
-    readonly type: Type;
-    validate(value: T): Result<undefined, InvalidValueError>;
+    constructor(type: Type) {
+        this.type = type
+    }
+
+    validate(value: T): InvalidValueError | undefined {
+        switch (this.type) {
+            case Type.IntType:
+                if (!Number.isInteger(value)) {
+                    return new InvalidValueError()
+                }
+                break;
+            case Type.DoubleType:
+                if (!(typeof value === 'number')) {
+                    return new InvalidValueError()
+                }
+                break;
+            case Type.BooleanType:
+                if (!(typeof value === 'boolean')) {
+                    return new InvalidValueError()
+                }
+                break;
+            case Type.ColorType:
+                // TODO: check is rgb
+                if (!(typeof value === 'string')) {
+                    return new InvalidValueError()
+                }
+                break;
+            case Type.StringType:
+                if (!(typeof value === 'string')) {
+                    return new InvalidValueError()
+                }
+                break;
+            case Type.VoidType:
+                if (!(value === null || value === undefined)) {
+                    return new InvalidValueError()
+                }
+                break;
+        }
+    }
 }
 
-export interface Enum extends Brand<TypeConstraint<string>, "Enum"> {
-    readonly values: Set<string>;
+export class Enum extends TypeConstraintsImpl<string> {
+    values: Set<string>;
+
+    constructor(values: Set<string>) {
+        super(Type.StringType)
+        this.values = values
+    }
+
+    validate(value: string): InvalidValueError | undefined {
+        // TODO: add call to super
+        if (!this.values.has(value)) {
+            return new InvalidValueError()
+        }
+    }
 }
 
-export interface IntRange extends Brand<TypeConstraint<number>, "IntRange"> {
-    readonly min: number;
-    readonly max: number;
+export class IntRange extends TypeConstraintsImpl<number> {
+    min: number;
+    max: number;
+
+    constructor(min: number, max: number) {
+        super(Type.IntType)
+        this.min = min
+        this.max = max
+    }
+
+    validate(value: number): InvalidValueError | undefined {
+        // TODO: add call to super
+        if (value < this.min || value > this.max) {
+            return new InvalidValueError()
+        }
+    }
 }
 
-export interface DoubleRange extends Brand<TypeConstraint<number>, "DoubleRange"> {
-    readonly min: number;
-    readonly max: number;
+export class DoubleRange extends TypeConstraintsImpl<number> {
+    min: number;
+    max: number;
+
+    constructor(min: number, max: number) {
+        super(Type.IntType)
+        this.min = min
+        this.max = max
+    }
+
+    validate(value: number): InvalidValueError | undefined {
+        // TODO: add call to super
+        if (value < this.min || value > this.max) {
+            return new InvalidValueError()
+        }
+    }
 }
 
-export type None<T> = Brand<TypeConstraint<T>, "None">
+export class None<T> extends TypeConstraintsImpl<T> {
+    constructor(type: Type) {
+        super(type)
+    }
+
+    validate(value: T): InvalidValueError | undefined {
+        return super.validate(value)
+    }
+}
+
