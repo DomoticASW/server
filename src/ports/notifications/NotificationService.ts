@@ -1,21 +1,38 @@
-import { Result } from 'option-t/plain_result';
 import { DeviceNotFoundError, InvalidTokenError, UserNotFoundError } from '../Errors.js'
 
 export interface NotificationsService extends DeviceStatusChangesSubscriber {
+  /**
+   * Subscribes for device offline notifications.
+   * @param token Authentication token
+   * @param deviceId Identifier of the device
+   * @returns Possible errors: DeviceNotFoundError | InvalidTokenError
+   */
   subscribeForDeviceOfflineNotifications(
       token: Token,
       deviceId: DeviceId
-  ): Result<undefined, DeviceNotFoundError | InvalidTokenError>
+  ): DeviceNotFoundError | InvalidTokenError | undefined;
 
+  /**
+   * Unsubscribes from device offline notifications.
+   * @param token Authentication token
+   * @param deviceId Identifier of the device
+   * @returns Possible errors: DeviceNotFoundError | InvalidTokenError
+   */
   unsubscribeForDeviceOfflineNotifications(
       token: Token,
       deviceId: DeviceId
-  ): Result<undefined, DeviceNotFoundError | InvalidTokenError>
+  ): DeviceNotFoundError | InvalidTokenError | undefined;
 
+  /**
+   * Sends a notification to a user.
+   * @param userId Identifier of the user
+   * @param message Message to be sent
+   * @returns Possible error: UserNotFoundError
+   */
   sendNotification(
       userId: UserId,
       message: string
-  ): Result<undefined, UserNotFoundError>
+  ): UserNotFoundError | undefined;
 }
 
 type DeviceStatusChangesSubscriber = object

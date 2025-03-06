@@ -1,4 +1,4 @@
-import { Repository } from '../Repository.js'
+import { Repository } from '../repository/Repository.js'
 import { DeviceOfflineNotificationSubscription } from './DeviceOfflineNotificationSubscription.js'
 import { UserId, DeviceId } from './NotificationService.js'
 
