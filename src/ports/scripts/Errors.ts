@@ -1,0 +1,1 @@
+export class ScriptNotFoundError extends Error { }
