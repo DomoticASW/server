@@ -1,5 +1,6 @@
 import { InvalidValueError } from "../../ports/devices-management/Errors.js";
 import { TypeConstraints, Type } from "../../ports/devices-management/Types.js";
+import { Maybe } from "option-t/maybe/namespace";
 
 abstract class TypeConstraintsImpl<T> implements TypeConstraints<T> {
     type: Type;
@@ -8,7 +9,7 @@ abstract class TypeConstraintsImpl<T> implements TypeConstraints<T> {
         this.type = type
     }
 
-    validate(value: T): InvalidValueError | undefined {
+    validate(value: T): Maybe.Maybe<InvalidValueError> {
         switch (this.type) {
             case Type.IntType:
                 if (!Number.isInteger(value)) {
@@ -53,11 +54,12 @@ export class Enum extends TypeConstraintsImpl<string> {
         this.values = values
     }
 
-    validate(value: string): InvalidValueError | undefined {
-        // TODO: add call to super
-        if (!this.values.has(value)) {
-            return new InvalidValueError()
-        }
+    validate(value: string): Maybe.Maybe<InvalidValueError> {
+        return Maybe.orElse(super.validate(value), () => {
+            if (!this.values.has(value)) {
+                return new InvalidValueError()
+            }
+        })
     }
 }
 
@@ -71,11 +73,12 @@ export class IntRange extends TypeConstraintsImpl<number> {
         this.max = max
     }
 
-    validate(value: number): InvalidValueError | undefined {
-        // TODO: add call to super
-        if (value < this.min || value > this.max) {
-            return new InvalidValueError()
-        }
+    validate(value: number): Maybe.Maybe<InvalidValueError> {
+        return Maybe.orElse(super.validate(value), () => {
+            if (value < this.min || value > this.max) {
+                return new InvalidValueError()
+            }
+        })
     }
 }
 
@@ -84,16 +87,17 @@ export class DoubleRange extends TypeConstraintsImpl<number> {
     max: number;
 
     constructor(min: number, max: number) {
-        super(Type.IntType)
+        super(Type.DoubleType)
         this.min = min
         this.max = max
     }
 
-    validate(value: number): InvalidValueError | undefined {
-        // TODO: add call to super
-        if (value < this.min || value > this.max) {
-            return new InvalidValueError()
-        }
+    validate(value: number): Maybe.Maybe<InvalidValueError> {
+        return Maybe.orElse(super.validate(value), () => {
+            if (value < this.min || value > this.max) {
+                return new InvalidValueError()
+            }
+        })
     }
 }
 
@@ -102,7 +106,7 @@ export class None<T> extends TypeConstraintsImpl<T> {
         super(type)
     }
 
-    validate(value: T): InvalidValueError | undefined {
+    validate(value: T): Maybe.Maybe<InvalidValueError> {
         return super.validate(value)
     }
 }
