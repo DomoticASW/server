@@ -1,6 +1,6 @@
 import { InvalidValueError } from "../../ports/devices-management/Errors.js";
 import { TypeConstraints, Type } from "../../ports/devices-management/Types.js";
-import { Maybe } from "option-t/maybe/namespace";
+import { Result } from "option-t/plain_result/namespace";
 
 abstract class TypeConstraintsImpl<T> implements TypeConstraints<T> {
     type: Type;
@@ -9,40 +9,41 @@ abstract class TypeConstraintsImpl<T> implements TypeConstraints<T> {
         this.type = type
     }
 
-    validate(value: T): Maybe.Maybe<InvalidValueError> {
+    validate(value: T): Result.Result<undefined, InvalidValueError> {
         switch (this.type) {
             case Type.IntType:
                 if (!Number.isInteger(value)) {
-                    return new InvalidValueError()
+                    return Result.createErr(new InvalidValueError())
                 }
                 break;
             case Type.DoubleType:
                 if (!(typeof value === 'number')) {
-                    return new InvalidValueError()
+                    return Result.createErr(new InvalidValueError())
                 }
                 break;
             case Type.BooleanType:
                 if (!(typeof value === 'boolean')) {
-                    return new InvalidValueError()
+                    return Result.createErr(new InvalidValueError())
                 }
                 break;
             case Type.ColorType:
                 // TODO: check is rgb
                 if (!(typeof value === 'string')) {
-                    return new InvalidValueError()
+                    return Result.createErr(new InvalidValueError())
                 }
                 break;
             case Type.StringType:
                 if (!(typeof value === 'string')) {
-                    return new InvalidValueError()
+                    return Result.createErr(new InvalidValueError())
                 }
                 break;
             case Type.VoidType:
                 if (!(value === null || value === undefined)) {
-                    return new InvalidValueError()
+                    return Result.createErr(new InvalidValueError())
                 }
                 break;
         }
+        return Result.createOk(undefined)
     }
 }
 
@@ -54,11 +55,12 @@ export class Enum extends TypeConstraintsImpl<string> {
         this.values = values
     }
 
-    validate(value: string): Maybe.Maybe<InvalidValueError> {
-        return Maybe.orElse(super.validate(value), () => {
+    validate(value: string): Result.Result<undefined, InvalidValueError> {
+        return Result.andThen(super.validate(value), () => {
             if (!this.values.has(value)) {
-                return new InvalidValueError()
+                return Result.createErr(new InvalidValueError())
             }
+            return Result.createOk(undefined)
         })
     }
 }
@@ -73,11 +75,12 @@ export class IntRange extends TypeConstraintsImpl<number> {
         this.max = max
     }
 
-    validate(value: number): Maybe.Maybe<InvalidValueError> {
-        return Maybe.orElse(super.validate(value), () => {
+    validate(value: number): Result.Result<undefined, InvalidValueError> {
+        return Result.andThen(super.validate(value), () => {
             if (value < this.min || value > this.max) {
-                return new InvalidValueError()
+                return Result.createErr(new InvalidValueError())
             }
+            return Result.createOk(undefined)
         })
     }
 }
@@ -92,11 +95,12 @@ export class DoubleRange extends TypeConstraintsImpl<number> {
         this.max = max
     }
 
-    validate(value: number): Maybe.Maybe<InvalidValueError> {
-        return Maybe.orElse(super.validate(value), () => {
+    validate(value: number): Result.Result<undefined, InvalidValueError> {
+        return Result.andThen(super.validate(value), () => {
             if (value < this.min || value > this.max) {
-                return new InvalidValueError()
+                return Result.createErr(new InvalidValueError())
             }
+            return Result.createOk(undefined)
         })
     }
 }
@@ -106,7 +110,7 @@ export class None<T> extends TypeConstraintsImpl<T> {
         super(type)
     }
 
-    validate(value: T): Maybe.Maybe<InvalidValueError> {
+    validate(value: T): Result.Result<undefined, InvalidValueError> {
         return super.validate(value)
     }
 }

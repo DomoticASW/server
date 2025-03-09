@@ -1,4 +1,4 @@
-import { Maybe } from "option-t/maybe/namespace";
+import { Result } from "option-t/plain_result/namespace";
 import { InvalidValueError } from "./Errors.js";
 
 export enum Type {
@@ -12,5 +12,5 @@ export enum Type {
 
 export interface TypeConstraints<T> {
     type: Type;
-    validate(value: T): Maybe.Maybe<InvalidValueError>;
+    validate(value: T): Result.Result<undefined, InvalidValueError>;
 }
