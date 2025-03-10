@@ -1,13 +1,13 @@
-export type Trigger = object
+export type Trigger = PeriodTrigger | DeviceEventTrigger
 
-export interface DeviceEventTrigger extends Trigger {
+export interface DeviceEventTrigger {
   deviceId: DeviceId
   eventName: string
 }
 
 type DeviceId = string
 
-export interface PeriodTrigger extends Trigger {
+export interface PeriodTrigger {
   start: Date
   periodsLong: number
 }
