@@ -1,0 +1,9 @@
+export class InvalidCredentialsError extends Error {}
+export class InvalidTokenFormatError extends Error {}
+export class invalidTokenFormatError extends Error {}
+export class EmailAlreadyInUseError extends Error {}
+export class DuplicateIdError extends Error {}
+export class NotFoundError extends Error {}
+export class TokenError extends Error {}
+export class InvalidTokenError extends TokenError {}
+export class UnauthorizedError extends TokenError {}
