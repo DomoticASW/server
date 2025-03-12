@@ -1,5 +1,5 @@
-import { DeviceActionError, DeviceActionNotFound, InvalidInputError } from "./Errors.js";
-import { TypeConstraints } from "./Types.js";
+import { InvalidInputError, DeviceActionError, DeviceActionNotFound } from "../../ports/devices-management/Errors.js";
+import { TypeConstraints } from "../../ports/devices-management/Types.js";
 
 export type DeviceId = string;
 export type DeviceGroupId = string;
