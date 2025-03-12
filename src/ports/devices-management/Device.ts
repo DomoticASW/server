@@ -17,9 +17,9 @@ export interface Device {
     address: URL;
 
     status: DeviceStatus;
-    properties: Map<DevicePropertyId, DeviceProperty<unknown>>;
-    actions: Map<DeviceActionId, DeviceAction<unknown>>;
-    events: Map<string, DeviceEvent>;
+    properties: DeviceProperty<unknown>[];
+    actions: DeviceAction<unknown>[];
+    events: DeviceEvent[];
 
     // TODO: package private ???
     executeAction(actionId: DeviceActionId, input: unknown): InvalidInputError | DeviceActionError | DeviceActionNotFound | undefined;
