@@ -21,7 +21,6 @@ export interface Device {
     actions: DeviceAction<unknown>[];
     events: DeviceEvent[];
 
-    // TODO: package private ???
     executeAction(actionId: DeviceActionId, input: unknown): InvalidInputError | DeviceActionError | DeviceActionNotFound | undefined;
 }
 
@@ -41,7 +40,6 @@ export interface DeviceAction<T> {
 
     inputTypeConstraints: TypeConstraints<T>;
 
-    // TODO: package private ???
     execute(input: T): InvalidInputError | DeviceActionError | undefined;
 }
 

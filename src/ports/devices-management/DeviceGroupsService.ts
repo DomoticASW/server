@@ -1,5 +1,5 @@
-import { DeviceGroupId, DeviceId } from "./Device.js";
-import { DeviceGroup } from "./DeviceGroup.js";
+import { DeviceGroupId, DeviceId } from "../../domain/devices-management/Device.js";
+import { DeviceGroup } from "../../domain/devices-management/DeviceGroup.js";
 import { DeviceGroupNameAlreadyInUseError, DeviceGroupNotFoundError, DeviceNotFoundError } from "./Errors.js";
 import { InvalidTokenError, TokenError } from "../permissions/Errors.js";
 import { Token } from "../permissions/Token.js";
