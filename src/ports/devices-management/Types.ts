@@ -11,6 +11,6 @@ export enum Type {
 }
 
 export interface TypeConstraints<T> {
-    type: Type;
+    readonly type: Type;
     validate(value: T): Result.Result<undefined, InvalidValueError>;
 }
