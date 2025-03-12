@@ -3,7 +3,7 @@ import { TypeConstraints, Type } from "../../ports/devices-management/Types.js";
 import { Result } from "option-t/plain_result/namespace";
 
 abstract class TypeConstraintsImpl<T> implements TypeConstraints<T> {
-    type: Type;
+    readonly type: Type;
 
     constructor(type: Type) {
         this.type = type
@@ -48,7 +48,7 @@ abstract class TypeConstraintsImpl<T> implements TypeConstraints<T> {
 }
 
 export class Enum extends TypeConstraintsImpl<string> {
-    values: Set<string>;
+    readonly values: Set<string>;
 
     constructor(values: Set<string>) {
         super(Type.StringType)
@@ -66,8 +66,8 @@ export class Enum extends TypeConstraintsImpl<string> {
 }
 
 export class IntRange extends TypeConstraintsImpl<number> {
-    min: number;
-    max: number;
+    readonly min: number;
+    readonly max: number;
 
     constructor(min: number, max: number) {
         super(Type.IntType)
@@ -86,8 +86,8 @@ export class IntRange extends TypeConstraintsImpl<number> {
 }
 
 export class DoubleRange extends TypeConstraintsImpl<number> {
-    min: number;
-    max: number;
+    readonly min: number;
+    readonly max: number;
 
     constructor(min: number, max: number) {
         super(Type.DoubleType)
