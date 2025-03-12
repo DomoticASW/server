@@ -1,4 +1,4 @@
-import { Device, DeviceActionId, DeviceId, DevicePropertyId } from "./Device.js";
+import { Device, DeviceActionId, DeviceId, DevicePropertyId } from "../../domain/devices-management/Device.js";
 import { DeviceUnreachableError, DeviceNotFoundError, InvalidInputError, DeviceActionError, DeviceActionNotFound, DeviceNotFound, DevicePropertyNotFound } from "./Errors.js";
 import { TokenError, PermissionError, InvalidTokenError } from "../permissions/Errors.js";
 import { Token } from "../permissions/Token.js";
