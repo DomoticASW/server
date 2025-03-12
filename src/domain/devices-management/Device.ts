@@ -12,37 +12,37 @@ export enum DeviceStatus {
 }
 
 export interface Device {
-    id: DeviceId;
+    readonly id: DeviceId;
     name: string;
-    address: URL;
+    readonly address: URL;
 
     status: DeviceStatus;
-    properties: DeviceProperty<unknown>[];
-    actions: DeviceAction<unknown>[];
-    events: DeviceEvent[];
+    readonly properties: DeviceProperty<unknown>[];
+    readonly actions: DeviceAction<unknown>[];
+    readonly events: DeviceEvent[];
 
     executeAction(actionId: DeviceActionId, input: unknown): InvalidInputError | DeviceActionError | DeviceActionNotFound | undefined;
 }
 
 export interface DeviceProperty<T> {
-    id: DevicePropertyId;
-    name: string;
+    readonly id: DevicePropertyId;
+    readonly name: string;
     value: T;
 
-    setter?: DeviceAction<T>;
-    typeConstraints: TypeConstraints<T>;
+    readonly setter?: DeviceAction<T>;
+    readonly typeConstraints: TypeConstraints<T>;
 }
 
 export interface DeviceAction<T> {
-    id: DeviceActionId;
-    name: string;
-    description?: string;
+    readonly id: DeviceActionId;
+    readonly name: string;
+    readonly description?: string;
 
-    inputTypeConstraints: TypeConstraints<T>;
+    readonly inputTypeConstraints: TypeConstraints<T>;
 
     execute(input: T): InvalidInputError | DeviceActionError | undefined;
 }
 
 export interface DeviceEvent {
-    name: string;
+    readonly name: string;
 }
