@@ -1,4 +1,4 @@
-import { DeviceEvent, DeviceId } from "./Device.js";
+import { DeviceEvent, DeviceId } from "../../domain/devices-management/Device.js";
 import { DeviceNotFoundError, NotDeviceEventError } from "./Errors.js";
 
 export interface DeviceEventsService {

@@ -1,4 +1,4 @@
-import { DeviceId, DeviceStatus } from "./Device.js";
+import { DeviceId, DeviceStatus } from "../../domain/devices-management/Device.js";
 
 export interface DeviceStatusesService {
     subscribeForDeviceStatusChanges(subscriber: DeviceStatusChangesSubscriber): void;
