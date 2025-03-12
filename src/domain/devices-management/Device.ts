@@ -1,15 +1,10 @@
 import { InvalidInputError, DeviceActionError, DeviceActionNotFound } from "../../ports/devices-management/Errors.js";
-import { TypeConstraints } from "../../domain/devices-management/Types.js";
-import { Brand } from "../../utils/Brand.js";
-import { Result } from "option-t/plain_result";
+import { TypeConstraints } from "../../ports/devices-management/Types.js";
 
-export type DeviceId = Brand<string, "DeviceId">
-export type DeviceActionId = Brand<string, "DeviceActionId">
-export type DevicePropertyId = Brand<string, "DevicePropertyId">
-
-export function DeviceId(id: string): DeviceId { return id as DeviceId }
-export function DeviceActionId(id: string): DeviceActionId { return id as DeviceActionId }
-export function DevicePropertyId(id: string): DevicePropertyId { return id as DevicePropertyId }
+export type DeviceId = string;
+export type DeviceGroupId = string;
+export type DeviceActionId = string;
+export type DevicePropertyId = string;
 
 export enum DeviceStatus {
     Online = "Online",
@@ -17,37 +12,39 @@ export enum DeviceStatus {
 }
 
 export interface Device {
-    readonly id: DeviceId;
+    id: DeviceId;
     name: string;
-    readonly address: URL;
+    address: URL;
 
     status: DeviceStatus;
-    readonly properties: DeviceProperty<unknown>[];
-    readonly actions: DeviceAction<unknown>[];
-    readonly events: DeviceEvent[];
+    properties: DeviceProperty<unknown>[];
+    actions: DeviceAction<unknown>[];
+    events: DeviceEvent[];
 
-    executeAction(actionId: DeviceActionId, input: unknown): Result<undefined, InvalidInputError | DeviceActionError | DeviceActionNotFound>;
+    // TODO: package private ???
+    executeAction(actionId: DeviceActionId, input: unknown): InvalidInputError | DeviceActionError | DeviceActionNotFound | undefined;
 }
 
 export interface DeviceProperty<T> {
-    readonly id: DevicePropertyId;
-    readonly name: string;
+    id: DevicePropertyId;
+    name: string;
     value: T;
 
-    readonly setter?: DeviceAction<T>;
-    readonly typeConstraints: TypeConstraints<T>;
+    setter?: DeviceAction<T>;
+    typeConstraints: TypeConstraints<T>;
 }
 
 export interface DeviceAction<T> {
-    readonly id: DeviceActionId;
-    readonly name: string;
-    readonly description?: string;
+    id: DeviceActionId;
+    name: string;
+    description?: string;
 
-    readonly inputTypeConstraints: TypeConstraints<T>;
+    inputTypeConstraints: TypeConstraints<T>;
 
-    execute(input: T): Result<undefined, InvalidInputError | DeviceActionError>;
+    // TODO: package private ???
+    execute(input: T): InvalidInputError | DeviceActionError | undefined;
 }
 
 export interface DeviceEvent {
-    readonly name: string;
+    name: string;
 }

@@ -1,13 +1,10 @@
-import { Brand } from "../../utils/Brand.js";
-import { DeviceId } from "./Device.js";
-
-export type DeviceGroupId = Brand<string, "DeviceGroupId">
-export function DeviceGroupId(id: string): DeviceGroupId { return id as DeviceGroupId }
+import { DeviceGroupId, DeviceId } from "./Device.js";
 
 export interface DeviceGroup {
-    readonly id: DeviceGroupId;
+    id: DeviceGroupId;
     name: string;
-
+    // TODO: package private ???
     addDeviceToGroup(deviceId: DeviceId): void;
+    // TODO: package private ???
     removeDeviceFromGroup(deviceId: DeviceId): void;
 }
