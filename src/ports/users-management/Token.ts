@@ -7,8 +7,8 @@ export enum UserRole {
 }
 
 export interface Token {
-    userEmail: Email;
-    role: UserRole;
+    readonly userEmail: Email;
+    readonly role: UserRole;
 
     new(userEmail: Email): Token | invalidTokenFormatError;
 }

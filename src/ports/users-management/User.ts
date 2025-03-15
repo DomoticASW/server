@@ -4,7 +4,7 @@ export type PasswordHash = string;
 
 export interface User {
     nickname: Nickname;
-    email: Email;
+    readonly email: Email;
     passwordHash: PasswordHash;
 }
 
