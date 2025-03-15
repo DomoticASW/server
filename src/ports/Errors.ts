@@ -1,19 +1,19 @@
 export interface DeviceNotFoundError {
-  message: string;
+  readonly message: string;
 }
 
 export interface InvalidTokenError {
-  message: string;
+  readonly message: string;
 }
 
 export interface UserNotFoundError {
-  message: string;
+  readonly message: string;
 }
 
 export interface DuplicateIdError {
-  message: string;
+  readonly message: string;
 }
 
 export interface NotFoundError {
-  message: string;
+  readonly message: string;
 }
