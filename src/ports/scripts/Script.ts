@@ -2,7 +2,7 @@ import { Instruction } from "./Instruction.js"
 import { Trigger } from "./Trigger.js"
 
 export interface Script<Id extends ScriptId> {
-  id: Id
+  readonly id: Id
   name: string
 
   instructions: Array<Instruction>
