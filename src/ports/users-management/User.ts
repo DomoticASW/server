@@ -8,4 +8,10 @@ export interface User {
     passwordHash: PasswordHash;
 }
 
-export interface Admin extends User {}
+export interface Admin extends User {
+    role: 'admin';
+}
+
+export function createAdmin(nickname: Nickname, email: Email, passwordHash: PasswordHash): Admin {
+    return { nickname, email, passwordHash, role: 'admin' };
+}
