@@ -1,10 +1,9 @@
-export interface Repository<Id, Entity> {
-  add(e: Entity): DuplicateIdError | null
-  update(e: Entity): NotFoundError | null
-  remove(e: Entity): NotFoundError | null
-  getAll(): Iterable<Entity>
-  find(id: Id): Entity | NotFoundError
-}
+import { DuplicateIdError, NotFoundError } from "./Errors.js";
 
-export class DuplicateIdError extends Error { }
-export class NotFoundError extends Error { }
+export interface Repository<Id, Entity> {
+    add(entity: Entity): DuplicateIdError | null;
+    update(entity: Entity): NotFoundError | null;
+    remove(entity: Entity): NotFoundError | null;
+    getAll(): Iterable<Entity>;
+    find(id: Id): Entity | NotFoundError;
+}
