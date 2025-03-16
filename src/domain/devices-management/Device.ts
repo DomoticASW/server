@@ -1,5 +1,5 @@
 import { InvalidInputError, DeviceActionError, DeviceActionNotFound } from "../../ports/devices-management/Errors.js";
-import { TypeConstraints } from "../../ports/devices-management/Types.js";
+import { TypeConstraints } from "../../domain/devices-management/Types.js";
 import { Brand } from "../../utils/Brand.js";
 
 export type DeviceId = Brand<string, "DeviceId">
