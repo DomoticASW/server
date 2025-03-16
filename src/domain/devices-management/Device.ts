@@ -1,10 +1,14 @@
 import { InvalidInputError, DeviceActionError, DeviceActionNotFound } from "../../ports/devices-management/Errors.js";
 import { TypeConstraints } from "../../ports/devices-management/Types.js";
+import { Brand } from "../../utils/Brand.js";
 
-export type DeviceId = string;
-export type DeviceGroupId = string;
-export type DeviceActionId = string;
-export type DevicePropertyId = string;
+export type DeviceId = Brand<string, "DeviceId">
+export type DeviceActionId = Brand<string, "DeviceActionId">
+export type DevicePropertyId = Brand<string, "DevicePropertyId">
+
+export function DeviceId(id: string): DeviceId { return id as DeviceId }
+export function DeviceActionId(id: string): DeviceActionId { return id as DeviceActionId }
+export function DevicePropertyId(id: string): DevicePropertyId { return id as DevicePropertyId }
 
 export enum DeviceStatus {
     Online = "Online",
