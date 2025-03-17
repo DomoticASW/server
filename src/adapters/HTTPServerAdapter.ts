@@ -1,14 +1,12 @@
 import express from 'express';
-import { NotificationsService } from '../ports/notifications/NotificationService.js';
-
 
 export class HTTPServerAdapter {
 
-    constructor(port: number, notificationService: NotificationsService) {
+    constructor(port: number) {
         const app = express();
 
         app.get('/api', (req, res) => {
-            res.send(notificationService.sendNotification("", ""));
+            res.send("API");
         });
 
         app.use(express.static('client/dist'))
@@ -17,5 +15,4 @@ export class HTTPServerAdapter {
             return console.log(`Express is listening at http://localhost:${port}`);
         });
     }
-
 }
