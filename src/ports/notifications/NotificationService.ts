@@ -1,5 +1,6 @@
 import { Result } from 'option-t/plain_result';
-import { DeviceNotFoundError, InvalidTokenError, UserNotFoundError } from '../Errors.js'
+import { InvalidTokenError, UserNotFoundError } from '../users-management/Errors.js';
+import { DeviceNotFoundError } from '../devices-management/Errors.js';
 
 export interface NotificationsService extends DeviceStatusChangesSubscriber {
   subscribeForDeviceOfflineNotifications(
