@@ -3,8 +3,7 @@ import { DeviceUnreachableError, DeviceNotFoundError, InvalidInputError, DeviceA
 import { PermissionError } from "../permissions/Errors.js";
 import { Token } from "../permissions/Token.js";
 import { Result } from "option-t/plain_result";
-import { InvalidTokenError } from "../Errors.js";
-import { TokenError } from "../users-management/Errors.js";
+import { InvalidTokenError, TokenError } from "../users-management/Errors.js";
 
 export interface DevicesService {
     add(token: Token, deviceUrl: URL): Result<DeviceId, DeviceUnreachableError | TokenError>;
