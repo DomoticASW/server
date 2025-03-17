@@ -9,5 +9,5 @@ type DeviceId = string
 
 export interface PeriodTrigger {
   start: Date
-  periodsLong: number
+  periodSeconds: number
 }
