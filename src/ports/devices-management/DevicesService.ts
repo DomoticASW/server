@@ -1,8 +1,10 @@
 import { Device, DeviceActionId, DeviceId, DevicePropertyId } from "../../domain/devices-management/Device.js";
 import { DeviceUnreachableError, DeviceNotFoundError, InvalidInputError, DeviceActionError, DeviceActionNotFound, DeviceNotFound, DevicePropertyNotFound } from "./Errors.js";
-import { TokenError, PermissionError, InvalidTokenError } from "../permissions/Errors.js";
+import { PermissionError } from "../permissions/Errors.js";
 import { Token } from "../permissions/Token.js";
 import { Result } from "option-t/plain_result";
+import { InvalidTokenError } from "../Errors.js";
+import { TokenError } from "../users-management/Errors.js";
 
 export interface DevicesService {
     add(token: Token, deviceUrl: URL): Result<DeviceId, DeviceUnreachableError | TokenError>;
