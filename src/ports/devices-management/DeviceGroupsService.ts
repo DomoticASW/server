@@ -1,9 +1,10 @@
 import { DeviceId } from "../../domain/devices-management/Device.js";
 import { DeviceGroup, DeviceGroupId } from "../../domain/devices-management/DeviceGroup.js";
 import { DeviceGroupNameAlreadyInUseError, DeviceGroupNotFoundError, DeviceNotFoundError } from "./Errors.js";
-import { InvalidTokenError, TokenError } from "../permissions/Errors.js";
 import { Token } from "../permissions/Token.js";
 import { Result } from "option-t/plain_result";
+import { InvalidTokenError } from "../Errors.js";
+import { TokenError } from "../users-management/Errors.js";
 
 export interface DeviceGroupsService {
     addGroup(token: Token, name: string): Result<DeviceGroupId, DeviceGroupNameAlreadyInUseError | TokenError>;
