@@ -1,5 +1,5 @@
 import { Repository } from '../Repository.js'
 import { DeviceOfflineNotificationSubscription } from './DeviceOfflineNotificationSubscription.js'
-import { UserId, DeviceId } from './NotificationService.js'
+import { Email, DeviceId } from './NotificationService.js'
 
-export type DeviceOfflineNotificationSubscriptionRepository = Repository<[UserId, DeviceId], DeviceOfflineNotificationSubscription>
+export type DeviceOfflineNotificationSubscriptionRepository = Repository<[Email, DeviceId], DeviceOfflineNotificationSubscription>
