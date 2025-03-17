@@ -1,6 +1,6 @@
-import { UserId, DeviceId } from "./NotificationService.js";
+import { Email, DeviceId } from "./NotificationService.js";
 
 export interface DeviceOfflineNotificationSubscription {
-  readonly userId: UserId;
+  readonly email: Email;
   readonly deviceId: DeviceId;
 }

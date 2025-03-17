@@ -13,7 +13,7 @@ export interface NotificationsService extends DeviceStatusChangesSubscriber {
   ): Result<undefined, DeviceNotFoundError | InvalidTokenError>
 
   sendNotification(
-      userId: UserId,
+      email: Email,
       message: string
   ): Result<undefined, UserNotFoundError>
 }
@@ -22,6 +22,6 @@ type DeviceStatusChangesSubscriber = object
 
 export type Token = string
 
-export type UserId = string
+export type Email = string
 
 export type DeviceId = string
