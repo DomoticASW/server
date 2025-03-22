@@ -1,4 +1,5 @@
 import { Result } from "option-t/plain_result";
+import { Brand } from "../utils/Brand.js";
 
 export interface Repository<Id, Entity> {
     add(entity: Entity): Result<undefined, DuplicateIdError>
@@ -8,10 +9,6 @@ export interface Repository<Id, Entity> {
     find(id: Id): Result<Entity, NotFoundError>
 }
 
-export interface DuplicateIdError {
-    readonly message: string;
-}
+export type DuplicateIdError = Brand<string, "DuplicateIdError">
 
-export interface NotFoundError {
-    readonly message: string;
-}
+export type NotFoundError = Brand<string, "NotFoundError">
