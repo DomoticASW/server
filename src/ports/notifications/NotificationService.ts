@@ -1,6 +1,10 @@
 import { Result } from 'option-t/plain_result';
 import { InvalidTokenError, UserNotFoundError } from '../users-management/Errors.js';
 import { DeviceNotFoundError } from '../devices-management/Errors.js';
+import { DeviceId } from '../../domain/devices-management/Device.js';
+import { DeviceStatusChangesSubscriber } from '../devices-management/DeviceStatusesService.js';
+import { Token } from "../users-management/Token.js";
+import { Email } from '../users-management/User.js';
 
 export interface NotificationsService extends DeviceStatusChangesSubscriber {
   subscribeForDeviceOfflineNotifications(
@@ -14,15 +18,7 @@ export interface NotificationsService extends DeviceStatusChangesSubscriber {
   ): Result<undefined, DeviceNotFoundError | InvalidTokenError>
 
   sendNotification(
-      userId: UserId,
+      email: Email,
       message: string
   ): Result<undefined, UserNotFoundError>
 }
-
-type DeviceStatusChangesSubscriber = object
-
-export type Token = string
-
-export type UserId = string
-
-export type DeviceId = string

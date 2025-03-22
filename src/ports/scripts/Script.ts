@@ -19,5 +19,5 @@ export interface Automation extends Script<AutomationId> {
 
 export type ScriptId = string
 
-type TaskId = ScriptId
-type AutomationId = ScriptId
+export type TaskId = ScriptId
+export type AutomationId = ScriptId
