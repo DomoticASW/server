@@ -1,5 +1,5 @@
-import { ScriptId } from "../scripts/Script.js";
-import { EditList } from "./EditList.js";
+import { ScriptId } from "../../domain/scripts/Script.js";
+import { EditList } from "../../domain/permissions/EditList.js";
 import { Repository } from "../Repository.js"
 
 export type EditListRepository = Repository<ScriptId, EditList>;

@@ -3,7 +3,7 @@ import { DeviceGroup, DeviceGroupId } from "../../domain/devices-management/Devi
 import { DeviceGroupNameAlreadyInUseError, DeviceGroupNotFoundError, DeviceNotFoundError } from "./Errors.js";
 import { Result } from "option-t/plain_result";
 import { InvalidTokenError, TokenError } from "../users-management/Errors.js";
-import { Token } from "../users-management/Token.js";
+import { Token } from "../../domain/users-management/Token.js";
 
 export interface DeviceGroupsService {
     addGroup(token: Token, name: string): Result<DeviceGroupId, DeviceGroupNameAlreadyInUseError | TokenError>;

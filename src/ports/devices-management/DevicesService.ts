@@ -1,7 +1,7 @@
 import { Device, DeviceActionId, DeviceId, DevicePropertyId } from "../../domain/devices-management/Device.js";
 import { DeviceUnreachableError, DeviceNotFoundError, InvalidInputError, DeviceActionError, DeviceActionNotFound, DeviceNotFound, DevicePropertyNotFound } from "./Errors.js";
 import { PermissionError } from "../permissions/Errors.js";
-import { Token } from "../users-management/Token.js";
+import { Token } from "../../domain/users-management/Token.js";
 import { Result } from "option-t/plain_result";
 import { InvalidTokenError, TokenError } from "../users-management/Errors.js";
 

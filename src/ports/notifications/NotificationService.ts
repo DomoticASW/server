@@ -3,8 +3,8 @@ import { InvalidTokenError, UserNotFoundError } from '../users-management/Errors
 import { DeviceNotFoundError } from '../devices-management/Errors.js';
 import { DeviceId } from '../../domain/devices-management/Device.js';
 import { DeviceStatusChangesSubscriber } from '../devices-management/DeviceStatusesService.js';
-import { Token } from "../users-management/Token.js";
-import { Email } from '../users-management/User.js';
+import { Token } from "../../domain/users-management/Token.js";
+import { Email } from '../../domain/users-management/User.js';
 
 export interface NotificationsService extends DeviceStatusChangesSubscriber {
   subscribeForDeviceOfflineNotifications(

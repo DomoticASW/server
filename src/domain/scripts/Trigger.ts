@@ -1,4 +1,4 @@
-import { DeviceId } from "../../domain/devices-management/Device.js"
+import { DeviceId } from "../devices-management/Device.js"
 
 export type Trigger = PeriodTrigger | DeviceEventTrigger
 

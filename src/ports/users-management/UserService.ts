@@ -1,6 +1,6 @@
 import { Result } from "option-t/plain_result";
-import { User, Nickname, Email, PasswordHash } from "./User.js";
-import { Token } from "./Token.js";
+import { User, Nickname, Email, PasswordHash } from "../../domain/users-management/User.js";
+import { Token } from "../../domain/users-management/Token.js";
 import { EmailAlreadyInUseError, UserNotFoundError, TokenError, InvalidTokenError, InvalidCredentialsError, InvalidTokenFormatError } from "./Errors.js";
 
 export interface UsersService {
