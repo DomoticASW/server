@@ -1,3 +1,13 @@
-export class TokenError extends Error { }
-export class InvalidTokenError extends Error { }
-export class UserNotFoundError extends Error { }
+import { Brand } from "../../utils/Brand.js"
+import { Error } from "../Error.js"
+
+export type InvalidCredentialsError = Brand<Error, "InvalidCredentialsError">
+export type InvalidTokenFormatError = Brand<Error, "InvalidTokenFormatError">
+export type invalidTokenFormatError = Brand<Error, "invalidTokenFormatError">
+export type EmailAlreadyInUseError = Brand<Error, "EmailAlreadyInUseError">
+export type DuplicateIdError = Brand<Error, "DuplicateIdError">
+export type NotFoundError = Brand<Error, "NotFoundError">
+export type UserNotFoundError = Brand<Error, "UserNotFoundError">
+export type TokenError = Brand<Error, "TokenError">
+export type InvalidTokenError = Brand<Error, "InvalidTokenError">
+export type UnauthorizedError = Brand<Error, "UnauthorizedError">
