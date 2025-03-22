@@ -1,5 +1,5 @@
 import { Repository } from "../Repository.js"
-import { TaskId } from "../scripts/Task.js";
-import { TaskList } from "./TaskLists.js";
+import { TaskId } from "../../domain/scripts/Script.js";
+import { TaskList } from "../../domain/permissions/TaskLists.js";
 
 export type TaskListRepository = Repository<TaskId, TaskList>;

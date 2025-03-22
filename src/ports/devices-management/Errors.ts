@@ -1,11 +1,14 @@
-export class InvalidValueError extends Error { }
-export class InvalidInputError extends Error { }
-export class DeviceNotFound extends Error { }
-export class DeviceActionError extends Error { }
-export class DeviceActionNotFound extends Error { }
-export class DevicePropertyNotFound extends Error { }
-export class DeviceGroupNameAlreadyInUseError extends Error { }
-export class DeviceGroupNotFoundError extends Error { }
-export class DeviceNotFoundError extends Error { }
-export class DeviceUnreachableError extends Error { }
-export class NotDeviceEventError extends Error { }
+import { Brand } from "../../utils/Brand.js"
+import { Error } from "../Error.js"
+
+export type InvalidValueError = Brand<Error, "InvalidValueError">
+export type InvalidInputError = Brand<Error, "InvalidInputError">
+export type DeviceNotFound = Brand<Error, "DeviceNotFound">
+export type DeviceActionError = Brand<Error, "DeviceActionError">
+export type DeviceActionNotFound = Brand<Error, "DeviceActionNotFound">
+export type DevicePropertyNotFound = Brand<Error, "DevicePropertyNotFound">
+export type DeviceGroupNameAlreadyInUseError = Brand<Error, "DeviceGroupNameAlreadyInUseError">
+export type DeviceGroupNotFoundError = Brand<Error, "DeviceGroupNotFoundError">
+export type DeviceNotFoundError = Brand<Error, "DeviceNotFoundError">
+export type DeviceUnreachableError = Brand<Error, "DeviceUnreachableError">
+export type NotDeviceEventError = Brand<Error, "NotDeviceEventError">

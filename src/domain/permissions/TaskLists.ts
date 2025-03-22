@@ -1,4 +1,4 @@
-import { TaskId } from "../scripts/Task.js";
+import { TaskId } from "../scripts/Script.js";
 import { Email } from "../users-management/User.js";
 
 export interface TaskList {
