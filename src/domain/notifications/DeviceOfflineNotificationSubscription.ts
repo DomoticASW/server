@@ -1,4 +1,4 @@
-import { DeviceId } from "../../domain/devices-management/Device.js";
+import { DeviceId } from "../devices-management/Device.js";
 import { Email } from "../users-management/User.js";
 
 export interface DeviceOfflineNotificationSubscription {

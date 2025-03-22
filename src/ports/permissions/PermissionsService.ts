@@ -1,11 +1,11 @@
 import { Result } from "option-t/plain_result";
-import { Email } from "../users-management/User.js";
+import { Email } from "../../domain/users-management/User.js";
 import { DeviceNotFoundError } from "../devices-management/Errors.js"
 import { InvalidTokenError, TokenError, UserNotFoundError } from "../users-management/Errors.js"
 import { ScriptNotFoundError } from "../scripts/Errors.js"
 import { PermissionError } from "./Errors.js";
-import { Token } from "../users-management/Token.js";
-import { ScriptId, TaskId } from "../scripts/Script.js"
+import { Token } from "../../domain/users-management/Token.js";
+import { ScriptId, TaskId } from "../../domain/scripts/Script.js"
 import { DeviceId } from "../../domain/devices-management/Device.js";
 
 export interface PermissionsService {
