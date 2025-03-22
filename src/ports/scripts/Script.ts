@@ -1,3 +1,4 @@
+import { Brand } from "../../utils/Brand.js"
 import { Instruction } from "./Instruction.js"
 import { Trigger } from "./Trigger.js"
 
@@ -17,7 +18,7 @@ export interface Automation extends Script<AutomationId> {
   trigger: Trigger
 }
 
-export type ScriptId = string
+export type ScriptId = TaskId | AutomationId
 
-export type TaskId = ScriptId
-export type AutomationId = ScriptId
+export type TaskId = Brand<string, "TaskId">
+export type AutomationId = Brand<string, "AutomationId">
