@@ -8,7 +8,7 @@
     "access": "public"
   },
   "scripts": {
-    "start": "npm run build-client && tsc && nodemon",
+    "start": "npm run build-client && tsc && docker compose up -d --wait && nodemon; docker compose down",
     "build-client": "[ -d client/dist ] || npm run rebuild-client",
     "rebuild-client": "cd client && npm install && npm run build",
     "lint": "eslint",
