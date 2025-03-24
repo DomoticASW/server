@@ -1,13 +1,13 @@
-import { Result } from "option-t/plain_result";
+import { Effect } from "effect/Effect";
 import { Brand } from "../utils/Brand.js";
 import { Error } from "./Error.js";
 
 export interface Repository<Id, Entity> {
-    add(entity: Entity): Result<undefined, DuplicateIdError>
-    update(entity: Entity): Result<undefined, NotFoundError>
-    remove(entity: Entity): Result<undefined, NotFoundError>
+    add(entity: Entity): Effect<void, DuplicateIdError>
+    update(entity: Entity): Effect<void, NotFoundError>
+    remove(entity: Entity): Effect<void, NotFoundError>
     getAll(): Iterable<Entity>;
-    find(id: Id): Result<Entity, NotFoundError>
+    find(id: Id): Effect<Entity, NotFoundError>
 }
 
 export type DuplicateIdError = Brand<Error, "DuplicateIdError">

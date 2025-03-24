@@ -1,16 +1,16 @@
 import { DeviceId } from "../../domain/devices-management/Device.js";
 import { DeviceGroup, DeviceGroupId } from "../../domain/devices-management/DeviceGroup.js";
 import { DeviceGroupNameAlreadyInUseError, DeviceGroupNotFoundError, DeviceNotFoundError } from "./Errors.js";
-import { Result } from "option-t/plain_result";
+import { Effect } from "effect/Effect";
 import { InvalidTokenError, TokenError } from "../users-management/Errors.js";
 import { Token } from "../../domain/users-management/Token.js";
 
 export interface DeviceGroupsService {
-    addGroup(token: Token, name: string): Result<DeviceGroupId, DeviceGroupNameAlreadyInUseError | TokenError>;
-    removeGroup(token: Token, groupId: DeviceGroupId): Result<undefined, DeviceGroupNotFoundError | TokenError>;
-    renameGroup(token: Token, groupId: DeviceGroupId, name: string): Result<undefined, DeviceGroupNotFoundError | DeviceGroupNameAlreadyInUseError | TokenError>;
-    findGroup(token: Token, groupId: DeviceGroupId): Result<DeviceGroup, DeviceGroupNotFoundError | InvalidTokenError>;
-    getAllDeviceGroups(token: Token): Result<Iterable<DeviceGroup>, InvalidTokenError>;
-    addDeviceToGroup(token: Token, deviceId: DeviceId, groupId: DeviceGroupId): Result<undefined, DeviceNotFoundError | DeviceGroupNotFoundError | TokenError>;
-    removeDeviceFromGroup(token: Token, deviceId: DeviceId, groupId: DeviceGroupId): Result<undefined, DeviceNotFoundError | DeviceGroupNotFoundError | TokenError>;
+    addGroup(token: Token, name: string): Effect<DeviceGroupId, DeviceGroupNameAlreadyInUseError | TokenError>;
+    removeGroup(token: Token, groupId: DeviceGroupId): Effect<void, DeviceGroupNotFoundError | TokenError>;
+    renameGroup(token: Token, groupId: DeviceGroupId, name: string): Effect<void, DeviceGroupNotFoundError | DeviceGroupNameAlreadyInUseError | TokenError>;
+    findGroup(token: Token, groupId: DeviceGroupId): Effect<DeviceGroup, DeviceGroupNotFoundError | InvalidTokenError>;
+    getAllDeviceGroups(token: Token): Effect<Iterable<DeviceGroup>, InvalidTokenError>;
+    addDeviceToGroup(token: Token, deviceId: DeviceId, groupId: DeviceGroupId): Effect<void, DeviceNotFoundError | DeviceGroupNotFoundError | TokenError>;
+    removeDeviceFromGroup(token: Token, deviceId: DeviceId, groupId: DeviceGroupId): Effect<void, DeviceNotFoundError | DeviceGroupNotFoundError | TokenError>;
 }

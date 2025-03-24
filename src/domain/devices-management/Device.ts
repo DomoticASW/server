@@ -1,7 +1,7 @@
 import { InvalidInputError, DeviceActionError, DeviceActionNotFound } from "../../ports/devices-management/Errors.js";
 import { TypeConstraints } from "../../domain/devices-management/Types.js";
 import { Brand } from "../../utils/Brand.js";
-import { Result } from "option-t/plain_result";
+import { Effect } from "effect/Effect";
 
 export type DeviceId = Brand<string, "DeviceId">
 export type DeviceActionId = Brand<string, "DeviceActionId">
@@ -26,7 +26,7 @@ export interface Device {
     readonly actions: DeviceAction<unknown>[];
     readonly events: DeviceEvent[];
 
-    executeAction(actionId: DeviceActionId, input: unknown): Result<undefined, InvalidInputError | DeviceActionError | DeviceActionNotFound>;
+    executeAction(actionId: DeviceActionId, input: unknown): Effect<void, InvalidInputError | DeviceActionError | DeviceActionNotFound>;
 }
 
 export interface DeviceProperty<T> {
@@ -45,7 +45,7 @@ export interface DeviceAction<T> {
 
     readonly inputTypeConstraints: TypeConstraints<T>;
 
-    execute(input: T): Result<undefined, InvalidInputError | DeviceActionError>;
+    execute(input: T): Effect<void, InvalidInputError | DeviceActionError>;
 }
 
 export interface DeviceEvent {

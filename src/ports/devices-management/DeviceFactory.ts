@@ -1,7 +1,7 @@
 import { DeviceUnreachableError } from "../../ports/devices-management/Errors.js";
 import { Device } from "../../domain/devices-management/Device.js";
-import { Result } from "option-t/plain_result";
+import { Effect } from "effect/Effect";
 
 export interface DeviceFactory {
-    create(deviceUrl: URL): Result<Device, DeviceUnreachableError>;
+    create(deviceUrl: URL): Effect<Device, DeviceUnreachableError>;
 }
