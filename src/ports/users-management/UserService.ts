@@ -1,17 +1,17 @@
-import { Result } from "option-t/plain_result";
+import { Effect } from "effect/Effect";
 import { User, Nickname, Email, PasswordHash } from "../../domain/users-management/User.js";
 import { Token } from "../../domain/users-management/Token.js";
 import { EmailAlreadyInUseError, UserNotFoundError, TokenError, InvalidTokenError, InvalidCredentialsError, InvalidTokenFormatError } from "./Errors.js";
 
 export interface UsersService {
-    publishRegistrationRequest(nickname: Nickname, email: Email, password: PasswordHash): Result<undefined, EmailAlreadyInUseError>;
-    approveRegistrationRequest(token: Token, email: Email): Result<undefined, UserNotFoundError | TokenError>;
-    rejectRegistrationRequest(token: Token, email: Email): Result<undefined, UserNotFoundError | TokenError>;
-    removeUser(token: Token, email: Email): Result<undefined, UserNotFoundError | TokenError>;
-    updateUserData(token: Token, nickname?: Nickname, email?: Email, password?: PasswordHash): Result<undefined, UserNotFoundError | EmailAlreadyInUseError | TokenError>;
-    getAllUsers(token: Token): Result<Iterable<User>, InvalidTokenError>;
-    getUserData(token: Token): Result<User, InvalidTokenError>;
-    login(email: Email, password: PasswordHash): Result<Token, InvalidCredentialsError>;
-    verifyToken(token: Token): Result<undefined, InvalidTokenError>;
-    makeToken(value: string): Result<Token, InvalidTokenFormatError>;
+    publishRegistrationRequest(nickname: Nickname, email: Email, password: PasswordHash): Effect<void, EmailAlreadyInUseError>;
+    approveRegistrationRequest(token: Token, email: Email): Effect<void, UserNotFoundError | TokenError>;
+    rejectRegistrationRequest(token: Token, email: Email): Effect<void, UserNotFoundError | TokenError>;
+    removeUser(token: Token, email: Email): Effect<void, UserNotFoundError | TokenError>;
+    updateUserData(token: Token, nickname?: Nickname, email?: Email, password?: PasswordHash): Effect<void, UserNotFoundError | EmailAlreadyInUseError | TokenError>;
+    getAllUsers(token: Token): Effect<Iterable<User>, InvalidTokenError>;
+    getUserData(token: Token): Effect<User, InvalidTokenError>;
+    login(email: Email, password: PasswordHash): Effect<Token, InvalidCredentialsError>;
+    verifyToken(token: Token): Effect<void, InvalidTokenError>;
+    makeToken(value: string): Effect<Token, InvalidTokenFormatError>;
 }
