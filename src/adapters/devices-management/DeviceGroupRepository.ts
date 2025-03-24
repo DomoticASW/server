@@ -47,10 +47,7 @@ export class DeviceGroupRepositoryMongoAdapter implements DeviceGroupRepository 
             const dg = await this.DG.findById(id);
             if (!dg) throw new Error("NotFound");
             return this.DeviceGroup(dg.id, dg.name!);
-        }).pipe(Effect.mapError(e => {
-            console.log(e);
-            return this.NotFoundError()
-        }))
+        }).pipe(Effect.mapError(() => this.NotFoundError()))
     }
 
     // TODO: remove all function below
