@@ -1,17 +1,17 @@
 import express from 'express';
-import { DeviceGroupRepositoryMongoAdapter } from './devices-management/DeviceGroupRepository.js';
 import { DeviceGroupId } from '../domain/devices-management/DeviceGroup.js';
 import { Effect, pipe } from 'effect';
+import { DeviceGroupRepositoryMongoAdapter } from './devices-management/DeviceGroupRepository.js';
 
 export class HTTPServerAdapter {
 
-    constructor(port: number) {
+    // TODO: change parameter types to interfaces and not implementations
+    constructor(port: number, deviceGroupRepository: DeviceGroupRepositoryMongoAdapter) {
         const app = express();
 
-        const adapter = new DeviceGroupRepositoryMongoAdapter("localhost:27017")
         app.get('/create', async (req, res) => {
             await pipe(
-                adapter.add(adapter.DeviceGroup(DeviceGroupId("1"), "camera")),
+                deviceGroupRepository.add(deviceGroupRepository.DeviceGroup(DeviceGroupId("1"), "camera")),
                 Effect.match({
                     onSuccess() { res.sendStatus(200) },
                     onFailure(err) { res.send(err) }
@@ -21,7 +21,7 @@ export class HTTPServerAdapter {
         });
         app.get('/get/:id', async (req, res) => {
             await pipe(
-                adapter.find(DeviceGroupId(req.params.id)),
+                deviceGroupRepository.find(DeviceGroupId(req.params.id)),
                 Effect.match({
                     onSuccess(dg) { res.send(dg) },
                     onFailure(err) { res.send(err) }
@@ -31,7 +31,7 @@ export class HTTPServerAdapter {
         });
         app.get('/get', async (req, res) => {
             await pipe(
-                adapter.getAll(),
+                deviceGroupRepository.getAll(),
                 Effect.map(dgs => res.send(dgs)),
                 Effect.runPromise
             )

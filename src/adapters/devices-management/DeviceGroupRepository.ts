@@ -3,17 +3,15 @@ import { DeviceGroup, DeviceGroupId } from "../../domain/devices-management/Devi
 import { DeviceGroupRepository } from "../../ports/devices-management/DeviceGroupRepository.js";
 import { DuplicateIdError, NotFoundError } from "../../ports/Repository.js";
 import { Effect } from "effect";
+import { getDBConnection } from "../../Database.js";
 
 export class DeviceGroupRepositoryMongoAdapter implements DeviceGroupRepository {
+
     private deviceGroupSchema = new mongoose.Schema({
         _id: String,
         name: String,
     });
-    private DG = mongoose.model('DeviceGroup', this.deviceGroupSchema);
-
-    constructor(mongoAddress: string) {
-        mongoose.connect(`mongodb://${mongoAddress}`);
-    }
+    private DG = getDBConnection("deviceGroupsDB").model("DeviceGroup", this.deviceGroupSchema)
 
     add(entity: DeviceGroup): Effect.Effect<void, DuplicateIdError> {
         return Effect.tryPromise({
