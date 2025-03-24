@@ -1,7 +1,7 @@
 import express from 'express';
 import { DeviceGroupRepositoryMongoAdapter } from './devices-management/DeviceGroupRepository.js';
 import { DeviceGroupId } from '../domain/devices-management/DeviceGroup.js';
-import { Result } from 'option-t/plain_result/namespace';
+import { Effect, pipe } from 'effect';
 
 export class HTTPServerAdapter {
 
@@ -10,27 +10,30 @@ export class HTTPServerAdapter {
 
         const adapter = new DeviceGroupRepositoryMongoAdapter("localhost:27017")
         app.get('/create', async (req, res) => {
-            const result = await adapter.add(adapter.DeviceGroup(DeviceGroupId("1"), "camera"))
-            Result.mapOrElse(
-                result,
-                err => res.send(err),
-                () => res.sendStatus(200)
+            await pipe(
+                adapter.add(adapter.DeviceGroup(DeviceGroupId("1"), "camera")),
+                Effect.match({
+                    onSuccess() { res.sendStatus(200) },
+                    onFailure(err) { res.send(err) }
+                }),
+                Effect.runPromise
+            )
+        });
+        app.get('/get/:id', async (req, res) => {
+            await pipe(
+                adapter.find(DeviceGroupId(req.params.id)),
+                Effect.match({
+                    onSuccess(dg) { res.send(dg) },
+                    onFailure(err) { res.send(err) }
+                }),
+                Effect.runPromise
             )
         });
         app.get('/get', async (req, res) => {
-            const dg = await adapter.find(DeviceGroupId("1"))
-            Result.mapOrElse(
-                dg,
-                err => res.send(err),
-                dg => res.send(dg)
-            )
-        });
-        app.get('/getNone', async (req, res) => {
-            const dg = await adapter.find(DeviceGroupId("2"))
-            Result.mapOrElse(
-                dg,
-                err => res.send(err),
-                dg => res.send(dg)
+            await pipe(
+                adapter.getAll(),
+                Effect.map(dgs => res.send(dgs)),
+                Effect.runPromise
             )
         });
 

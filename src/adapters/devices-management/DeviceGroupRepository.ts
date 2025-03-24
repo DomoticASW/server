@@ -1,72 +1,76 @@
-import { Effect } from "effect/Effect";
+import mongoose from "mongoose";
 import { DeviceGroup, DeviceGroupId } from "../../domain/devices-management/DeviceGroup.js";
 import { DeviceGroupRepository } from "../../ports/devices-management/DeviceGroupRepository.js";
 import { DuplicateIdError, NotFoundError } from "../../ports/Repository.js";
-import mongoose from "mongoose";
+import { Effect } from "effect";
 
 export class DeviceGroupRepositoryMongoAdapter implements DeviceGroupRepository {
-
-    address: URL
-
-    constructor(mongoAddress: string) {
-        const url = URL.parse("mongodb://" + mongoAddress)
-
-        if (url) {
-            this.address = url
-        } else {
-            throw new Error("bad mongo address: " + url);
-        }
-
-        mongoose.connect(url.toString())
-    }
-
     private deviceGroupSchema = new mongoose.Schema({
-        id: String,
-        name: String
+        _id: String,
+        name: String,
     });
-
     private DG = mongoose.model('DeviceGroup', this.deviceGroupSchema);
 
-    add(entity: DeviceGroup): Effect<void, DuplicateIdError> {
-        const user = new this.DG()
-        user.id = entity.id
-        user.name = entity.name
-        await user.save()
-        return createOk(undefined)
-    }
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    update(entity: DeviceGroup): Effect<void, NotFoundError> {
-        throw new Error("Method not implemented.");
-    }
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    remove(entity: DeviceGroup): Effect<void, NotFoundError> {
-        throw new Error("Method not implemented.");
-    }
-    getAll(): Effect<Iterable<DeviceGroup>, never> {
-        throw new Error("Method not implemented.");
+    constructor(mongoAddress: string) {
+        mongoose.connect(`mongodb://${mongoAddress}`);
     }
 
-    find(id: DeviceGroupId): Effect<DeviceGroup, NotFoundError> {
-        const dg = await this.DG.findOne({ id: id })
-        if (dg) {
-            return createOk(this.DeviceGroup(dg.id, dg.name!))
-        } else {
-            return createErr({ message: "NotFound", __brand: "NotFoundError" })
-        }
+    add(entity: DeviceGroup): Effect.Effect<void, DuplicateIdError> {
+        return Effect.tryPromise({
+            try: async () => {
+                const user = new this.DG({ _id: entity.id, name: entity.name });
+                await user.save();
+            },
+            catch: () => this.DuplicateIdError(),
+        });
     }
 
-    // TODO: delete
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    update(entity: DeviceGroup): Effect.Effect<void, NotFoundError> {
+        return Effect.fail({ message: "Method not implemented.", __brand: "NotFoundError" });
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    remove(entity: DeviceGroup): Effect.Effect<void, NotFoundError> {
+        return Effect.fail({ message: "Method not implemented.", __brand: "NotFoundError" });
+    }
+
+    getAll(): Effect.Effect<Iterable<DeviceGroup>, never> {
+        return Effect.tryPromise(async () => {
+            const dgs = await this.DG.find();
+            return dgs.map(dg => this.DeviceGroup(dg.id, dg.name!))
+        }).pipe(Effect.orDie)
+    }
+
+    find(id: DeviceGroupId): Effect.Effect<DeviceGroup, NotFoundError> {
+        return Effect.tryPromise(async () => {
+            const dg = await this.DG.findById(id);
+            if (!dg) throw new Error("NotFound");
+            return this.DeviceGroup(dg.id, dg.name!);
+        }).pipe(Effect.mapError(e => {
+            console.log(e);
+            return this.NotFoundError()
+        }))
+    }
+
+    // TODO: remove all function below
+    DuplicateIdError(): DuplicateIdError {
+        return { message: "An object with that id already exists", __brand: "DuplicateIdError" }
+    }
+    NotFoundError(): NotFoundError {
+        return { message: "An object with that id does not exist", __brand: "NotFoundError" }
+    }
+
     DeviceGroup(id: DeviceGroupId, name: string): DeviceGroup {
         return {
-            id: id,
-            name: name,
+            id,
+            name,
             addDeviceToGroup(deviceId) {
                 console.log(deviceId);
             },
             removeDeviceFromGroup(deviceId) {
                 console.log(deviceId);
             },
-        }
+        };
     }
-
 }
