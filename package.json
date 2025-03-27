@@ -8,11 +8,11 @@
     "access": "public"
   },
   "scripts": {
-    "start": "npm run build-client && tsc && docker compose up -d --wait && nodemon; docker compose down",
+    "start": "npm run build-client && tsc && docker compose -f docker-compose.yaml -f docker-compose.development.yaml up --force-recreate -d --wait && nodemon ; docker compose -f docker-compose.yaml -f docker-compose.development.yaml down",
     "build-client": "[ -d client/dist ] || npm run rebuild-client",
     "rebuild-client": "cd client && npm install && npm run build",
     "lint": "eslint",
-    "test": "jest"
+    "test": "docker compose -f docker-compose.yaml -f docker-compose.testing.yaml up --force-recreate -d --wait && jest ; docker compose -f docker-compose.yaml -f docker-compose.testing.yaml down"
   },
   "author": "Alessandro Venturini, Corrado Stortini, Marco Raggini, Francesco Carlucci",
   "license": "ISC",
