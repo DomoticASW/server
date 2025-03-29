@@ -1,11 +1,12 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { Effect, orDie, promise, tryPromise } from "effect/Effect";
+import { Effect, flatMap, orDie, succeed, fail, tryPromise } from "effect/Effect";
 import { DeviceId } from "../../domain/devices-management/Device.js";
 import { DeviceOfflineNotificationSubscription } from "../../domain/notifications-management/DeviceOfflineNotificationSubscription.js";
 import { Email } from "../../domain/users-management/User.js";
 import { DeviceOfflineNotificationSubscriptionRepository } from "../../ports/notifications-management/DeviceOfflineNotificationSubscriptionRepository.js";
 import { DuplicateIdError, NotFoundError } from "../../ports/Repository.js";
 import mongoose from "mongoose";
+import { pipe } from "effect";
 
 interface DeviceOfflineNotificationSubscriptionSchema {
   _id: {
@@ -23,16 +24,16 @@ export class DeviceOfflineNotificationSubscriptionRepositoryMongoadapter impleme
       }
   });
 
-  private notification: mongoose.Model<DeviceOfflineNotificationSubscriptionSchema>
+  private notifications: mongoose.Model<DeviceOfflineNotificationSubscriptionSchema>
 
   constructor(connection: mongoose.Connection) {
-      this.notification = connection.model("DeviceOfflineNotificationSubscription", this.deviceOfflineNotificationSubscriptionSchema, undefined, {overwriteModels: true})
+      this.notifications = connection.model("DeviceOfflineNotificationSubscription", this.deviceOfflineNotificationSubscriptionSchema, undefined, {overwriteModels: true})
   }
 
   add(entity: DeviceOfflineNotificationSubscription): Effect<void, DuplicateIdError> {
     return tryPromise({
         try: async () => {
-            const notification = new this.notification({ _id: { email: entity.email, deviceId: entity.deviceId } });
+            const notification = new this.notifications({ _id: { email: entity.email, deviceId: entity.deviceId } });
             await notification.save();
         },
         catch: () => DuplicateIdError(),
@@ -49,12 +50,26 @@ export class DeviceOfflineNotificationSubscriptionRepositoryMongoadapter impleme
 
   getAll(): Effect<Iterable<DeviceOfflineNotificationSubscription>, never, never> {
     return tryPromise(async () => {
-      const notifications = await this.notification.find();
-      return notifications.map(notification => DeviceOfflineNotificationSubscription(notification._id.email, notification._id.deviceId))
+      const notifications = await this.notifications.find();
+      return notifications.map(notification => this.toEntity(notification))
     }).pipe(orDie);
   }
 
-  find(id: [Email, DeviceId]): Effect<DeviceOfflineNotificationSubscription, NotFoundError, never> {
-    throw Error("Not yet implemented")
+  find(id: { email: Email, deviceId: DeviceId }): Effect<DeviceOfflineNotificationSubscription, NotFoundError, never> {
+    const promise = async () => await this.notifications.findById(id)
+    return pipe(
+        tryPromise(promise),
+        orDie,
+        flatMap(notification => {
+            if (notification) {
+                return succeed(this.toEntity(notification))
+            } else {
+                return fail(NotFoundError())
+            }
+        })
+    )
+  }
+  toEntity(notification: DeviceOfflineNotificationSubscriptionSchema): DeviceOfflineNotificationSubscription {
+    return DeviceOfflineNotificationSubscription(notification._id.email, notification._id.deviceId)
   }
 }

@@ -51,3 +51,29 @@ test("Cannot add to the repository two notification with same id", async () => {
   expect(notifications).toContainEqual(notification);
   expect(notifications).toHaveLength(1);
 });
+
+test("A notification can be found on the repository", async () => {
+  const notification = DeviceOfflineNotificationSubscription("email@email.com", "1")
+
+  await Effect.runPromise(repo.add(notification));
+  const result = await Effect.runPromise(repo.find(notification));
+
+  expect(result).toStrictEqual(notification);
+});
+
+test("If a notification does not exists on the db sends an error", async () => {
+  const notification = DeviceOfflineNotificationSubscription("email@email.com", "1")
+
+  await pipe(
+    repo.find(notification),
+    Effect.match({
+        onSuccess() { },
+        onFailure(err) { expect(err.__brand).toBe("NotFoundError") }
+    }),
+    Effect.runPromise
+  );
+});
+
+afterAll(async () => {
+  await dbConnection.close()
+})
