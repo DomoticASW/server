@@ -1,25 +1,12 @@
-import { DuplicateIdError, NotFoundError } from "../../src/ports/Repository.js"
+import { DuplicateIdError } from "../../src/ports/Repository.js";
 
-test("DuplicateIdError message is constructed correcly", () => {
-    const cause = "Device id 3 alredy in use"
-    const err = DuplicateIdError(cause)
-    expect(err.cause).toBe(cause)
-    expect(err.message).toBe("Id already in use")
-})
+test("DuplicateIdError has a message", () => {
+    const error = DuplicateIdError();
+    expect(error.message).toBe("Id already in use")
+    expect(error.cause).toBeNull()
+});
 
-test("DuplicateIdError does not need a cause", () => {
-    const err = DuplicateIdError()
-    expect(err.cause).toBe(undefined)
-})
-
-test("NotFoundError message is constructed correcly", () => {
-    const cause = "Device with id 3 not found"
-    const err = NotFoundError(cause)
-    expect(err.cause).toBe(cause)
-    expect(err.message).toBe("Not found")
-})
-
-test("NotFoundError does not need a cause", () => {
-    const err = NotFoundError()
-    expect(err.cause).toBe(undefined)
-})
+test("DuplicateIdError has a cause", () => {
+    const error = DuplicateIdError("This is the cause");
+    expect(error.cause).toBe("This is the cause")
+});
