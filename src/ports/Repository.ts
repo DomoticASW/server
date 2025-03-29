@@ -5,7 +5,7 @@ import { Error } from "./Error.js";
 export interface Repository<Id, Entity> {
     add(entity: Entity): Effect<void, DuplicateIdError>
     update(entity: Entity): Effect<void, NotFoundError>
-    remove(entity: Entity): Effect<void, NotFoundError>
+    remove(id: Id): Effect<void, NotFoundError>
     getAll(): Effect<Iterable<Entity>, never>;
     find(id: Id): Effect<Entity, NotFoundError>
 }
