@@ -20,7 +20,7 @@ export function DuplicateIdError(cause?: string): DuplicateIdError {
 }
 
 export function DuplicateIdError(cause?: string): DuplicateIdError {
-    return { message: "Id already in use", cause: cause } as DuplicateIdError
+    return { message: "Id already in use", cause: cause, __brand: "DuplicateIdError" }
 }
 
 export type NotFoundError = Brand<Error, "NotFoundError">
