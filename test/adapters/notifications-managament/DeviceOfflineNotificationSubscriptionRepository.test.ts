@@ -1,23 +1,53 @@
 import mongoose from "mongoose";
 import { DeviceOfflineNotificationSubscriptionRepositoryMongoadapter } from "../../../src/adapters/notifications-management/DeviceOfflineNotificationSubscription.js";
-import { Effect } from "effect";
+import { Effect, pipe } from "effect";
 import { DeviceOfflineNotificationSubscription } from "../../../src/domain/notifications-management/DeviceOfflineNotificationSubscription.js";
+import { DeviceOfflineNotificationSubscriptionRepository } from "../../../src/ports/notifications-management/DeviceOfflineNotificationSubscriptionRepository.js";
 
 const dbName: string = "DeviceOfflineNotificationSubscriptionRepositoryTests"
+let dbConnection: mongoose.Connection
+let repo: DeviceOfflineNotificationSubscriptionRepository
 
-const dbConnection: mongoose.Connection = await mongoose.createConnection(`mongodb://localhost:27018/${dbName}`).asPromise();
-const repo = new DeviceOfflineNotificationSubscriptionRepositoryMongoadapter(dbConnection);
+beforeAll(async () => {
+  dbConnection = await mongoose.createConnection(`mongodb://localhost:27018/${dbName}`).asPromise();
+  repo = new DeviceOfflineNotificationSubscriptionRepositoryMongoadapter(dbConnection);
+});
+
+beforeEach(async () => {
+  const collections = await dbConnection.listCollections()
+  await Promise.all(collections.map(c => dbConnection.dropCollection(c.name)))
+
+  repo = new DeviceOfflineNotificationSubscriptionRepositoryMongoadapter(dbConnection);
+});
 
 test("The repository is initially empty", async () => {
   const notifications = await Effect.runPromise(repo.getAll()) 
   expect(notifications).toHaveLength(0)
 });
 
-test("A DeviceOfflineNotificationSubscription can be add to the repository", async () => {
+test("A DeviceOfflineNotificationSubscription can be added to the repository", async () => {
+  const notification = DeviceOfflineNotificationSubscription("email@email.com", "1");
+
+  await Effect.runPromise(repo.add(notification));
+  const notifications = await Effect.runPromise(repo.getAll());
+  expect(notifications).toHaveLength(1);
+  expect(notifications).toContainEqual(notification);
+});
+
+test("Cannot add to the repository two notification with same id", async () => {
   const notification = DeviceOfflineNotificationSubscription("email@email.com", "1")
 
-  await Effect.runPromise(repo.add(notification))
-  const notifications = await Effect.runPromise(repo.getAll())
-  expect(notification).toHaveLength(1)
-  expect(notifications).toContain(notification)
+  await Effect.runPromise(repo.add(notification));
+  await pipe(
+      repo.add(notification),
+      Effect.match({
+          onSuccess() { },
+          onFailure(err) { expect(err.__brand).toBe("DuplicateIdError") }
+      }),
+      Effect.runPromise
+  );
+
+  const notifications = await Effect.runPromise(repo.getAll());
+  expect(notifications).toContainEqual(notification);
+  expect(notifications).toHaveLength(1);
 });
