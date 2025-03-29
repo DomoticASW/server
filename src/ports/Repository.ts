@@ -17,3 +17,7 @@ export function DuplicateIdError(cause?: string): DuplicateIdError {
 }
 
 export type NotFoundError = Brand<Error, "NotFoundError">
+
+export function NotFoundError(cause?: string): NotFoundError {
+    return { message: "Not found", cause: cause, __brand: "NotFoundError" }
+}
