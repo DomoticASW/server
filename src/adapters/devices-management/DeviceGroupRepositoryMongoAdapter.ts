@@ -19,8 +19,6 @@ export class DeviceGroupRepositoryMongoAdapter implements DeviceGroupRepository 
     });
     private DG: mongoose.Model<DeviceGroupSchema>
 
-    private dgs: DeviceGroup[] = []
-
     constructor(connection: mongoose.Connection) {
         this.connection = connection
         this.DG = connection.model("DeviceGroup", this.deviceGroupSchema, undefined, { overwriteModels: true })
