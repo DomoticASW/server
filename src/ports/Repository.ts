@@ -12,4 +12,8 @@ export interface Repository<Id, Entity> {
 
 export type DuplicateIdError = Brand<Error, "DuplicateIdError">
 
+export function DuplicateIdError(cause?: string): DuplicateIdError {
+    return { message: "Id already in use", cause: cause } as DuplicateIdError
+}
+
 export type NotFoundError = Brand<Error, "NotFoundError">
