@@ -11,16 +11,20 @@ export enum UserRole {
 export interface Token {
     readonly userEmail: Email;
     readonly role: UserRole;
-
+    
     newToken(string: string): Brand<string, "Token" | InvalidTokenFormatError>;
 }
 
-export class TokenImpl implements Token {
+export function Token(userEmail: Email, role: UserRole): Token {
+    return new TokenImpl(userEmail, role);
+}
+
+class TokenImpl implements Token {
     constructor(
         public readonly userEmail: Email,
         public readonly role: UserRole
     ) {}
-
+    
     newToken(value: string): Brand<string, "Token" | InvalidTokenFormatError> {
         if (!value) {
             throw new Error("Not implemented yet");
