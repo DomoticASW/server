@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { Effect, flatMap, orDie, succeed, fail, tryPromise } from "effect/Effect";
+import { Effect, flatMap, orDie, succeed, fail, tryPromise, promise, runPromise } from "effect/Effect";
 import { DeviceId } from "../../domain/devices-management/Device.js";
 import { DeviceOfflineNotificationSubscription } from "../../domain/notifications-management/DeviceOfflineNotificationSubscription.js";
 import { Email } from "../../domain/users-management/User.js";
@@ -41,7 +41,12 @@ export class DeviceOfflineNotificationSubscriptionRepositoryMongoadapter impleme
   }
 
   update(entity: DeviceOfflineNotificationSubscription): Effect<void, NotFoundError> {
-    throw Error("Not yet implemented")
+    return tryPromise({
+      try: async () => {
+        await runPromise(this.find(entity));
+      },
+      catch: () => NotFoundError()
+    });
   }
 
   remove(entity: DeviceOfflineNotificationSubscription): Effect<void, NotFoundError> {
@@ -69,6 +74,7 @@ export class DeviceOfflineNotificationSubscriptionRepositoryMongoadapter impleme
         })
     )
   }
+
   toEntity(notification: DeviceOfflineNotificationSubscriptionSchema): DeviceOfflineNotificationSubscription {
     return DeviceOfflineNotificationSubscription(notification._id.email, notification._id.deviceId)
   }
