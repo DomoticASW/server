@@ -50,7 +50,18 @@ export class DeviceOfflineNotificationSubscriptionRepositoryMongoadapter impleme
   }
 
   remove(entity: DeviceOfflineNotificationSubscription): Effect<void, NotFoundError> {
-    throw Error("Not yet implemented")
+    const promise = async () => await this.notifications.findByIdAndDelete(entity)
+    return pipe(
+      tryPromise(promise),
+      orDie,
+      flatMap(notification => {
+          if (notification) {
+              return succeed(null)
+          } else {
+              return fail(NotFoundError())
+          }
+      })
+  )
   }
 
   getAll(): Effect<Iterable<DeviceOfflineNotificationSubscription>, never, never> {
