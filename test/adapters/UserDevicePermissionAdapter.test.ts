@@ -52,6 +52,15 @@ test("The entity cannot has changes", async () => {
   expect(res).toStrictEqual(res)
 })
 
+test("Try to remove an UserDevicePermission", async () => {
+  await Effect.runPromise(repo.add(permission));
+  await Effect.runPromise(repo.remove(permission));
+  const res1 = await Effect.runPromise(repo.getAll())
+  expect(res1).toHaveLength(1)
+  const res2 = await Effect.runPromise(repo.getAll())
+  expect(res2).toHaveLength(0)
+})
+
 afterAll(async () => {
   await dbConnection.close()
 })
