@@ -1,0 +1,94 @@
+import mongoose from "mongoose";
+import { Effect, pipe } from "effect";
+import { flatMap, orDie, succeed, tryPromise } from "effect/Effect";
+import { RegistrationRequestRepository } from "../../../src/ports/users-management/RegistrationRequestRepository.js";
+import { Email, Nickname, PasswordHash } from "../../domain/users-management/User.js";
+import { RegistrationRequest } from "../../domain/users-management/RegistrationRequest.js";
+import { DuplicateIdError, NotFoundError } from "../../ports/Repository.js";
+
+export interface RegistrationRequestSchema {
+    nickname: Nickname,
+    email: Email,
+    passwordHash: PasswordHash
+}
+
+export class RegistartionRequestRepositoryAdapter implements RegistrationRequestRepository {
+    
+    private registrationRequestSchema = new mongoose.Schema<RegistrationRequestSchema>({
+        nickname: { type: String, required: true },
+        email: { type: String, required: true, unique: true },
+        passwordHash: { type: String, required: true }
+    });
+    
+    private registrationRequest: mongoose.Model<RegistrationRequestSchema>;
+    
+    constructor(connection: mongoose.Connection) {
+        this.registrationRequest =
+        connection.models.RegistarationRequest ||
+        connection.model<RegistrationRequestSchema>(
+            "RegistarationRequest",
+            this.registrationRequestSchema
+        );
+    }
+    
+    add(entity: RegistrationRequest): Effect.Effect<void, DuplicateIdError> {
+        return tryPromise({
+            try: async () => {
+                const RR = new this.registrationRequest({nickname: entity.nickname, email: entity.email, passwordHash: entity.passwordHash});
+                await RR.save();
+            },
+            catch: () => DuplicateIdError(),
+        });
+    }
+    
+    update(entity: RegistrationRequest): Effect.Effect<void, NotFoundError> {
+        return tryPromise({
+            try: async () => {
+                const RR = await this.registrationRequest.findByIdAndUpdate(entity.email, {nickname: entity.nickname, email: entity.email, passwordHash: entity.passwordHash}, {new: true});
+                if (!RR) {
+                    throw NotFoundError();
+                }
+            },
+            catch: () => NotFoundError(),
+        }).pipe(orDie);
+    }
+    
+    remove(entity: RegistrationRequest): Effect.Effect<void, NotFoundError> {
+        return tryPromise({
+            try: async () => {
+                const RR = await this.registrationRequest.findByIdAndDelete(entity.email);
+                if (!RR) {
+                    throw NotFoundError();
+                }
+            },
+            catch: () => NotFoundError(),
+        }).pipe(orDie);
+    }
+    
+    getAll(): Effect.Effect<Iterable<RegistrationRequest>, never> {
+        return tryPromise(async () => {
+            const RRs = await this.registrationRequest.find();
+            return RRs.map(RR => this.toEntity(RR))
+        }).pipe(orDie);
+    }
+    
+    find(id: Email): Effect.Effect<RegistrationRequest, NotFoundError> {
+        const promise = async () => await this.registrationRequest.findById(id)
+        return pipe(
+            tryPromise(promise),
+            orDie,
+            flatMap(RR => {
+                if (RR) {
+                    return succeed(this.toEntity(RR))
+                } else {
+                    return fail(NotFoundError())
+                }
+            })
+        )
+        
+    }
+    
+    toEntity(registrationRequest: RegistrationRequestSchema): RegistrationRequest {
+        return RegistrationRequest(Nickname(registrationRequest.nickname), Email(registrationRequest.email), PasswordHash(registrationRequest.passwordHash));
+    }
+}
