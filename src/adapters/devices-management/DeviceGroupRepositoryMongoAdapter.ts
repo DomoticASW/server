@@ -1,17 +1,13 @@
 import mongoose from "mongoose";
-import { Effect, pipe } from "effect";
 import { DeviceGroup, DeviceGroupId } from "../../domain/devices-management/DeviceGroup.js";
-import { DeviceGroupRepository } from "../../ports/devices-management/DeviceGroupRepository.js";
-import { DuplicateIdError, NotFoundError } from "../../ports/Repository.js";
-import { isMongoServerError, MongoDBErrorCodes } from "../../utils/MongoDBErrorCodes.js";
+import { BaseRepositoryMongoAdapter } from "../BaseRepositoryMongoAdapter.js";
 
 interface DeviceGroupSchema {
     _id: string,
     name: string
 }
 
-export class DeviceGroupRepositoryMongoAdapter implements DeviceGroupRepository {
-    private connection: mongoose.Connection;
+export class DeviceGroupRepositoryMongoAdapter extends BaseRepositoryMongoAdapter<DeviceGroupId, DeviceGroup, string, DeviceGroupSchema> {
 
     private deviceGroupSchema = new mongoose.Schema<DeviceGroupSchema>({
         _id: { type: String, required: true },
@@ -20,78 +16,19 @@ export class DeviceGroupRepositoryMongoAdapter implements DeviceGroupRepository 
     private DG: mongoose.Model<DeviceGroupSchema>
 
     constructor(connection: mongoose.Connection) {
-        this.connection = connection
+        super(connection)
         this.DG = connection.model("DeviceGroup", this.deviceGroupSchema, undefined, { overwriteModels: true })
     }
 
-    add(entity: DeviceGroup): Effect.Effect<void, DuplicateIdError> {
-        const promise = async () => await this.toSchema(entity).save()
-        return Effect.tryPromise({
-            try: promise,
-            catch(error) {
-                if (isMongoServerError(error, MongoDBErrorCodes.DuplicateKey))
-                    return DuplicateIdError()
-                else {
-                    throw error
-                }
-            },
-        })
-    }
-    update(entity: DeviceGroup): Effect.Effect<void, NotFoundError> {
-        const promise = async () => await this.DG.findByIdAndUpdate(entity.id, entity)
-        return pipe(
-            Effect.tryPromise(promise),
-            Effect.orDie,
-            Effect.flatMap(dg => {
-                if (dg) {
-                    return Effect.succeed(null)
-                } else {
-                    return Effect.fail(NotFoundError())
-                }
-            })
-        )
-    }
-    remove(id: DeviceGroupId): Effect.Effect<void, NotFoundError> {
-        const promise = async () => await this.DG.findByIdAndDelete(id)
-        return pipe(
-            Effect.tryPromise(promise),
-            Effect.orDie,
-            Effect.flatMap(dg => {
-                if (dg) {
-                    return Effect.succeed(null)
-                } else {
-                    return Effect.fail(NotFoundError())
-                }
-            })
-        )
-    }
-    getAll(): Effect.Effect<Iterable<DeviceGroup>, never> {
-        return pipe(
-            Effect.tryPromise(async () => await this.DG.find()),
-            Effect.map(dgs => dgs.map(dg => this.toEntity(dg))),
-            Effect.orDie
-        )
-    }
-    find(id: DeviceGroupId): Effect.Effect<DeviceGroup, NotFoundError> {
-        const promise = async () => await this.DG.findById(id)
-        return pipe(
-            Effect.tryPromise(promise),
-            Effect.orDie,
-            Effect.flatMap(dg => {
-                if (dg) {
-                    return Effect.succeed(this.toEntity(dg))
-                } else {
-                    return Effect.fail(NotFoundError())
-                }
-            })
-        )
+    protected toDocument(e: DeviceGroup): mongoose.Document<unknown, object, DeviceGroupSchema> & DeviceGroupSchema {
+        return new this.DG({ _id: e.id, name: e.name })
     }
 
-    private toSchema(dg: DeviceGroup) {
-        return new this.DG({ _id: dg.id, name: dg.name })
+    protected toEntity(s: DeviceGroupSchema): DeviceGroup {
+        return DeviceGroup(DeviceGroupId(s._id), s.name)
     }
 
-    private toEntity(dgs: DeviceGroupSchema): DeviceGroup {
-        return DeviceGroup(DeviceGroupId(dgs._id), dgs.name)
+    protected model(): mongoose.Model<DeviceGroupSchema> {
+        return this.DG
     }
 }
