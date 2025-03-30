@@ -2,7 +2,8 @@ import mongoose from "mongoose";
 import { DeviceGroup, DeviceGroupId } from "../../domain/devices-management/DeviceGroup.js";
 import { BaseRepositoryMongoAdapter } from "../BaseRepositoryMongoAdapter.js";
 
-interface DeviceGroupSchema {
+// Export is needed in order to test the adapter
+export interface DeviceGroupSchema {
     _id: string,
     name: string
 }
