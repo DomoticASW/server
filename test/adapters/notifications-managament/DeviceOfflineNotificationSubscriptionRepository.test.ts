@@ -89,6 +89,27 @@ test("Update returns an error if the entity is not present", async () => {
   );
 });
 
+test("Remove a notification from the repo if present", async () => {
+  await Effect.runPromise(repo.add(notification));
+  await Effect.runPromise(repo.remove(notification));
+
+  const res = await Effect.runPromise(repo.getAll())
+  expect(res).toHaveLength(0)
+});
+
+test("Trying to remove a notification from the repo if not present returns an error", async () => {
+  await pipe(
+    repo.remove(notification),
+    Effect.match({
+      onSuccess() {},
+      onFailure(error) {
+        expect(error.__brand).toBe("NotFoundError");
+      },
+    }),
+    Effect.runPromise
+  );
+});
+
 afterAll(async () => {
   await dbConnection.close()
 })
