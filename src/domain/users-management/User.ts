@@ -22,10 +22,6 @@ export interface User {
 
 export type Admin = Brand<User, "Admin">
 
-export function User(nickname: Nickname, email: Email, passwordHash: PasswordHash, role: Role): User {
-    return new UserImpl(nickname, email, passwordHash, role);
-}
-
 export class UserImpl implements User {
     constructor(
         public nickname: Nickname,
