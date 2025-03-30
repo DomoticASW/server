@@ -7,14 +7,15 @@ import { BaseRepositoryMongoAdapter } from "../../src/adapters/BaseRepositoryMon
  * @param dbName Name of the DB that will be used to run tests
  * @param collectionName Name of the collection that the repository is expected to create
  * @param makeId Function that creates an entity id by a given string
- * @param makeEntity Function that creates an entity with the given id or random if that's not provided
+ * @param makeEntity Function that creates an entity with the given id or random if that's not provided, 
+ * also if something is provided you should use it to modify some property of the entity
  * @param makeRepository Function that creates an instance of the repository to test
  */
 export function testRepositoryMongoAdapter<Id, Entity, SchemaId, Schema extends { _id: SchemaId }>(
     dbName: string,
     collectionName: string,
     makeId: (id: string) => Id,
-    makeEntity: (id?: Id) => Entity,
+    makeEntity: (id?: Id, something?: string) => Entity,
     makeRepository: (connection: mongoose.Connection) => BaseRepositoryMongoAdapter<Id, Entity, SchemaId, Schema>,
     idToSchemaId: (id: Id) => SchemaId) {
 
@@ -127,19 +128,24 @@ export function testRepositoryMongoAdapter<Id, Entity, SchemaId, Schema extends 
             )
     })
 
-    // test("Updates correclty updates an entity", async () => {
-    //     const newName = "Kitchen"
-    //     const dg = makeDeviceGroup("1", "Bedroom")
+    test("Updates correclty updates an entity", async () => {
+        const id = makeId("1")
+        const dg = makeEntity(id, "Hello")
+        const dgUpdated = makeEntity(id, "world")
 
-    //     const updated = await Effect.gen(function* () {
-    //         yield* repo.add(dg)
-    //         dg.name = newName
-    //         yield* repo.update(dg)
-    //         return yield* repo.find(dg.id)
-    //     }).pipe(Effect.runPromise)
+        // In order for this test to work correctly the entity must be changed in any way
+        // If your test failed here you might have wrongly implemented makeEntity by
+        // not taking into account the second parameter
+        expect(dg).not.toEqual(dgUpdated)
 
-    //     expect(updated.name).toBe(newName)
-    // })
+        const updated = await Effect.gen(function* () {
+            yield* repo.add(dg)
+            yield* repo.update(dgUpdated)
+            return yield* repo.find(id)
+        }).pipe(Effect.runPromise)
+
+        expect(updated).toEqual(dgUpdated)
+    })
 
     test("Update returns NotFoundError if entity was not present", async () => {
         const dg = makeEntity()
