@@ -48,7 +48,15 @@ update(entity: UserDevicePermission): Effect.Effect<void, NotFoundError> {
   }
 
   remove(entity: UserDevicePermission): Effect.Effect<void, NotFoundError> {
-    throw new Error("Method not implemented.");
+    return tryPromise({
+      try: async () => {
+          const permission = await this.permissions.findByIdAndDelete([entity.email, entity.deviceId], {email: entity.email, deviceId: entity.deviceId});
+          if (!permission) {
+              throw NotFoundError();
+          }
+      },
+      catch: () => NotFoundError(),
+    }).pipe(orDie);
   }
   getAll(): Effect.Effect<Iterable<UserDevicePermission>, never> {
     return tryPromise(async () => {
