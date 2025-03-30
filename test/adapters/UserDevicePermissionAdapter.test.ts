@@ -25,17 +25,32 @@ beforeEach(async () => {
 });
 
 test("The repository is initially empty", async () => {
-  const notifications = await Effect.runPromise(repo.getAll()) 
-  expect(notifications).toHaveLength(0)
+  const permissions = await Effect.runPromise(repo.getAll()) 
+  expect(permissions).toHaveLength(0)
 });
 
 
 test("Try to add UserDevicePermission", async () => {
   await Effect.runPromise(repo.add(permission));
-  const notifications = await Effect.runPromise(repo.getAll());
-  expect(notifications).toHaveLength(1);
-  expect(notifications).toContainEqual(permission);
+  const permissions = await Effect.runPromise(repo.getAll());
+  expect(permissions).toHaveLength(1);
+  expect(permissions).toContainEqual(permission);
 });
+
+test("Try to find an UserDevicePermission", async () => {
+  await Effect.runPromise(repo.add(permission));
+  const result = await Effect.runPromise(repo.find([permission.email, permission.deviceId]));
+  expect(result).toEqual(permission);
+});
+
+test("The entity cannot has changes", async () => {
+  // That is because all the fields are readonly
+  await Effect.runPromise(repo.add(permission));
+  await Effect.runPromise(repo.update(permission));
+
+  const res = await Effect.runPromise(repo.find([permission.email, permission.deviceId]))
+  expect(res).toStrictEqual(res)
+})
 
 afterAll(async () => {
   await dbConnection.close()
