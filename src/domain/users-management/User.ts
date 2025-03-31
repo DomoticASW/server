@@ -4,6 +4,8 @@ export type Nickname = Brand<string, "Nickname">
 export type Email = Brand<string, "Email">
 export type PasswordHash = Brand<string, "PasswordHash">
 
+export function Email(email: string): Email { return email as Email }
+
 export enum Role {
     Admin = "Admin",
     User = "User"
