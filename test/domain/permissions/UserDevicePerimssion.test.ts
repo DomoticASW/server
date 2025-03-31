@@ -17,5 +17,5 @@ import { Email } from "../../../src/domain/users-management/User.js"
  
  test("UserDevicePermission testing field", () => {
      expect(makeUserDevicePermission().deviceId).toBe("1")
-     expect(makeUserDevicePermission().deviceId).toBe("marcoraggio@gmail.com")
+     expect(makeUserDevicePermission().email).toBe("marcoraggio@gmail.com")
  })
