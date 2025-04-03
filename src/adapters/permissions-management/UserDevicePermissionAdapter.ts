@@ -38,7 +38,7 @@ export class UserDevicePermissionMongoAdapter implements UserDevicePermissionRep
   update(entity: UserDevicePermission): Effect.Effect<void, NotFoundError> {
     return tryPromise({
       try: async () => {
-        const permission = await this.permissions.findById([entity.email, entity.deviceId], { email: entity.email, deviceId: entity.deviceId });
+        const permission = await this.permissions.findOne({email: entity.email, deviceId: entity.deviceId});
         if (!permission) {
           throw NotFoundError();
         }
@@ -50,7 +50,7 @@ export class UserDevicePermissionMongoAdapter implements UserDevicePermissionRep
   remove(entity: UserDevicePermission): Effect.Effect<void, NotFoundError> {
     return tryPromise({
       try: async () => {
-        const permission = await this.permissions.findByIdAndDelete([entity.email, entity.deviceId], { email: entity.email, deviceId: entity.deviceId });
+        const permission = await this.permissions.findOneAndDelete([entity.email, entity.deviceId], { email: entity.email, deviceId: entity.deviceId });
         if (!permission) {
           throw NotFoundError();
         }
@@ -65,7 +65,7 @@ export class UserDevicePermissionMongoAdapter implements UserDevicePermissionRep
     }).pipe(orDie);
   }
   find(id: [Email, DeviceId]): Effect.Effect<UserDevicePermission, NotFoundError> {
-    const promise = this.permissions.findById(id);
+    const promise = this.permissions.findOne({email: id[0], deviceId: id[1]});
     return tryPromise({
       try: async () => {
         const permission = await promise;

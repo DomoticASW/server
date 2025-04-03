@@ -49,14 +49,14 @@ test("The entity cannot has changes", async () => {
   await Effect.runPromise(repo.update(permission));
 
   const res = await Effect.runPromise(repo.find([permission.email, permission.deviceId]))
-  expect(res).toStrictEqual(res)
+  expect(res).toStrictEqual(permission)
 })
 
 test("Try to remove an UserDevicePermission", async () => {
   await Effect.runPromise(repo.add(permission));
-  await Effect.runPromise(repo.remove(permission));
   const res1 = await Effect.runPromise(repo.getAll())
   expect(res1).toHaveLength(1)
+  await Effect.runPromise(repo.remove(permission));
   const res2 = await Effect.runPromise(repo.getAll())
   expect(res2).toHaveLength(0)
 })
