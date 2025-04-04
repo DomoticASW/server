@@ -1,5 +1,72 @@
+import { DeviceActionId, DeviceId, DevicePropertyId } from "../devices-management/Device.js"
+import { Email } from "../users-management/User.js"
+import { TaskId } from "./Script.js"
+import { Type } from "../../ports/devices-management/Types.js"
+
 export interface Instruction {
   execute(env: ExecutionEnvironment): ExecutionEnvironment
+}
+
+export interface SendNotificationInstruction extends Instruction {
+  email: Email
+  message: string
+}
+
+export interface WaitInstruction extends Instruction {
+  seconds: number
+}
+
+export interface StartTaskInstruction extends Instruction {
+  taskId: TaskId
+}
+
+export interface DeviceActionInstruction extends Instruction {
+  deviceId: DeviceId
+  actionId: DeviceActionId
+  input: object
+}
+
+export interface ConstantInstruction<T> extends Instruction {
+  name: string
+  type: Type
+  realType: T
+  // TODO: add execution environment and constant value in some way
+}
+
+//TODO: Remove export if not needed
+export interface ConstantValue<T> {
+  value: T
+}
+
+export interface CreateConstantInstruction<T> extends ConstantInstruction<T> {
+  value: T
+}
+
+export interface CreateDevicePropertyConstantInstruction<T> extends ConstantInstruction<T> {
+  deviceId: DeviceId 
+  devicePropertyId: DevicePropertyId
+}
+
+export interface IfInstruction<T> extends Instruction {
+  then: Instruction
+  condition: Condition<T>
+}
+
+export interface ElseInstruction<T> extends IfInstruction<T> {
+  else: Instruction
+}
+
+export interface Condition<T> {
+  leftConstant: ConstantInstruction<T>
+  rightConstant: ConstantInstruction<T>
+  operator: ConditionOperator<T>
+  negate: boolean
+
+  evaluate(env: ExecutionEnvironment): boolean
+}
+
+export interface ConditionOperator<T> {
+  evaluate(left: ConstantInstruction<T>, right: ConstantInstruction<T>): boolean;
 }
 
 type ExecutionEnvironment = undefined
