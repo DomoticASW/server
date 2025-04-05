@@ -33,11 +33,6 @@ export interface ConstantInstruction<T> extends Instruction {
   // TODO: add execution environment and constant value in some way
 }
 
-//TODO: Remove export if not needed
-export interface ConstantValue<T> {
-  value: T
-}
-
 export interface CreateConstantInstruction<T> extends ConstantInstruction<T> {
   value: T
 }
@@ -69,4 +64,10 @@ export interface ConditionOperator<T> {
   evaluate(left: ConstantInstruction<T>, right: ConstantInstruction<T>): boolean;
 }
 
-type ExecutionEnvironment = undefined
+interface ConstantValue<T> {
+  value: T
+}
+
+export interface ExecutionEnvironment {
+  constants: Map<ConstantInstruction<object>, ConstantValue<object>>
+}
