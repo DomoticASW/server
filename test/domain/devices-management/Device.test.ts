@@ -1,4 +1,6 @@
-import { Device, DeviceEvent, DeviceId, DeviceStatus, DeviceProperty, DeviceAction } from "../../../src/domain/devices-management/Device.js"
+import { Effect } from "effect"
+import { Device, DeviceEvent, DeviceId, DeviceStatus, DeviceProperty, DeviceAction, DeviceActionId } from "../../../src/domain/devices-management/Device.js"
+import { Enum, IntRange, NoneVoid, TypeConstraints } from "../../../src/domain/devices-management/Types.js"
 
 interface MakeDeviceParameters {
     id?: string,
@@ -21,6 +23,21 @@ function makeDevice({
     return Device(DeviceId(id), name, new URL(address), status, properties, actions, events)
 }
 
+interface MakeDeviceActionParameters<T> {
+    id?: string,
+    name?: string,
+    description?: string,
+    inputTypeConstraints: TypeConstraints<T>
+}
+function makeDeviceAction<T>({
+    id = "1",
+    name = "turn on",
+    description = "turns the lamp on",
+    inputTypeConstraints
+}: MakeDeviceActionParameters<T>) {
+    return DeviceAction(DeviceActionId(id), name, inputTypeConstraints, description)
+}
+
 test("DeviceId creation", () => {
     const idValue = "1"
     const id = DeviceId(idValue)
@@ -41,6 +58,40 @@ test("Device creation", () => {
     expect(d.properties).toEqual([])
     expect(d.actions).toEqual([])
     expect(d.events).toEqual(events)
+})
+
+test("DeviceAction creation", () => {
+    const id = "1"
+    const name = "turn on"
+    const description = "turns the lamp on"
+    const inputTC = NoneVoid()
+    const action = makeDeviceAction({ id: id, name: name, description: description, inputTypeConstraints: inputTC })
+    expect(action.id).toBe(id)
+    expect(action.name).toBe(name)
+    expect(action.description).toBe(description)
+    expect(action.inputTypeConstraints).toBe(inputTC)
+})
+
+test("DeviceAction execution checks input type constraints", () => {
+    const action = makeDeviceAction({ inputTypeConstraints: IntRange(0, 100) })
+    expect(() => action.execute(3).pipe(Effect.runSync)).not.toThrow()
+    action.execute(110).pipe(
+        Effect.match({
+            onFailure: (error) => expect(error.__brand).toBe("InvalidInputError"),
+            onSuccess() { throw new Error("This operation should not have succeded") }
+        }),
+        Effect.runSync
+    )
+
+    const action2 = makeDeviceAction({ inputTypeConstraints: Enum(new Set(["A", "B", "C"])) })
+    expect(() => action2.execute("A").pipe(Effect.runSync)).not.toThrow()
+    action2.execute("D").pipe(
+        Effect.match({
+            onFailure: (error) => expect(error.__brand).toBe("InvalidInputError"),
+            onSuccess() { throw new Error("This operation should not have succeded") }
+        }),
+        Effect.runSync
+    )
 })
 
 test("DeviceEvent creation", () => {
