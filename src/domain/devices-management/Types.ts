@@ -1,7 +1,22 @@
 import { Effect } from "effect";
 import { InvalidValueError } from "../../ports/devices-management/Errors.js";
-import { Color, Type } from "../../ports/devices-management/Types.js";
+import { Type } from "../../ports/devices-management/Types.js";
 import { Brand } from "../../utils/Brand.js";
+
+export interface Color {
+    readonly r: number
+    readonly g: number
+    readonly b: number
+}
+export function Color(r: number, g: number, b: number): Color {
+    if (r < 0) { r = 0 }
+    if (g < 0) { g = 0 }
+    if (b < 0) { b = 0 }
+    if (r > 255) { r = 255 }
+    if (g > 255) { g = 255 }
+    if (b > 255) { b = 255 }
+    return { r, g, b }
+}
 
 export type TypeConstraints<T> = Enum | IntRange | DoubleRange | None<T>
 
