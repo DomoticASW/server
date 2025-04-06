@@ -1,5 +1,5 @@
 import { Effect } from "effect"
-import { Device, DeviceEvent, DeviceId, DeviceStatus, DeviceProperty, DeviceAction, DeviceActionId } from "../../../src/domain/devices-management/Device.js"
+import { Device, DeviceEvent, DeviceId, DeviceStatus, DeviceProperty, DeviceAction, DeviceActionId, DevicePropertyId } from "../../../src/domain/devices-management/Device.js"
 import { Enum, IntRange, NoneVoid, TypeConstraints } from "../../../src/domain/devices-management/Types.js"
 
 interface MakeDeviceParameters {
@@ -21,6 +21,21 @@ function makeDevice({
     events = []
 }: MakeDeviceParameters) {
     return Device(DeviceId(id), name, new URL(address), status, properties, actions, events)
+}
+
+interface MakeDevicePropertyParameters<T> {
+    id?: string,
+    name?: string,
+    value: T,
+    setterOrTypeConstraints: DeviceAction<T> | TypeConstraints<T>
+}
+function makeDeviceProperty<T>({
+    id = "1",
+    name = "brightness",
+    value,
+    setterOrTypeConstraints
+}: MakeDevicePropertyParameters<T>) {
+    return DeviceProperty(DevicePropertyId(id), name, value, setterOrTypeConstraints)
 }
 
 interface MakeDeviceActionParameters<T> {
@@ -58,6 +73,27 @@ test("Device creation", () => {
     expect(d.properties).toEqual([])
     expect(d.actions).toEqual([])
     expect(d.events).toEqual(events)
+})
+
+test("DeviceProperty creation", () => {
+    const id = "1"
+    const name = "brightness"
+    const value = 3
+    const typeConstraint = IntRange(0, 100)
+    const property = makeDeviceProperty({ id: id, name: name, value: value, setterOrTypeConstraints: typeConstraint })
+    expect(property.id).toBe(id)
+    expect(property.name).toBe(name)
+    expect(property.value).toBe(value)
+    expect(property.setter).toBeUndefined()
+    expect(property.typeConstraints).toBe(typeConstraint)
+})
+
+test("DeviceProperty with setter creation", () => {
+    const typeConstraint = IntRange(0, 100)
+    const action = makeDeviceAction({ inputTypeConstraints: typeConstraint })
+    const property = makeDeviceProperty({ value: 3, setterOrTypeConstraints: action })
+    expect(property.setter).toBe(action)
+    expect(property.typeConstraints).toBe(typeConstraint)
 })
 
 test("DeviceAction creation", () => {

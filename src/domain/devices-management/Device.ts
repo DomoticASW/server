@@ -52,7 +52,6 @@ export function Device(
     }
 }
 
-
 export interface DeviceProperty<T> {
     readonly id: DevicePropertyId;
     readonly name: string;
@@ -60,6 +59,17 @@ export interface DeviceProperty<T> {
 
     readonly setter?: DeviceAction<T>;
     readonly typeConstraints: TypeConstraints<T>;
+}
+export function DeviceProperty<T>(id: DevicePropertyId, name: string, value: T, setterOrTypeConstraints: DeviceAction<T> | TypeConstraints<T>): DeviceProperty<T> {
+    // used to discriminate setterOrTypeConstraints
+    function isDeviceAction<T>(obj: DeviceAction<T> | TypeConstraints<T>): obj is DeviceAction<T> {
+        return "id" in obj
+    }
+    if (isDeviceAction(setterOrTypeConstraints)) {
+        return { id: id, name: name, value: value, setter: setterOrTypeConstraints, typeConstraints: setterOrTypeConstraints.inputTypeConstraints }
+    } else {
+        return { id: id, name: name, value: value, setter: undefined, typeConstraints: setterOrTypeConstraints }
+    }
 }
 
 export interface DeviceAction<T> {
