@@ -60,18 +60,20 @@ test("DeviceId creation", () => {
 })
 
 test("Device creation", () => {
-    const id = DeviceId("1")
+    const id = "1"
     const name = "Lamp"
-    const address = new URL("https://192.168.0.2:8080")
+    const address = "https://192.168.0.2:8080"
     const status = DeviceStatus.Online
+    const actions = [makeDeviceAction({ name: "set brightness", inputTypeConstraints: IntRange(0, 100) })]
+    const properties = [makeDeviceProperty({ name: "brightness", value: 50, setterOrTypeConstraints: actions[0] })]
     const events = [DeviceEvent("low battery"), DeviceEvent("full battery")]
-    const d = Device(id, name, address, status, [], [], events)
+    const d = makeDevice({ id, name, address, status, properties, actions, events })
     expect(d.id).toBe(id)
     expect(d.name).toBe(name)
-    expect(d.address).toBe(address)
+    expect(d.address).toEqual(new URL(address))
     expect(d.status).toBe(status)
-    expect(d.properties).toEqual([])
-    expect(d.actions).toEqual([])
+    expect(d.properties).toEqual(properties)
+    expect(d.actions).toEqual(actions)
     expect(d.events).toEqual(events)
 })
 
