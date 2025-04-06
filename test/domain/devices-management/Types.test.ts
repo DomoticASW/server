@@ -1,6 +1,26 @@
 import { Effect } from "effect"
-import { DoubleRange, Enum, IntRange, NoneBoolean, NoneColor, NoneDouble, NoneInt, NoneString, NoneVoid } from "../../../src/domain/devices-management/Types.js"
+import { Color, DoubleRange, Enum, IntRange, NoneBoolean, NoneColor, NoneDouble, NoneInt, NoneString, NoneVoid } from "../../../src/domain/devices-management/Types.js"
 import { Type } from "../../../src/ports/devices-management/Types.js"
+
+test("Color creation", () => {
+    const r = 10
+    const g = 122
+    const b = 0
+    const color = Color(r, g, b)
+    expect(color.r).toBe(r)
+    expect(color.g).toBe(g)
+    expect(color.b).toBe(b)
+})
+
+test("Color creation with bad arguments", () => {
+    const r = -10
+    const g = 290
+    const b = 123
+    const color = Color(r, g, b)
+    expect(color.r).toBe(0)
+    expect(color.g).toBe(255)
+    expect(color.b).toBe(b)
+})
 
 test("Enum TypeConstraints creation", () => {
     const values = new Set(["A", "B", "C"])
