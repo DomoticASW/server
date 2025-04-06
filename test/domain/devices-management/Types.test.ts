@@ -25,7 +25,7 @@ test("Enum validate does not accept invalid values", () => {
             onFailure(error) {
                 expect(error.__brand).toBe("InvalidValueError")
             },
-            onSuccess() { fail("This operation should have failed") }
+            onSuccess() { throw new Error("This operation should have failed") }
         }).pipe(Effect.runSync)
     })
 })
@@ -55,7 +55,7 @@ test("IntRange validate does not accept invalid values", () => {
             onFailure(error) {
                 expect(error.__brand).toBe("InvalidValueError")
             },
-            onSuccess() { fail("This operation should have failed") }
+            onSuccess() { throw new Error("This operation should have failed") }
         }).pipe(Effect.runSync)
     })
 })
@@ -85,7 +85,7 @@ test("DoubleRange validate does not accept invalid values", () => {
             onFailure(error) {
                 expect(error.__brand).toBe("InvalidValueError")
             },
-            onSuccess() { fail("This operation should have failed") }
+            onSuccess() { throw new Error("This operation should have failed") }
         }).pipe(Effect.runSync)
     })
 })
