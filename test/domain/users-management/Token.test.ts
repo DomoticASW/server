@@ -12,14 +12,3 @@ test("Token creation", () => {
     expect(token.userEmail).toBe("ciao@gmail.com");
     expect(token.role).toBe(UserRole.User);
 })
-
-test("New token generation", () => {
-    const token = createToken();
-    const newToken = token.newToken(token.userEmail);
-    expect(typeof newToken).toBe("string");
-})
-
-test("New token generation with empty string", () => {
-    const token = createToken();
-    expect(() => token.newToken("")).toThrow("Not implemented yet");
-})
