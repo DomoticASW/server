@@ -50,5 +50,15 @@ export interface DoubleRange extends Brand<TypeConstraint<number>, "DoubleRange"
     readonly min: number;
     readonly max: number;
 }
+export function DoubleRange(min: number, max: number): DoubleRange {
+    return {
+        __brand: "DoubleRange", type: Type.IntType, min: min, max: max, validate(value) {
+            return Effect.if(value >= min && value <= max, {
+                onTrue: () => Effect.succeed(null),
+                onFalse: () => Effect.fail(InvalidValueError(`Value ${value} is not valid since it's not between ${min} and ${max}`))
+            })
+        }
+    }
+}
 
 export type None<T> = Brand<TypeConstraint<T>, "None">
