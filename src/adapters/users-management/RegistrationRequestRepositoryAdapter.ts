@@ -13,24 +13,24 @@ export interface RegistrationRequestSchema {
 }
 
 export class RegistartionRequestRepositoryAdapter implements RegistrationRequestRepository {
-
+    
     private registrationRequestSchema = new mongoose.Schema<RegistrationRequestSchema>({
         nickname: { type: String, required: true },
         email: { type: String, required: true, unique: true },
         passwordHash: { type: String, required: true }
     });
-
+    
     private registrationRequest: mongoose.Model<RegistrationRequestSchema>;
-
+    
     constructor(connection: mongoose.Connection) {
         this.registrationRequest =
-            connection.models.RegistarationRequest ||
-            connection.model<RegistrationRequestSchema>(
-                "RegistarationRequest",
-                this.registrationRequestSchema
-            );
+        connection.models.RegistarationRequest ||
+        connection.model<RegistrationRequestSchema>(
+            "RegistarationRequest",
+            this.registrationRequestSchema
+        );
     }
-
+    
     add(entity: RegistrationRequest): Effect.Effect<void, DuplicateIdError> {
         return tryPromise({
             try: async () => {
@@ -40,11 +40,15 @@ export class RegistartionRequestRepositoryAdapter implements RegistrationRequest
             catch: () => DuplicateIdError(),
         });
     }
-
+    
     update(entity: RegistrationRequest): Effect.Effect<void, NotFoundError> {
         return tryPromise({
             try: async () => {
-                const RR = await this.registrationRequest.findByIdAndUpdate(entity.email, { nickname: entity.nickname, email: entity.email, passwordHash: entity.passwordHash }, { new: true });
+                const RR = await this.registrationRequest.findOneAndUpdate(
+                    { email: entity.email },
+                    { nickname: entity.nickname, email: entity.email, passwordHash: entity.passwordHash },
+                    { new: true }
+                );
                 if (!RR) {
                     throw NotFoundError();
                 }
@@ -52,11 +56,11 @@ export class RegistartionRequestRepositoryAdapter implements RegistrationRequest
             catch: () => NotFoundError(),
         }).pipe(orDie);
     }
-
+    
     remove(entity: RegistrationRequest): Effect.Effect<void, NotFoundError> {
         return tryPromise({
             try: async () => {
-                const RR = await this.registrationRequest.findByIdAndDelete(entity.email);
+                const RR = await this.registrationRequest.findOneAndDelete(entity.email);
                 if (!RR) {
                     throw NotFoundError();
                 }
@@ -64,14 +68,14 @@ export class RegistartionRequestRepositoryAdapter implements RegistrationRequest
             catch: () => NotFoundError(),
         }).pipe(orDie);
     }
-
+    
     getAll(): Effect.Effect<Iterable<RegistrationRequest>, never> {
         return tryPromise(async () => {
             const RRs = await this.registrationRequest.find();
             return RRs.map(RR => this.toEntity(RR))
         }).pipe(orDie);
     }
-
+    
     find(id: Email): Effect.Effect<RegistrationRequest, NotFoundError> {
         const promise = async () => await this.registrationRequest.findOne({ email: id })
         return pipe(
@@ -85,9 +89,9 @@ export class RegistartionRequestRepositoryAdapter implements RegistrationRequest
                 }
             })
         )
-
+        
     }
-
+    
     toEntity(registrationRequest: RegistrationRequestSchema): RegistrationRequest {
         return RegistrationRequest(Nickname(registrationRequest.nickname), Email(registrationRequest.email), PasswordHash(registrationRequest.passwordHash));
     }
