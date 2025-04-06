@@ -1,6 +1,6 @@
 import { Effect } from "effect"
 import { Device, DeviceEvent, DeviceId, DeviceStatus, DeviceProperty, DeviceAction, DeviceActionId, DevicePropertyId } from "../../../src/domain/devices-management/Device.js"
-import { Enum, IntRange, NoneVoid, TypeConstraints } from "../../../src/domain/devices-management/Types.js"
+import { Enum, IntRange, NoneBoolean, NoneColor, NoneDouble, NoneInt, NoneString, NoneVoid, TypeConstraints } from "../../../src/domain/devices-management/Types.js"
 
 interface MakeDeviceParameters {
     id?: string,
@@ -102,6 +102,29 @@ test("Device execute action checks input type constraints", () => {
         Effect.runSync
     )
     expect(() => d.executeAction(actions[0].id, 60).pipe(Effect.runSync)).not.toThrow()
+})
+
+test("Device execute action checks input type", () => {
+    const testSet: Array<{ constraints: TypeConstraints<unknown>, input: unknown }> = [
+        { constraints: NoneBoolean(), input: "hello" },
+        { constraints: NoneInt(), input: "hello" },
+        { constraints: NoneDouble(), input: "hello" },
+        { constraints: NoneString(), input: true },
+        { constraints: NoneColor(), input: { color: "red" } },
+        { constraints: NoneVoid(), input: "hello" },
+    ]
+
+    testSet.forEach(({ constraints, input }) => {
+        const actions = [makeDeviceAction({ inputTypeConstraints: constraints })]
+        const d = makeDevice({ actions })
+        d.executeAction(actions[0].id, input).pipe(
+            Effect.match({
+                onFailure: (error) => expect(error.__brand).toBe("InvalidInputError"),
+                onSuccess() { throw new Error(`This operation should not have succeded. Input type: ${constraints.type}, input: ${input}`) }
+            }),
+            Effect.runSync
+        )
+    })
 })
 
 test("DeviceProperty creation", () => {

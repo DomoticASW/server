@@ -1,7 +1,8 @@
 import { InvalidInputError, DeviceActionError, DeviceActionNotFound } from "../../ports/devices-management/Errors.js";
-import { TypeConstraints } from "../../domain/devices-management/Types.js";
+import { Color, TypeConstraints } from "../../domain/devices-management/Types.js";
 import { Brand } from "../../utils/Brand.js";
 import { Effect } from "effect";
+import { Type } from "../../ports/devices-management/Types.js";
 
 export type DeviceId = Brand<string, "DeviceId">
 export type DeviceActionId = Brand<string, "DeviceActionId">
@@ -47,8 +48,42 @@ export function Device(
         events: events,
         executeAction: function (actionId: DeviceActionId, input: unknown): Effect.Effect<void, InvalidInputError | DeviceActionError | DeviceActionNotFound> {
             const action = actions.find(a => a.id === actionId)
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            function isColor(obj: any): obj is Color {
+                return "r" in obj && "g" in obj && "b" in obj
+            }
             if (action) {
-                return action.execute(input)
+                let err
+                switch (action.inputTypeConstraints.type) {
+                    case Type.BooleanType:
+                        if (typeof input !== "boolean") err = Effect.fail(InvalidInputError("This action only accepts boolean inputs"));
+                        break;
+
+                    case Type.IntType:
+                        if (!Number.isInteger(input)) err = Effect.fail(InvalidInputError("This action only accepts integer inputs"));
+                        break;
+
+                    case Type.DoubleType:
+                        if (typeof input !== "number") err = Effect.fail(InvalidInputError("This action only accepts double inputs"));
+                        break;
+
+                    case Type.StringType:
+                        if (typeof input !== "string") err = Effect.fail(InvalidInputError("This action only accepts string inputs"));
+                        break;
+
+                    case Type.ColorType:
+                        if (typeof input === "object" && !isColor(input)) err = Effect.fail(InvalidInputError("This action only accepts RGB color inputs"));
+                        break;
+
+                    case Type.VoidType:
+                        if (input !== undefined && input !== null) err = Effect.fail(InvalidInputError("This action does not accept any input"));
+                        break;
+                }
+                if (err) {
+                    return err
+                } else {
+                    return action.execute(input)
+                }
             } else {
                 return Effect.fail(DeviceActionNotFound(`Action with id ${actionId} does not exist on device "${this.name}"`))
             }
