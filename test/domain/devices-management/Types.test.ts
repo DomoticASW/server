@@ -29,3 +29,33 @@ test("Enum validate does not accept invalid values", () => {
         }).pipe(Effect.runSync)
     })
 })
+
+test("IntRange TypeConstraints creation", () => {
+    const min = 0
+    const max = 100
+    const ts = IntRange(min, max)
+    expect(ts.type).toBe(Type.IntType)
+    expect(ts.min).toEqual(min)
+    expect(ts.max).toEqual(max)
+})
+
+test("IntRange validate accepts valid values", async () => {
+    const ts = IntRange(-10, 100)
+    const someValidValues = [-10, 0, 5, 50.0, 100]
+    const operation = Effect.all(someValidValues.map(v => ts.validate(v)))
+    await Effect.runPromise(operation)
+})
+
+test("IntRange validate does not accept invalid values", () => {
+    const ts = IntRange(-10, 100)
+    const someInvalidValues = [-11, 110, 50.1]
+    const operations = someInvalidValues.map(v => ts.validate(v))
+    operations.forEach(op => {
+        Effect.match(op, {
+            onFailure(error) {
+                expect(error.__brand).toBe("InvalidValueError")
+            },
+            onSuccess() { fail("This operation should have failed") }
+        }).pipe(Effect.runSync)
+    })
+})

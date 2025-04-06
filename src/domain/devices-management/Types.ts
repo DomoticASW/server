@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Effect, pipe } from "effect";
 import { InvalidValueError } from "../../ports/devices-management/Errors.js";
 import { Type } from "../../ports/devices-management/Types.js";
 import { Brand } from "../../utils/Brand.js";
@@ -27,6 +27,23 @@ export function Enum(values: Set<string>): Enum {
 export interface IntRange extends Brand<TypeConstraint<number>, "IntRange"> {
     readonly min: number;
     readonly max: number;
+}
+export function IntRange(min: number, max: number): IntRange {
+    return {
+        __brand: "IntRange", type: Type.IntType, min: min, max: max, validate(value) {
+            return Effect.flatMap(
+                Effect.if(Number.isInteger(value), {
+                    onTrue: () => Effect.succeed(null),
+                    onFalse: () => Effect.fail(InvalidValueError(`Value ${value} is not valid as it's not an integer`))
+                }),
+                () =>
+                    Effect.if(value >= min && value <= max, {
+                        onTrue: () => Effect.succeed(null),
+                        onFalse: () => Effect.fail(InvalidValueError(`Value ${value} is not valid since it's not between ${min} and ${max}`))
+                    })
+            )
+        }
+    }
 }
 
 export interface DoubleRange extends Brand<TypeConstraint<number>, "DoubleRange"> {
