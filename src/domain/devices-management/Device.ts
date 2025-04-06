@@ -75,3 +75,6 @@ export interface DeviceAction<T> {
 export interface DeviceEvent {
     readonly name: string;
 }
+export function DeviceEvent(name: string): DeviceEvent {
+    return { name: name }
+}
