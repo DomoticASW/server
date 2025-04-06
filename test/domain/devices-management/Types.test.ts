@@ -1,5 +1,5 @@
 import { Effect } from "effect"
-import { DoubleRange, Enum, IntRange } from "../../../src/domain/devices-management/Types.js"
+import { DoubleRange, Enum, IntRange, NoneBoolean, NoneColor, NoneDouble, NoneInt, NoneString, NoneVoid } from "../../../src/domain/devices-management/Types.js"
 import { Type } from "../../../src/ports/devices-management/Types.js"
 
 test("Enum TypeConstraints creation", () => {
@@ -88,4 +88,34 @@ test("DoubleRange validate does not accept invalid values", () => {
             onSuccess() { fail("This operation should have failed") }
         }).pipe(Effect.runSync)
     })
+})
+
+test("NoneBoolean TypeConstraints creation", () => {
+    const ts = NoneBoolean()
+    expect(ts.type).toBe(Type.BooleanType)
+})
+
+test("NoneInt TypeConstraints creation", () => {
+    const ts = NoneInt()
+    expect(ts.type).toBe(Type.IntType)
+})
+
+test("NoneDouble TypeConstraints creation", () => {
+    const ts = NoneDouble()
+    expect(ts.type).toBe(Type.DoubleType)
+})
+
+test("NoneString TypeConstraints creation", () => {
+    const ts = NoneString()
+    expect(ts.type).toBe(Type.StringType)
+})
+
+test("NoneColor TypeConstraints creation", () => {
+    const ts = NoneColor()
+    expect(ts.type).toBe(Type.ColorType)
+})
+
+test("NoneVoid TypeConstraints creation", () => {
+    const ts = NoneVoid()
+    expect(ts.type).toBe(Type.VoidType)
 })

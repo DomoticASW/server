@@ -1,6 +1,6 @@
-import { Effect, pipe } from "effect";
+import { Effect } from "effect";
 import { InvalidValueError } from "../../ports/devices-management/Errors.js";
-import { Type } from "../../ports/devices-management/Types.js";
+import { Color, Type } from "../../ports/devices-management/Types.js";
 import { Brand } from "../../utils/Brand.js";
 
 export type TypeConstraints<T> = Enum | IntRange | DoubleRange | None<T>
@@ -62,3 +62,26 @@ export function DoubleRange(min: number, max: number): DoubleRange {
 }
 
 export type None<T> = Brand<TypeConstraint<T>, "None">
+function None<T>(type: Type): None<T> {
+    return {
+        __brand: "None", type: type, validate: () => Effect.succeed(null),
+    }
+}
+export function NoneBoolean(): None<boolean> {
+    return None(Type.BooleanType)
+}
+export function NoneInt(): None<number> {
+    return None(Type.IntType)
+}
+export function NoneDouble(): None<number> {
+    return None(Type.DoubleType)
+}
+export function NoneString(): None<string> {
+    return None(Type.StringType)
+}
+export function NoneColor(): None<Color> {
+    return None(Type.ColorType)
+}
+export function NoneVoid(): None<void> {
+    return None(Type.VoidType)
+}
