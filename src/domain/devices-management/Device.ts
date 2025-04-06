@@ -1,7 +1,7 @@
 import { InvalidInputError, DeviceActionError, DeviceActionNotFound } from "../../ports/devices-management/Errors.js";
 import { TypeConstraints } from "../../domain/devices-management/Types.js";
 import { Brand } from "../../utils/Brand.js";
-import { Effect } from "effect/Effect";
+import { Effect } from "effect";
 
 export type DeviceId = Brand<string, "DeviceId">
 export type DeviceActionId = Brand<string, "DeviceActionId">
@@ -26,7 +26,7 @@ export interface Device {
     readonly actions: DeviceAction<unknown>[];
     readonly events: DeviceEvent[];
 
-    executeAction(actionId: DeviceActionId, input: unknown): Effect<void, InvalidInputError | DeviceActionError | DeviceActionNotFound>;
+    executeAction(actionId: DeviceActionId, input: unknown): Effect.Effect<void, InvalidInputError | DeviceActionError | DeviceActionNotFound>;
 }
 
 export function Device(
@@ -46,7 +46,7 @@ export function Device(
         actions: actions,
         events: events,
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        executeAction: function (actionId: DeviceActionId, input: unknown): Effect<void, InvalidInputError | DeviceActionError | DeviceActionNotFound> {
+        executeAction: function (actionId: DeviceActionId, input: unknown): Effect.Effect<void, InvalidInputError | DeviceActionError | DeviceActionNotFound> {
             throw new Error("Function not implemented.");
         }
     }
@@ -69,7 +69,20 @@ export interface DeviceAction<T> {
 
     readonly inputTypeConstraints: TypeConstraints<T>;
 
-    execute(input: T): Effect<void, InvalidInputError | DeviceActionError>;
+    execute(input: T): Effect.Effect<void, InvalidInputError | DeviceActionError>;
+}
+export function DeviceAction<T>(id: DeviceActionId, name: string, inputTypeConstraints: TypeConstraints<T>, description?: string): DeviceAction<T> {
+    return {
+        id: id,
+        name: name,
+        description: description,
+        inputTypeConstraints: inputTypeConstraints,
+        execute(input) {
+            // Don't ask me why validate wants a never, thanks TypeScript
+            return this.inputTypeConstraints.validate(input as never).pipe(Effect.mapError(err => InvalidInputError(err.cause)))
+            // TODO: actually execute the action on the device
+        },
+    }
 }
 
 export interface DeviceEvent {
