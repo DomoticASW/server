@@ -41,19 +41,21 @@ test("Try to find a RegistrationRequest", async () => {
     expect(result).toEqual(registrationRequest);
 });
 
-test("The RegistrationRequest cannot have changes", async () => {
+test("Try to update a RegistrationRequest", async () => {
+    const RR = RegistrationRequest(Nickname("Fra"), Email("ciao@gmail.com"), PasswordHash("password"));
+
     await Effect.runPromise(repo.add(registrationRequest));
-    await Effect.runPromise(repo.update(registrationRequest));
+    await Effect.runPromise(repo.update(RR));
     
     const res = await Effect.runPromise(repo.find(registrationRequest.email))
-    expect(res).toStrictEqual(res)
+    expect(res).toStrictEqual(RR)
 })
 
 test("Try to remove a RegistrationRequest", async () => {
     await Effect.runPromise(repo.add(registrationRequest));
-    await Effect.runPromise(repo.remove(registrationRequest));
     const res1 = await Effect.runPromise(repo.getAll())
     expect(res1).toHaveLength(1)
+    await Effect.runPromise(repo.remove(registrationRequest));
     const res2 = await Effect.runPromise(repo.getAll())
     expect(res2).toHaveLength(0)
 })
