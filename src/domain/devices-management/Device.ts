@@ -45,9 +45,13 @@ export function Device(
         properties: properties,
         actions: actions,
         events: events,
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         executeAction: function (actionId: DeviceActionId, input: unknown): Effect.Effect<void, InvalidInputError | DeviceActionError | DeviceActionNotFound> {
-            throw new Error("Function not implemented.");
+            const action = actions.find(a => a.id === actionId)
+            if (action) {
+                return action.execute(input)
+            } else {
+                return Effect.fail(DeviceActionNotFound(`Action with id ${actionId} does not exist on device "${this.name}"`))
+            }
         }
     }
 }

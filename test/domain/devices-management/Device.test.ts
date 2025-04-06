@@ -77,6 +77,33 @@ test("Device creation", () => {
     expect(d.events).toEqual(events)
 })
 
+test("Device execute action missing action", () => {
+    const actions = [makeDeviceAction({ name: "set brightness", inputTypeConstraints: IntRange(0, 100) })]
+    const properties = [makeDeviceProperty({ name: "brightness", value: 50, setterOrTypeConstraints: actions[0] })]
+    const d = makeDevice({ properties, actions })
+    d.executeAction(DeviceActionId("wrongid"), 60).pipe(
+        Effect.match({
+            onFailure: (error) => expect(error.__brand).toBe("DeviceActionNotFound"),
+            onSuccess() { throw new Error("This operation should not have succeded") }
+        }),
+        Effect.runSync
+    )
+})
+
+test("Device execute action checks input type constraints", () => {
+    const actions = [makeDeviceAction({ name: "set brightness", inputTypeConstraints: IntRange(0, 100) })]
+    const properties = [makeDeviceProperty({ name: "brightness", value: 50, setterOrTypeConstraints: actions[0] })]
+    const d = makeDevice({ properties, actions })
+    d.executeAction(actions[0].id, 101).pipe(
+        Effect.match({
+            onFailure: (error) => expect(error.__brand).toBe("InvalidInputError"),
+            onSuccess() { throw new Error("This operation should not have succeded") }
+        }),
+        Effect.runSync
+    )
+    expect(() => d.executeAction(actions[0].id, 60).pipe(Effect.runSync)).not.toThrow()
+})
+
 test("DeviceProperty creation", () => {
     const id = "1"
     const name = "brightness"
