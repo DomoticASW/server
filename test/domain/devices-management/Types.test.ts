@@ -26,6 +26,6 @@ test("Enum validate does not accept invalid values", () => {
                 expect(error.__brand).toBe("InvalidValueError")
             },
             onSuccess() { fail("This operation should have failed") }
-        })
+        }).pipe(Effect.runSync)
     })
 })
