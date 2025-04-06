@@ -22,3 +22,5 @@ export type ScriptId = TaskId | AutomationId
 
 export type TaskId = Brand<string, "TaskId">
 export type AutomationId = Brand<string, "AutomationId">
+
+export function TaskId(id: string): TaskId { return id as TaskId }
