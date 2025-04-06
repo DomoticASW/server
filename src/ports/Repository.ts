@@ -10,7 +10,6 @@ export interface Repository<Id, Entity> {
     find(id: Id): Effect<Entity, NotFoundError>
 }
 
-
 export type DuplicateIdError = Brand<Error, "DuplicateIdError">
 
 export function DuplicateIdError(cause?: string): DuplicateIdError {
