@@ -1,0 +1,73 @@
+import { TaskLists } from "../../../src/domain/permissions/TaskLists.js"
+import { TaskId } from "../../../src/domain/scripts/Script.js"
+import { Email } from "../../../src/domain/users-management/User.js"
+ 
+ function makeTaskLists(id: string = "1") {
+    return TaskLists(TaskId(id))
+ }
+ 
+ test("TaskLists creation", () => {
+    const taskId = "1"
+    const id = TaskId(taskId)
+    expect(id).toBe(taskId)
+ })
+ 
+ test("TaskLists testing field", () => {
+    expect(makeTaskLists().id).toBe("1")
+    expect(makeTaskLists().blacklist).toEqual([])
+    expect(makeTaskLists().whitelist).toEqual([])
+  })
+
+  test("TaskLists try to add email to blacklist", () => {
+    const taskLists = makeTaskLists()
+    const email = Email("test@gmail.com")
+    taskLists.addEmailToBlacklist(email)
+    expect(taskLists.blacklist).toHaveLength(1)
+    expect(taskLists.blacklist).toEqual([email])
+  })
+
+  test("TaskLists try to add email to whitelist", () => {
+    const taskLists = makeTaskLists()
+    const email = Email("test@gmail.com")
+    taskLists.addEmailToWhitelist(email)
+    expect(taskLists.whitelist).toHaveLength(1)
+    expect(taskLists.whitelist).toEqual([email])
+  })
+
+  test("TaskLists try to remove email from blacklist", () => {
+    const taskLists = makeTaskLists()
+    const email = Email("test@gmail.com")
+
+    taskLists.addEmailToBlacklist(email)
+    expect(taskLists.blacklist).toHaveLength(1)
+    taskLists.removeEmailFromBlacklist(email)
+    expect(taskLists.blacklist).toHaveLength(0)
+  })
+
+  test("TaskLists try to remove email from whitelist", () => {
+    const taskLists = makeTaskLists()
+    const email = Email("test@gmail.com")
+
+    taskLists.addEmailToWhitelist(email)
+    expect(taskLists.whitelist).toHaveLength(1)
+    taskLists.removeEmailFromWhitelist(email)
+    expect(taskLists.whitelist).toHaveLength(0)
+  })
+
+  test("TaskLists try to add duplicate email to blacklist", () => {
+    const taskLists = makeTaskLists()
+    const email = Email("test@gmail.com")
+
+    taskLists.addEmailToBlacklist(email)
+    taskLists.addEmailToBlacklist(email)
+    expect(taskLists.blacklist).toHaveLength(1)
+  })
+
+  test("TaskLists try to add duplicate email to whitelist", () => {
+    const taskLists = makeTaskLists()
+    const email = Email("test@gmail.com")
+
+    taskLists.addEmailToWhitelist(email)
+    taskLists.addEmailToWhitelist(email)
+    expect(taskLists.whitelist).toHaveLength(1)
+  })
