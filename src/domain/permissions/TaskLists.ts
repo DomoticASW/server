@@ -37,12 +37,12 @@ class TaskListsImpl implements TaskLists {
   }
 
   addEmailToBlacklist(email: Email): void {
-    if (!this._blacklist.includes(email)) {
+    if (!this._blacklist.includes(email) && !this._whitelist.includes(email)) {
       this._blacklist.push(email);
     }
   }
   addEmailToWhitelist(email: Email): void {
-    if (!this._whitelist.includes(email)) {
+    if (!this._whitelist.includes(email) && !this._blacklist.includes(email)) {
       this._whitelist.push(email);
     }
   }
