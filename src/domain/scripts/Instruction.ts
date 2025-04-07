@@ -2,6 +2,7 @@ import { DeviceActionId, DeviceId, DevicePropertyId } from "../devices-managemen
 import { Email } from "../users-management/User.js"
 import { TaskId } from "./Script.js"
 import { Type } from "../../ports/devices-management/Types.js"
+import { Option } from "effect/Option"
 
 export interface Instruction {
   execute(env: ExecutionEnvironment): ExecutionEnvironment
@@ -23,14 +24,13 @@ export interface StartTaskInstruction extends Instruction {
 export interface DeviceActionInstruction extends Instruction {
   deviceId: DeviceId
   actionId: DeviceActionId
-  input: object
+  input: unknown
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export interface ConstantInstruction<T> extends Instruction {
   name: string
   type: Type
-  realType: T
-  // TODO: add execution environment and constant value in some way
 }
 
 export interface CreateConstantInstruction<T> extends ConstantInstruction<T> {
@@ -38,16 +38,16 @@ export interface CreateConstantInstruction<T> extends ConstantInstruction<T> {
 }
 
 export interface CreateDevicePropertyConstantInstruction<T> extends ConstantInstruction<T> {
-  deviceId: DeviceId 
+  deviceId: DeviceId
   devicePropertyId: DevicePropertyId
 }
 
-export interface IfInstruction<T> extends Instruction {
+export interface IfInstruction extends Instruction {
   then: Instruction
-  condition: Condition<T>
+  condition: Condition<never>
 }
 
-export interface ElseInstruction<T> extends IfInstruction<T> {
+export interface ElseInstruction extends IfInstruction {
   else: Instruction
 }
 
@@ -69,5 +69,5 @@ interface ConstantValue<T> {
 }
 
 export interface ExecutionEnvironment {
-  constants: Map<ConstantInstruction<object>, ConstantValue<object>>
+  constants: Map<ConstantInstruction<unknown>, Option<ConstantValue<unknown>>>
 }
