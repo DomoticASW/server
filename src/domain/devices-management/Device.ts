@@ -29,6 +29,30 @@ export interface Device {
     executeAction(actionId: DeviceActionId, input: unknown): Effect<void, InvalidInputError | DeviceActionError | DeviceActionNotFound>;
 }
 
+export function Device(
+    id: DeviceId,
+    name: string,
+    address: URL,
+    status: DeviceStatus,
+    properties: DeviceProperty<unknown>[],
+    actions: DeviceAction<unknown>[],
+    events: DeviceEvent[]): Device {
+    return {
+        id: id,
+        name: name,
+        address: address,
+        status: status,
+        properties: properties,
+        actions: actions,
+        events: events,
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        executeAction: function (actionId: DeviceActionId, input: unknown): Effect<void, InvalidInputError | DeviceActionError | DeviceActionNotFound> {
+            throw new Error("Function not implemented.");
+        }
+    }
+}
+
+
 export interface DeviceProperty<T> {
     readonly id: DevicePropertyId;
     readonly name: string;
