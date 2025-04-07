@@ -47,10 +47,10 @@ export class UserDevicePermissionMongoAdapter implements UserDevicePermissionRep
     }).pipe(orDie);
   }
 
-  remove(entity: UserDevicePermission): Effect.Effect<void, NotFoundError> {
+  remove(id: [Email, DeviceId]): Effect.Effect<void, NotFoundError> {
     return tryPromise({
       try: async () => {
-        const permission = await this.permissions.findOneAndDelete([entity.email, entity.deviceId], { email: entity.email, deviceId: entity.deviceId });
+        const permission = await this.permissions.findOneAndDelete({ email: id[0], deviceId: id[1] });
         if (!permission) {
           throw NotFoundError();
         }
