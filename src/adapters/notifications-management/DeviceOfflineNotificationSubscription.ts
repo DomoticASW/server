@@ -61,7 +61,7 @@ export class DeviceOfflineNotificationSubscriptionRepositoryMongoadapter impleme
               return fail(NotFoundError())
           }
       })
-  )
+    )
   }
 
   getAll(): Effect<Iterable<DeviceOfflineNotificationSubscription>, never, never> {
