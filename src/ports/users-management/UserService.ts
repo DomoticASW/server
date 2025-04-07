@@ -3,7 +3,7 @@ import { User, Nickname, Email, PasswordHash, Role, UserImpl } from "../../domai
 import { Token } from "../../domain/users-management/Token.js";
 import { EmailAlreadyInUseError, UserNotFoundError, TokenError, InvalidTokenError, InvalidCredentialsError, InvalidTokenFormatError, userNotFoundError } from "./Errors.js";
 import { UserRepository } from "./UserRepository.js";
-import { succeed } from "effect/Exit";
+import { Effect as Eff } from "effect";
 
 export interface UsersService {
     publishRegistrationRequest(nickname: Nickname, email: Email, password: PasswordHash): Effect<void, EmailAlreadyInUseError>;
@@ -22,27 +22,14 @@ export class UsersServiceImpl implements UsersService {
     constructor(
         private userRepository: UserRepository,
         private adminEmail: Email
-    ) {}
-    
+    ) { }
+
     publishRegistrationRequest(
-        nickname: Nickname, 
-        email: Email, 
+        nickname: Nickname,
+        email: Email,
         password: PasswordHash,
-    ): Promise<Effect<void, EmailAlreadyInUseError>> {
-        try {
-            // Check if email already exists
-            const existingUser = this.userRepository.find(email);
-            if (existingUser) {
-                fail(EmailAlreadyInUseError())
-            };
-            
-            const newUser = new UserImpl(nickname, email, password, Role.User);            
-            this.userRepository.add(newUser);
-            
-            return Promise.resolve(succeed(undefined));
-        } catch (error) {
-            console.error('Error in publishRegistrationRequest:', error);
-            return fail(EmailAlreadyInUseError())
-        };
+    ): Effect<void, EmailAlreadyInUseError> {
+        const newUser = new UserImpl(nickname, email, password, Role.User);
+        return this.userRepository.add(newUser).pipe(Eff.mapError(() => EmailAlreadyInUseError()));
     }
 }
