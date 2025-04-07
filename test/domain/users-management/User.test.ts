@@ -7,3 +7,8 @@ test("User creation", () => {
     expect(user.passwordHash).toBe("passwordHash");
     expect(user.role).toBe(Role.User);
 })
+
+test("Email can be created", () => {
+  const email = Email("myEmail@email.com");
+  expect(email).toBe("myEmail@email.com");
+})
