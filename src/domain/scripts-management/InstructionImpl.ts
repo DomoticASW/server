@@ -1,7 +1,7 @@
 import { Type } from "../../ports/devices-management/Types.js";
-import { DeviceActionId, DeviceId } from "../devices-management/Device.js";
+import { DeviceActionId, DeviceId, DevicePropertyId } from "../devices-management/Device.js";
 import { Email } from "../users-management/User.js";
-import { ConstantValue, CreateConstantInstruction, DeviceActionInstruction, ExecutionEnvironmentFromConstants, SendNotificationInstruction, StartTaskInstruction, WaitInstruction } from "./Instruction.js";
+import { ConstantValue, CreateConstantInstruction, CreateDevicePropertyConstantInstruction, DeviceActionInstruction, ExecutionEnvironmentFromConstants, SendNotificationInstruction, StartTaskInstruction, WaitInstruction } from "./Instruction.js";
 import { TaskId } from "./Script.js";
 
 export function SendNotificationInstruction(email: Email, message: string): SendNotificationInstruction {
@@ -35,10 +35,10 @@ export function StartTaskInstruction(taskId: TaskId): StartTaskInstruction {
   }
 }
 
-export function DeviceActionInstruction(deviceId: DeviceId, actionId: DeviceActionId, input: unknown): DeviceActionInstruction {
+export function DeviceActionInstruction(deviceId: DeviceId, deviceActionId: DeviceActionId, input: unknown): DeviceActionInstruction {
   return {
     deviceId: deviceId,
-    actionId: actionId,
+    deviceActionId: deviceActionId,
     input: input,
     execute(env) {
       //TODO: Execute the action on the device via the devices service
@@ -56,6 +56,18 @@ export function CreateConstantInstruction<T>(name: string, type: Type, value: T)
       const newEnv = ExecutionEnvironmentFromConstants(env.constants)
       newEnv.constants.set(this, ConstantValue(value))
       return newEnv
+    }
+  }
+}
+
+export function CreateDevicePropertyConstantInstruction<T>(name: string, type: Type, deviceId: DeviceId, devicePropertyId: DevicePropertyId): CreateDevicePropertyConstantInstruction<T> {
+  return {
+    name: name,
+    type: type,
+    deviceId: deviceId,
+    devicePropertyId: devicePropertyId,
+    execute(env) {
+      return env
     }
   }
 }

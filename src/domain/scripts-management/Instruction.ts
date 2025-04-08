@@ -22,7 +22,7 @@ export interface StartTaskInstruction extends Instruction {
 
 export interface DeviceActionInstruction extends Instruction {
   deviceId: DeviceId
-  actionId: DeviceActionId
+  deviceActionId: DeviceActionId
   input: unknown
 }
 
