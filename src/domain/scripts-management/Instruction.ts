@@ -42,12 +42,12 @@ export interface CreateDevicePropertyConstantInstruction<T> extends ConstantInst
 }
 
 export interface IfInstruction extends Instruction {
-  then: Instruction
+  then: Iterable<Instruction>
   condition: Condition<never>
 }
 
 export interface ElseInstruction extends IfInstruction {
-  else: Instruction
+  else: Iterable<Instruction>
 }
 
 export interface Condition<T> {
@@ -60,7 +60,7 @@ export interface Condition<T> {
 }
 
 export interface ConditionOperator<T> {
-  evaluate(left: ConstantInstruction<T>, right: ConstantInstruction<T>): boolean;
+  evaluate(left: ConstantValue<T>, right: ConstantValue<T>): boolean;
 }
 
 export interface ConstantValue<T> {

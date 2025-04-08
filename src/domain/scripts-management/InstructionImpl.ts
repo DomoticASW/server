@@ -67,6 +67,7 @@ export function CreateDevicePropertyConstantInstruction<T>(name: string, type: T
     deviceId: deviceId,
     devicePropertyId: devicePropertyId,
     execute(env) {
+      //TODO: Get the value of the property from the device via the device service and add it to the env constants
       return env
     }
   }
