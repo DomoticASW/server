@@ -1,16 +1,11 @@
 import { EditList } from "../../../src/domain/permissions/EditList.js"
-import { ScriptId } from "../../../src/domain/scripts-management/Script.js";
+import { ScriptId, TaskId } from "../../../src/domain/scripts-management/Script.js";
 import { Email } from "../../../src/domain/users-management/User.js"
  
  function makeEditList(id: string = "1") {
-    return EditList(ScriptId(id, "Task"))
+    const scriptId: ScriptId = TaskId(id)
+    return EditList(scriptId)
  }
- 
- test("ScriptId creation", () => {
-    const scriptId = "1"
-    const id = ScriptId(scriptId, "Task")
-    expect(id).toBe(scriptId)
- })
  
  test("EditList testing field", () => {
     expect(makeEditList().id).toBe("1")

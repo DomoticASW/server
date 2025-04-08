@@ -6,12 +6,6 @@ import { Email } from "../../../src/domain/users-management/User.js"
     return TaskLists(TaskId(id))
  }
  
- test("TaskLists creation", () => {
-    const taskId = "1"
-    const id = TaskId(taskId)
-    expect(id).toBe(taskId)
- })
- 
  test("TaskLists testing field", () => {
     expect(makeTaskLists().id).toBe("1")
     expect(makeTaskLists().blacklist).toEqual([])
