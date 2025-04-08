@@ -85,6 +85,6 @@ export function ExecutionEnvironment(): ExecutionEnvironment {
 
 export function ExecutionEnvironmentFromConstants(constants: Map<ConstantInstruction<unknown>, ConstantValue<unknown>>): ExecutionEnvironment {
   return {
-    constants: constants
+    constants: new Map(constants)
   }
 }
