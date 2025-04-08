@@ -1,5 +1,10 @@
+<<<<<<< HEAD
 import { TaskLists } from "../../../src/domain/permissions-management/TaskLists.js"
 import { TaskId } from "../../../src/domain/scripts/Script.js"
+=======
+import { TaskLists } from "../../../src/domain/permissions/TaskLists.js"
+import { TaskId } from "../../../src/domain/scripts-management/Script.js"
+>>>>>>> a9fd43e (chore: changed names of packages of scripts into scripts-management)
 import { Email } from "../../../src/domain/users-management/User.js"
  
  function makeTaskLists(id: string = "1") {
