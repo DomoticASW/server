@@ -63,10 +63,28 @@ export interface ConditionOperator<T> {
   evaluate(left: ConstantInstruction<T>, right: ConstantInstruction<T>): boolean;
 }
 
-interface ConstantValue<T> {
-  value: T
+export interface ConstantValue<T> {
+  readonly value: T
 }
 
 export interface ExecutionEnvironment {
-  constants: Map<ConstantInstruction<unknown>, ConstantValue<unknown>>
+  readonly constants: Map<ConstantInstruction<unknown>, ConstantValue<unknown>>
+}
+
+export function ConstantValue<T>(value: T): ConstantValue<T> {
+  return {
+    value: value
+  }
+}
+
+export function ExecutionEnvironment(): ExecutionEnvironment {
+  return {
+    constants: new Map<ConstantInstruction<unknown>, ConstantValue<unknown>>()
+  }
+}
+
+export function ExecutionEnvironmentFromConstants(constants: Map<ConstantInstruction<unknown>, ConstantValue<unknown>>): ExecutionEnvironment {
+  return {
+    constants: constants
+  }
 }

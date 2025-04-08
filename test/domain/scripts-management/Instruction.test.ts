@@ -1,6 +1,23 @@
+import { ConstantValue, ExecutionEnvironment, ExecutionEnvironmentFromConstants } from "../../../src/domain/scripts-management/Instruction.js"
 import { CreateConstantInstruction, StartTaskInstruction } from "../../../src/domain/scripts-management/InstructionImpl.js"
 import { TaskId } from "../../../src/domain/scripts-management/Script.js"
 import { Type } from "../../../src/ports/devices-management/Types.js"
+
+test("An execution environment can be created", () => {
+  const env = ExecutionEnvironment()
+  expect(env.constants.size).toBe(0)
+})
+
+test("An execution environment can be created with values", () => {
+  const env = ExecutionEnvironment()
+  const env2 = ExecutionEnvironmentFromConstants(env.constants)
+  expect(env2.constants).toBe(env.constants)
+})
+
+test("A constant value can be created", () => {
+  const value = ConstantValue(10)
+  expect(value.value).toBe(10)
+})
 
 test("A start task instruction can be created", () => {
   const instruction = StartTaskInstruction(TaskId("1"))
@@ -12,4 +29,14 @@ test("A create constant instruction can be created", () => {
   expect(instruction.name).toBe("constantName");
   expect(instruction.type).toBe(Type.IntType);
   expect(instruction.value).toBe(10);
+})
+
+test("A create constant instruction add a value to the env when executed", () => {
+  const instruction = CreateConstantInstruction("constantName", Type.IntType, 10)
+  const env = ExecutionEnvironment()
+  expect(instruction.execute(env).constants.size).toBe(1)
+  
+  const constant = instruction.execute(env).constants.get(instruction);
+  expect(constant).toBeDefined();
+  expect(constant?.value).toBe(10);
 })
