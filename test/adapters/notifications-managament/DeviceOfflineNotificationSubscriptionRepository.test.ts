@@ -3,6 +3,8 @@ import { DeviceOfflineNotificationSubscriptionRepositoryMongoadapter } from "../
 import { Effect, pipe } from "effect";
 import { DeviceOfflineNotificationSubscription } from "../../../src/domain/notifications-management/DeviceOfflineNotificationSubscription.js";
 import { DeviceOfflineNotificationSubscriptionRepository } from "../../../src/ports/notifications-management/DeviceOfflineNotificationSubscriptionRepository.js";
+import { DeviceId } from "../../../src/domain/devices-management/Device.js";
+import { Email } from "../../../src/domain/users-management/User.js";
 
 const dbName: string = "DeviceOfflineNotificationSubscriptionRepositoryTests"
 let dbConnection: mongoose.Connection
@@ -12,7 +14,7 @@ let notification: DeviceOfflineNotificationSubscription
 beforeAll(async () => {
   dbConnection = await mongoose.createConnection(`mongodb://localhost:27018/${dbName}`).asPromise();
   repo = new DeviceOfflineNotificationSubscriptionRepositoryMongoadapter(dbConnection);
-  notification = DeviceOfflineNotificationSubscription("email@email.com", "1")
+  notification = DeviceOfflineNotificationSubscription(Email("email@email.com"), DeviceId("1"))
 });
 
 beforeEach(async () => {

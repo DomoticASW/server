@@ -87,6 +87,6 @@ export class DeviceOfflineNotificationSubscriptionRepositoryMongoadapter impleme
   }
 
   toEntity(notification: DeviceOfflineNotificationSubscriptionSchema): DeviceOfflineNotificationSubscription {
-    return DeviceOfflineNotificationSubscription(notification._id.email, notification._id.deviceId)
+    return DeviceOfflineNotificationSubscription(Email(notification._id.email), DeviceId(notification._id.deviceId))
   }
 }
