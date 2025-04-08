@@ -1,5 +1,6 @@
+import { DeviceActionId, DeviceId } from "../../../src/domain/devices-management/Device.js"
 import { ConstantValue, ExecutionEnvironment, ExecutionEnvironmentFromConstants } from "../../../src/domain/scripts-management/Instruction.js"
-import { CreateConstantInstruction, SendNotificationInstruction, StartTaskInstruction, WaitInstruction } from "../../../src/domain/scripts-management/InstructionImpl.js"
+import { CreateConstantInstruction, DeviceActionInstruction, SendNotificationInstruction, StartTaskInstruction, WaitInstruction } from "../../../src/domain/scripts-management/InstructionImpl.js"
 import { TaskId } from "../../../src/domain/scripts-management/Script.js"
 import { Email } from "../../../src/domain/users-management/User.js"
 import { Type } from "../../../src/ports/devices-management/Types.js"
@@ -35,6 +36,13 @@ test("A wait instruction can be created", () => {
 test("A start task instruction can be created", () => {
   const instruction = StartTaskInstruction(TaskId("1"))
   expect(instruction.taskId).toBe("1")
+})
+
+test("A device action instruction can be created", () => {
+  const instruction = DeviceActionInstruction(DeviceId("deviceId"), DeviceActionId("actionId"), 10)
+  expect(instruction.deviceId).toBe("deviceId")
+  expect(instruction.actionId).toBe("actionId")
+  expect(instruction.input).toBe(10)
 })
 
 test("A create constant instruction can be created", () => {
