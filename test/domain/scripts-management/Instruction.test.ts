@@ -1,6 +1,7 @@
 import { DeviceActionId, DeviceId, DevicePropertyId } from "../../../src/domain/devices-management/Device.js"
 import { ConstantValue, ExecutionEnvironment, ExecutionEnvironmentFromConstants } from "../../../src/domain/scripts-management/Instruction.js"
 import { CreateConstantInstruction, CreateDevicePropertyConstantInstruction, DeviceActionInstruction, SendNotificationInstruction, StartTaskInstruction, WaitInstruction } from "../../../src/domain/scripts-management/InstructionImpl.js"
+import { NumberEOperator } from "../../../src/domain/scripts-management/Operators.js"
 import { TaskId } from "../../../src/domain/scripts-management/Script.js"
 import { Email } from "../../../src/domain/users-management/User.js"
 import { Type } from "../../../src/ports/devices-management/Types.js"
@@ -69,4 +70,14 @@ test("A create device property constant instruction can be created", () => {
   expect(instruction.type).toBe(Type.IntType)
   expect(instruction.deviceId).toBe("deviceId")
   expect(instruction.devicePropertyId).toBe("devicePropertyId")
+})
+
+test("An int equals operator makes a check on int types", () => {
+  const condition = NumberEOperator()
+  const left = ConstantValue(10)
+  const right1 = ConstantValue(10)
+  expect(condition.evaluate(left, right1)).toBe(true)
+
+  const right2 = ConstantValue(5)
+  expect(condition.evaluate(left, right2)).toBe(false)
 })
