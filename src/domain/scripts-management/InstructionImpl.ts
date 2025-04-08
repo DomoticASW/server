@@ -1,6 +1,7 @@
 import { Type } from "../../ports/devices-management/Types.js";
+import { DeviceActionId, DeviceId } from "../devices-management/Device.js";
 import { Email } from "../users-management/User.js";
-import { ConstantValue, CreateConstantInstruction, ExecutionEnvironmentFromConstants, SendNotificationInstruction, StartTaskInstruction, WaitInstruction } from "./Instruction.js";
+import { ConstantValue, CreateConstantInstruction, DeviceActionInstruction, ExecutionEnvironmentFromConstants, SendNotificationInstruction, StartTaskInstruction, WaitInstruction } from "./Instruction.js";
 import { TaskId } from "./Script.js";
 
 export function SendNotificationInstruction(email: Email, message: string): SendNotificationInstruction {
@@ -29,6 +30,18 @@ export function StartTaskInstruction(taskId: TaskId): StartTaskInstruction {
     taskId: taskId,
     execute(env) {
       //TODO: Execute the task, need of the scripts service to be implemented
+      return env
+    },
+  }
+}
+
+export function DeviceActionInstruction(deviceId: DeviceId, actionId: DeviceActionId, input: unknown): DeviceActionInstruction {
+  return {
+    deviceId: deviceId,
+    actionId: actionId,
+    input: input,
+    execute(env) {
+      //TODO: Execute the action on the device via the devices service
       return env
     },
   }
