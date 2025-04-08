@@ -1,9 +1,9 @@
 import { Effect } from "effect/Effect";
-import { Automation, AutomationId, Task, TaskId } from "../../domain/scripts/Script.js";
+import { Automation, AutomationId, Task, TaskId } from "../../domain/scripts-management/Script.js";
 import { Token } from "../../domain/users-management/Token.js";
 import { InvalidTokenError } from "../users-management/Errors.js";
 import { AutomationNameAlreadyInUse, InvalidAutomationError, InvalidTaskError, ScriptNotFoundError, TaskNameAlreadyInUse } from "./Errors.js";
-import { TaskBuilder } from "../../domain/scripts/ScriptBuilder.js";
+import { TaskBuilder } from "../../domain/scripts-management/ScriptBuilder.js";
 import { PermissionError } from "../permissions/Errors.js";
 
 export interface ScriptService {

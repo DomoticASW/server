@@ -1,5 +1,5 @@
 import { TaskLists } from "../../../src/domain/permissions/TaskLists.js"
-import { TaskId } from "../../../src/domain/scripts/Script.js"
+import { TaskId } from "../../../src/domain/scripts-management/Script.js"
 import { Email } from "../../../src/domain/users-management/User.js"
  
  function makeTaskLists(id: string = "1") {

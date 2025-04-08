@@ -1,5 +1,5 @@
 import { EditList } from "../../../src/domain/permissions/EditList.js"
-import { ScriptId } from "../../../src/domain/scripts/Script.js";
+import { ScriptId } from "../../../src/domain/scripts-management/Script.js";
 import { Email } from "../../../src/domain/users-management/User.js"
  
  function makeEditList(id: string = "1") {
