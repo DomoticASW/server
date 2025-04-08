@@ -1,6 +1,6 @@
-import { DeviceActionId, DeviceId } from "../../../src/domain/devices-management/Device.js"
+import { DeviceActionId, DeviceId, DevicePropertyId } from "../../../src/domain/devices-management/Device.js"
 import { ConstantValue, ExecutionEnvironment, ExecutionEnvironmentFromConstants } from "../../../src/domain/scripts-management/Instruction.js"
-import { CreateConstantInstruction, DeviceActionInstruction, SendNotificationInstruction, StartTaskInstruction, WaitInstruction } from "../../../src/domain/scripts-management/InstructionImpl.js"
+import { CreateConstantInstruction, CreateDevicePropertyConstantInstruction, DeviceActionInstruction, SendNotificationInstruction, StartTaskInstruction, WaitInstruction } from "../../../src/domain/scripts-management/InstructionImpl.js"
 import { TaskId } from "../../../src/domain/scripts-management/Script.js"
 import { Email } from "../../../src/domain/users-management/User.js"
 import { Type } from "../../../src/ports/devices-management/Types.js"
@@ -39,9 +39,9 @@ test("A start task instruction can be created", () => {
 })
 
 test("A device action instruction can be created", () => {
-  const instruction = DeviceActionInstruction(DeviceId("deviceId"), DeviceActionId("actionId"), 10)
+  const instruction = DeviceActionInstruction(DeviceId("deviceId"), DeviceActionId("deviceActionId"), 10)
   expect(instruction.deviceId).toBe("deviceId")
-  expect(instruction.actionId).toBe("actionId")
+  expect(instruction.deviceActionId).toBe("deviceActionId")
   expect(instruction.input).toBe(10)
 })
 
@@ -61,4 +61,12 @@ test("A create constant instruction add a value to the env when executed", () =>
   const constant = instruction.execute(env).constants.get(instruction);
   expect(constant).toBeDefined();
   expect(constant?.value).toBe(10);
+})
+
+test("A create device property constant instruction can be created", () => {
+  const instruction = CreateDevicePropertyConstantInstruction("constantName", Type.IntType, DeviceId("deviceId"), DevicePropertyId("devicePropertyId"))
+  expect(instruction.name).toBe("constantName")
+  expect(instruction.type).toBe(Type.IntType)
+  expect(instruction.deviceId).toBe("deviceId")
+  expect(instruction.devicePropertyId).toBe("devicePropertyId")
 })
