@@ -2,7 +2,6 @@ import { DeviceActionId, DeviceId, DevicePropertyId } from "../devices-managemen
 import { Email } from "../users-management/User.js"
 import { TaskId } from "./Script.js"
 import { Type } from "../../ports/devices-management/Types.js"
-import { Option } from "effect/Option"
 
 export interface Instruction {
   execute(env: ExecutionEnvironment): ExecutionEnvironment
@@ -69,5 +68,5 @@ interface ConstantValue<T> {
 }
 
 export interface ExecutionEnvironment {
-  constants: Map<ConstantInstruction<unknown>, Option<ConstantValue<unknown>>>
+  constants: Map<ConstantInstruction<unknown>, ConstantValue<unknown>>
 }
