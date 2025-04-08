@@ -1,6 +1,6 @@
 import { Type } from "../../ports/devices-management/Types.js";
 import { Email } from "../users-management/User.js";
-import { ConstantValue, CreateConstantInstruction, ExecutionEnvironmentFromConstants, SendNotificationInstruction, StartTaskInstruction } from "./Instruction.js";
+import { ConstantValue, CreateConstantInstruction, ExecutionEnvironmentFromConstants, SendNotificationInstruction, StartTaskInstruction, WaitInstruction } from "./Instruction.js";
 import { TaskId } from "./Script.js";
 
 export function SendNotificationInstruction(email: Email, message: string): SendNotificationInstruction {
@@ -8,6 +8,17 @@ export function SendNotificationInstruction(email: Email, message: string): Send
     email: email,
     message: message,
     execute(env) {
+      //TODO: Send the notification via the notification service
+      return env
+    },
+  }
+}
+
+export function WaitInstruction(seconds: number): WaitInstruction {
+  return {
+    seconds: seconds,
+    execute(env) {
+      //TODO: Wait the seconds to procede
       return env
     },
   }
