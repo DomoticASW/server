@@ -1,7 +1,7 @@
 import { DeviceActionId, DeviceId, DevicePropertyId } from "../../../src/domain/devices-management/Device.js"
 import { ConstantValue, ExecutionEnvironment, ExecutionEnvironmentFromConstants } from "../../../src/domain/scripts-management/Instruction.js"
 import { CreateConstantInstruction, CreateDevicePropertyConstantInstruction, DeviceActionInstruction, SendNotificationInstruction, StartTaskInstruction, WaitInstruction } from "../../../src/domain/scripts-management/InstructionImpl.js"
-import { NumberEOperator } from "../../../src/domain/scripts-management/Operators.js"
+import { NumberEOperator, NumberGEOperator, NumberLEOperator } from "../../../src/domain/scripts-management/Operators.js"
 import { TaskId } from "../../../src/domain/scripts-management/Script.js"
 import { Email } from "../../../src/domain/users-management/User.js"
 import { Type } from "../../../src/ports/devices-management/Types.js"
@@ -72,12 +72,39 @@ test("A create device property constant instruction can be created", () => {
   expect(instruction.devicePropertyId).toBe("devicePropertyId")
 })
 
-test("An int equals operator makes a check on int types", () => {
+test("A number equals operator makes a check of equality on numbers", () => {
   const condition = NumberEOperator()
   const left = ConstantValue(10)
-  const right1 = ConstantValue(10)
-  expect(condition.evaluate(left, right1)).toBe(true)
 
+  const right1 = ConstantValue(10)
   const right2 = ConstantValue(5)
+  
+  expect(condition.evaluate(left, right1)).toBe(true)
   expect(condition.evaluate(left, right2)).toBe(false)
+})
+
+test("A number greater equals operator makes a check of greater/equality on numbers", () => {
+  const condition = NumberGEOperator()
+  const left = ConstantValue(10)
+
+  const right1 = ConstantValue(10)
+  const right2 = ConstantValue(5)
+  const right3 = ConstantValue(15)
+
+  expect(condition.evaluate(left, right1)).toBe(true)
+  expect(condition.evaluate(left, right2)).toBe(true)
+  expect(condition.evaluate(left, right3)).toBe(false)
+})
+
+test("A number less equals operator makes a check of lesser/equality on numbers", () => {
+  const condition = NumberLEOperator()
+  const left = ConstantValue(10)
+
+  const right1 = ConstantValue(10)
+  const right2 = ConstantValue(5)
+  const right3 = ConstantValue(15)
+
+  expect(condition.evaluate(left, right1)).toBe(true)
+  expect(condition.evaluate(left, right2)).toBe(false)
+  expect(condition.evaluate(left, right3)).toBe(true)
 })
