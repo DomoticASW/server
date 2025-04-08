@@ -1,5 +1,5 @@
 import { ConstantValue, ExecutionEnvironment, ExecutionEnvironmentFromConstants } from "../../../src/domain/scripts-management/Instruction.js"
-import { CreateConstantInstruction, SendNotificationInstruction, StartTaskInstruction } from "../../../src/domain/scripts-management/InstructionImpl.js"
+import { CreateConstantInstruction, SendNotificationInstruction, StartTaskInstruction, WaitInstruction } from "../../../src/domain/scripts-management/InstructionImpl.js"
 import { TaskId } from "../../../src/domain/scripts-management/Script.js"
 import { Email } from "../../../src/domain/users-management/User.js"
 import { Type } from "../../../src/ports/devices-management/Types.js"
@@ -21,10 +21,15 @@ test("A constant value can be created", () => {
   expect(value.value).toBe(10)
 })
 
-test("A SendNotificationInstruction can be created", () => {
+test("A send notification instruction can be created", () => {
   const instruction = SendNotificationInstruction(Email("email"), "this is a message")
   expect(instruction.email).toBe("email")
   expect(instruction.message).toBe("this is a message")
+})
+
+test("A wait instruction can be created", () => {
+  const instruction = WaitInstruction(1)
+  expect(instruction.seconds).toBe(1)
 })
 
 test("A start task instruction can be created", () => {
