@@ -23,3 +23,19 @@ export function NumberLEOperator(): ConditionOperator<number> {
     },
   }
 }
+
+export function NumberLOperator(): ConditionOperator<number> {
+  return {
+    evaluate(left, right) {
+      return left.value < right.value
+    },
+  }
+}
+
+export function NumberGOperator(): ConditionOperator<number> {
+  return {
+    evaluate(left, right) {
+      return left.value > right.value
+    },
+  }
+}
