@@ -1,10 +1,10 @@
 import mongoose from "mongoose"
-import { UserDevicePermissionRepository } from "../../src/ports/permissions/UserDevicePermissionRepository.js"
-import { UserDevicePermission } from "../../src/domain/permissions/UserDevicePermission.js"
-import { Email } from "../../src/domain/users-management/User.js"
-import { DeviceId } from "../../src/domain/devices-management/Device.js"
-import { UserDevicePermissionMongoAdapter } from "../../src/adapters/permissions-management/UserDevicePermissionAdapter.js"
 import { Effect } from "effect"
+import { UserDevicePermissionRepository } from "../../../src/ports/permissions/UserDevicePermissionRepository.js"
+import { UserDevicePermission } from "../../../src/domain/permissions/UserDevicePermission.js"
+import { UserDevicePermissionMongoAdapter } from "../../../src/adapters/permissions-management/UserDevicePermissionAdapter.js"
+import { Email } from "../../../src/domain/users-management/User.js"
+import { DeviceId } from "../../../src/domain/devices-management/Device.js"
 
 const dbName: string = "UserDevicePermissionRepositoryTests"
 let dbConnection: mongoose.Connection
