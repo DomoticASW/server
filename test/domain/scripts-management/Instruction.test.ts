@@ -1,7 +1,8 @@
 import { DeviceActionId, DeviceId, DevicePropertyId } from "../../../src/domain/devices-management/Device.js"
+import { Color } from "../../../src/domain/devices-management/Types.js"
 import { ConstantValue, ExecutionEnvironment, ExecutionEnvironmentFromConstants } from "../../../src/domain/scripts-management/Instruction.js"
 import { CreateConstantInstruction, CreateDevicePropertyConstantInstruction, DeviceActionInstruction, SendNotificationInstruction, StartTaskInstruction, WaitInstruction } from "../../../src/domain/scripts-management/InstructionImpl.js"
-import { NumberEOperator, NumberGEOperator, NumberGOperator, NumberLEOperator, NumberLOperator, StringEOperator } from "../../../src/domain/scripts-management/Operators.js"
+import { ColorEOperator, NumberEOperator, NumberGEOperator, NumberGOperator, NumberLEOperator, NumberLOperator, StringEOperator } from "../../../src/domain/scripts-management/Operators.js"
 import { TaskId } from "../../../src/domain/scripts-management/Script.js"
 import { Email } from "../../../src/domain/users-management/User.js"
 import { Type } from "../../../src/ports/devices-management/Types.js"
@@ -139,4 +140,18 @@ test("A string equal operator makes a check of equality between strings", () => 
 
   expect(condition.evaluate(left, right1)).toBe(true)
   expect(condition.evaluate(left, right2)).toBe(false)
+})
+
+test("A color equal operator makes a check of equality between colors", () => {
+  const condition = ColorEOperator()
+  const left = ConstantValue(Color(10, 10, 10))
+  const right1 = ConstantValue(Color(10, 10, 10))
+  const right2 = ConstantValue(Color(11, 10, 10))
+  const right3 = ConstantValue(Color(10, 11, 10))
+  const right4 = ConstantValue(Color(10, 10, 11))
+
+  expect(condition.evaluate(left, right1)).toBe(true)
+  expect(condition.evaluate(left, right2)).toBe(false)
+  expect(condition.evaluate(left, right3)).toBe(false)
+  expect(condition.evaluate(left, right4)).toBe(false)
 })
