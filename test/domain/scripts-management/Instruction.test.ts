@@ -1,7 +1,7 @@
 import { DeviceActionId, DeviceId, DevicePropertyId } from "../../../src/domain/devices-management/Device.js"
 import { ConstantValue, ExecutionEnvironment, ExecutionEnvironmentFromConstants } from "../../../src/domain/scripts-management/Instruction.js"
 import { CreateConstantInstruction, CreateDevicePropertyConstantInstruction, DeviceActionInstruction, SendNotificationInstruction, StartTaskInstruction, WaitInstruction } from "../../../src/domain/scripts-management/InstructionImpl.js"
-import { NumberEOperator, NumberGEOperator, NumberGOperator, NumberLEOperator, NumberLOperator } from "../../../src/domain/scripts-management/Operators.js"
+import { NumberEOperator, NumberGEOperator, NumberGOperator, NumberLEOperator, NumberLOperator, StringEOperator } from "../../../src/domain/scripts-management/Operators.js"
 import { TaskId } from "../../../src/domain/scripts-management/Script.js"
 import { Email } from "../../../src/domain/users-management/User.js"
 import { Type } from "../../../src/ports/devices-management/Types.js"
@@ -129,4 +129,14 @@ test("A number greater operator makes a check of greater on numbers", () => {
 
   expect(condition.evaluate(left, right1)).toBe(false)
   expect(condition.evaluate(left, right2)).toBe(true)
+})
+
+test("A string equal operator makes a check of equality between strings", () => {
+  const condition = StringEOperator()
+  const left = ConstantValue("ciao")
+  const right1 = ConstantValue("ciao")
+  const right2 = ConstantValue("ciao1")
+
+  expect(condition.evaluate(left, right1)).toBe(true)
+  expect(condition.evaluate(left, right2)).toBe(false)
 })
