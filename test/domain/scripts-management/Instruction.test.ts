@@ -83,3 +83,15 @@ test("A condition can be created", () => {
   expect(condition.evaluate(newEnv)).toBe(true)
   expect(condition2.evaluate(newEnv)).toBe(false)
 })
+
+test("A condition can be created with a negate bool", () => {
+  const instruction1 = CreateConstantInstruction("constantName1", Type.IntType, 15)
+  const instruction2 = CreateConstantInstruction("constantName2", Type.IntType, 10)
+  const condition = Condition(instruction1, instruction2, NumberGOperator(), true)
+  const condition2 = Condition(instruction1, instruction2, NumberLEOperator(), true)
+
+  const env = ExecutionEnvironment()
+  const newEnv = instruction2.execute(instruction1.execute(env))
+  expect(condition.evaluate(newEnv)).toBe(false)
+  expect(condition2.evaluate(newEnv)).toBe(true)
+})

@@ -81,7 +81,7 @@ export function Condition<T>(left: ConstantInstruction<T>, right: ConstantInstru
       const left = env.constants.get(this.leftConstant) as ConstantValue<T>
       const right = env.constants.get(this.rightConstant) as ConstantValue<T>
 
-      return operator.evaluate(left, right);
+      return negate !== operator.evaluate(left, right);
     },
   }
 }
