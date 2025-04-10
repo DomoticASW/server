@@ -13,8 +13,8 @@ export interface TaskLists {
   removeEmailFromWhitelist(email: Email): void
 }
 
-export function TaskLists(id: TaskId): TaskLists {
-  return new TaskListsImpl(id);
+export function TaskLists(id: TaskId, blacklist: Email[], whitelist: Email[]): TaskLists {
+  return new TaskListsImpl(id, blacklist, whitelist);
 }
 
 class TaskListsImpl implements TaskLists {
@@ -23,10 +23,10 @@ class TaskListsImpl implements TaskLists {
   private _blacklist: Email[];
   private _whitelist: Email[];
 
-  constructor(id: TaskId) {
+  constructor(id: TaskId, blacklist: Email[], whitelist: Email[]) {
     this.id = id;
-    this._blacklist = [];
-    this._whitelist = [];
+    this._blacklist = blacklist;
+    this._whitelist = whitelist;
   }
   
   get blacklist(): Email[] {
