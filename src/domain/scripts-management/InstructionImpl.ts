@@ -1,7 +1,7 @@
 import { Type } from "../../ports/devices-management/Types.js";
 import { DeviceActionId, DeviceId, DevicePropertyId } from "../devices-management/Device.js";
 import { Email } from "../users-management/User.js";
-import { ConstantValue, CreateConstantInstruction, CreateDevicePropertyConstantInstruction, DeviceActionInstruction, ExecutionEnvironmentFromConstants, SendNotificationInstruction, StartTaskInstruction, WaitInstruction } from "./Instruction.js";
+import { Condition, ConstantValue, CreateConstantInstruction, CreateDevicePropertyConstantInstruction, DeviceActionInstruction, ExecutionEnvironmentFromConstants, IfInstruction, Instruction, SendNotificationInstruction, StartTaskInstruction, WaitInstruction } from "./Instruction.js";
 import { TaskId } from "./Script.js";
 
 export function SendNotificationInstruction(email: Email, message: string): SendNotificationInstruction {
@@ -70,5 +70,23 @@ export function CreateDevicePropertyConstantInstruction<T>(name: string, type: T
       //TODO: Get the value of the property from the device via the device service and add it to the env constants
       return env
     }
+  }
+}
+
+export function IfInstruction(instructions: Iterable<Instruction>, condition: Condition<never>): IfInstruction {
+  return {
+    then: instructions,
+    condition: condition,
+    execute(env) {
+      let newEnv = ExecutionEnvironmentFromConstants(env.constants)
+
+      if (condition.evaluate(newEnv)) {
+        Array.from(this.then).forEach(instruction => {
+          newEnv = instruction.execute(newEnv)
+        });
+      }
+
+      return newEnv
+    },
   }
 }

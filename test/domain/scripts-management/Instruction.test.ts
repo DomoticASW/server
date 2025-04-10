@@ -1,6 +1,6 @@
 import { DeviceActionId, DeviceId, DevicePropertyId } from "../../../src/domain/devices-management/Device.js"
 import { Condition, ConstantValue, ExecutionEnvironment, ExecutionEnvironmentFromConstants } from "../../../src/domain/scripts-management/Instruction.js"
-import { CreateConstantInstruction, CreateDevicePropertyConstantInstruction, DeviceActionInstruction, SendNotificationInstruction, StartTaskInstruction, WaitInstruction } from "../../../src/domain/scripts-management/InstructionImpl.js"
+import { CreateConstantInstruction, CreateDevicePropertyConstantInstruction, DeviceActionInstruction, IfInstruction, SendNotificationInstruction, StartTaskInstruction, WaitInstruction } from "../../../src/domain/scripts-management/InstructionImpl.js"
 import { NumberGOperator, NumberLEOperator } from "../../../src/domain/scripts-management/Operators.js"
 import { TaskId } from "../../../src/domain/scripts-management/Script.js"
 import { Email } from "../../../src/domain/users-management/User.js"
@@ -94,4 +94,42 @@ test("A condition can be created with a negate bool", () => {
   const newEnv = instruction2.execute(instruction1.execute(env))
   expect(condition.evaluate(newEnv)).toBe(false)
   expect(condition2.evaluate(newEnv)).toBe(true)
+})
+
+test("An if instruction can be created", () => {
+  //SETUP instructions, conditions and environment
+  const left = CreateConstantInstruction("constantName1", Type.IntType, 15)
+  const right = CreateConstantInstruction("constantName2", Type.IntType, 10)
+  const thenInstruction1 = CreateConstantInstruction("constantName3", Type.StringType, "stringa")
+  const thenInstruction2 = CreateConstantInstruction("constantName4", Type.StringType, "stringa2")
+
+  const thenInstructions = [
+    thenInstruction1,
+    thenInstruction2
+  ]
+
+  const condition = Condition(left, right, NumberGOperator())
+  const negatedCondition = Condition(left, right, NumberGOperator(), true)
+  
+  const setupEnv = ExecutionEnvironment()
+  const env = right.execute(left.execute(setupEnv))
+  
+  //ACT
+  const ifInstruction = IfInstruction(thenInstructions, condition)
+  const falseIfInstruction = IfInstruction(thenInstructions, negatedCondition)
+
+  const stringInstruction1 = ifInstruction.execute(env).constants.get(thenInstruction1)
+  const stringInstruction2 = ifInstruction.execute(env).constants.get(thenInstruction2)
+  const undefinedInstruction1 = falseIfInstruction.execute(env).constants.get(thenInstruction1)
+  const undefinedInstruction2 = falseIfInstruction.execute(env).constants.get(thenInstruction1)
+
+  //ASSERT
+  expect(stringInstruction1).toBeDefined()
+  expect(thenInstruction1.execute(env).constants.get(thenInstruction1)).toStrictEqual(stringInstruction1)
+
+  expect(stringInstruction2).toBeDefined()
+  expect(thenInstruction2.execute(env).constants.get(thenInstruction2)).toStrictEqual(stringInstruction2)
+
+  expect(undefinedInstruction1).not.toBeDefined()
+  expect(undefinedInstruction2).not.toBeDefined()
 })
