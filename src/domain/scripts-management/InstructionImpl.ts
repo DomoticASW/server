@@ -81,7 +81,7 @@ export function IfInstruction(instructions: Array<Instruction>, condition: Condi
       let newEnv = ExecutionEnvironmentFromConstants(env.constants)
 
       if (condition.evaluate(newEnv)) {
-        Array.from(this.then).forEach(instruction => {
+        this.then.forEach(instruction => {
           newEnv = instruction.execute(newEnv)
         });
       }
