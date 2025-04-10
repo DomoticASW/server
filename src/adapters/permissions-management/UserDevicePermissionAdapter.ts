@@ -19,7 +19,7 @@ export class UserDevicePermissionMongoAdapter implements UserDevicePermissionRep
     deviceId: { type: String, required: true },
   });
 
-  private permissions = mongoose.Model<UserDevicePermissionSchema>
+  private permissions: mongoose.Model<UserDevicePermissionSchema>
 
   constructor(connection: mongoose.Connection) {
     this.permissions = connection.model<UserDevicePermissionSchema>("UserDevicePermission", this.userDevicePermissionSchema, undefined, { overwriteModels: true });
