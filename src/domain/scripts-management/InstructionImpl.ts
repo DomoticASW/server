@@ -73,7 +73,7 @@ export function CreateDevicePropertyConstantInstruction<T>(name: string, type: T
   }
 }
 
-export function IfInstruction(instructions: Iterable<Instruction>, condition: Condition<never>): IfInstruction {
+export function IfInstruction(instructions: Array<Instruction>, condition: Condition<never>): IfInstruction {
   return {
     then: instructions,
     condition: condition,
@@ -91,7 +91,7 @@ export function IfInstruction(instructions: Iterable<Instruction>, condition: Co
   }
 }
 
-export function ElseInstruction(thenInstructions: Iterable<Instruction>, elseInstructions: Iterable<Instruction>, condition: Condition<never>): ElseInstruction {
+export function ElseInstruction(thenInstructions: Array<Instruction>, elseInstructions: Array<Instruction>, condition: Condition<never>): ElseInstruction {
   return {
     then: thenInstructions,
     else: elseInstructions,

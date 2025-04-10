@@ -42,12 +42,12 @@ export interface CreateDevicePropertyConstantInstruction<T> extends ConstantInst
 }
 
 export interface IfInstruction extends Instruction {
-  then: Iterable<Instruction>
+  then: Array<Instruction>
   condition: Condition<never>
 }
 
 export interface ElseInstruction extends IfInstruction {
-  else: Iterable<Instruction>
+  else: Array<Instruction>
 }
 
 export interface Condition<T> {
