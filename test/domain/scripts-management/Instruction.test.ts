@@ -1,6 +1,7 @@
 import { DeviceActionId, DeviceId, DevicePropertyId } from "../../../src/domain/devices-management/Device.js"
-import { ConstantValue, ExecutionEnvironment, ExecutionEnvironmentFromConstants } from "../../../src/domain/scripts-management/Instruction.js"
+import { Condition, ConstantValue, ExecutionEnvironment, ExecutionEnvironmentFromConstants } from "../../../src/domain/scripts-management/Instruction.js"
 import { CreateConstantInstruction, CreateDevicePropertyConstantInstruction, DeviceActionInstruction, SendNotificationInstruction, StartTaskInstruction, WaitInstruction } from "../../../src/domain/scripts-management/InstructionImpl.js"
+import { NumberGOperator, NumberLEOperator } from "../../../src/domain/scripts-management/Operators.js"
 import { TaskId } from "../../../src/domain/scripts-management/Script.js"
 import { Email } from "../../../src/domain/users-management/User.js"
 import { Type } from "../../../src/ports/devices-management/Types.js"
@@ -69,4 +70,16 @@ test("A create device property constant instruction can be created", () => {
   expect(instruction.type).toBe(Type.IntType)
   expect(instruction.deviceId).toBe("deviceId")
   expect(instruction.devicePropertyId).toBe("devicePropertyId")
+})
+
+test("A condition can be created", () => {
+  const instruction1 = CreateConstantInstruction("constantName1", Type.IntType, 15)
+  const instruction2 = CreateConstantInstruction("constantName2", Type.IntType, 10)
+  const condition = Condition(instruction1, instruction2, NumberGOperator())
+  const condition2 = Condition(instruction1, instruction2, NumberLEOperator())
+
+  const env = ExecutionEnvironment()
+  const newEnv = instruction2.execute(instruction1.execute(env))
+  expect(condition.evaluate(newEnv)).toBe(true)
+  expect(condition2.evaluate(newEnv)).toBe(false)
 })

@@ -71,6 +71,21 @@ export interface ExecutionEnvironment {
   readonly constants: Map<ConstantInstruction<unknown>, ConstantValue<unknown>>
 }
 
+export function Condition<T>(left: ConstantInstruction<T>, right: ConstantInstruction<T>, operator: ConditionOperator<T>, negate: boolean = false): Condition<T> {
+  return {
+    leftConstant: left,
+    rightConstant: right,
+    operator: operator,
+    negate: negate,
+    evaluate(env) {
+      const left = env.constants.get(this.leftConstant) as ConstantValue<T>
+      const right = env.constants.get(this.rightConstant) as ConstantValue<T>
+
+      return operator.evaluate(left, right);
+    },
+  }
+}
+
 export function ConstantValue<T>(value: T): ConstantValue<T> {
   return {
     value: value
