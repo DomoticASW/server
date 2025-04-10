@@ -39,3 +39,11 @@ export function NumberGOperator(): ConditionOperator<number> {
     },
   }
 }
+
+export function StringEOperator(): ConditionOperator<string> {
+  return {
+    evaluate(left, right) {
+      return left.value == right.value
+    },
+  }
+}
