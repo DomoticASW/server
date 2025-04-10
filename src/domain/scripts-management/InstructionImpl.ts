@@ -1,7 +1,7 @@
 import { Type } from "../../ports/devices-management/Types.js";
 import { DeviceActionId, DeviceId, DevicePropertyId } from "../devices-management/Device.js";
 import { Email } from "../users-management/User.js";
-import { Condition, ConstantValue, CreateConstantInstruction, CreateDevicePropertyConstantInstruction, DeviceActionInstruction, ExecutionEnvironmentFromConstants, IfInstruction, Instruction, SendNotificationInstruction, StartTaskInstruction, WaitInstruction } from "./Instruction.js";
+import { Condition, ConstantValue, CreateConstantInstruction, CreateDevicePropertyConstantInstruction, DeviceActionInstruction, ElseInstruction, ExecutionEnvironmentFromConstants, IfInstruction, Instruction, SendNotificationInstruction, StartTaskInstruction, WaitInstruction } from "./Instruction.js";
 import { TaskId } from "./Script.js";
 
 export function SendNotificationInstruction(email: Email, message: string): SendNotificationInstruction {
@@ -85,6 +85,27 @@ export function IfInstruction(instructions: Iterable<Instruction>, condition: Co
           newEnv = instruction.execute(newEnv)
         });
       }
+
+      return newEnv
+    },
+  }
+}
+
+export function ElseInstruction(thenInstructions: Iterable<Instruction>, elseInstructions: Iterable<Instruction>, condition: Condition<never>): ElseInstruction {
+  return {
+    then: thenInstructions,
+    else: elseInstructions,
+    condition: condition,
+    execute(env) {
+      let newEnv = ExecutionEnvironmentFromConstants(env.constants)
+
+      Array
+      .from(condition.evaluate(newEnv) ? this.then : this.else)
+      .forEach(
+        instruction => {
+          newEnv = instruction.execute(newEnv)
+        }
+      )
 
       return newEnv
     },
