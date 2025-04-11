@@ -1,9 +1,9 @@
 import { Effect } from "effect";
 import { DeviceId } from "../../domain/devices-management/Device.js";
-import { UserDevicePermission } from "../../domain/permissions/UserDevicePermission.js";
+import { UserDevicePermission } from "../../domain/permissions-management/UserDevicePermission.js";
 import { Email } from "../../domain/users-management/User.js";
-import { UserDevicePermissionRepository } from "../../ports/permissions/UserDevicePermissionRepository.js";
-import { DuplicateIdError, NotFoundError } from "../../ports/users-management/Errors.js";
+import { UserDevicePermissionRepository } from "../../ports/permissions-management/UserDevicePermissionRepository.js";
+import { DuplicateIdError, NotFoundError } from "../../ports/Repository.js";
 import mongoose from "mongoose";
 import { orDie, tryPromise } from "effect/Effect";
 

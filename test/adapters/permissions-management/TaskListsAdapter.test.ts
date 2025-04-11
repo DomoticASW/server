@@ -1,9 +1,9 @@
 import mongoose from "mongoose"
 import { Effect } from "effect"
 import { TaskId } from "../../../src/domain/scripts/Script.js"
-import { TaskListsRepository } from "../../../src/ports/permissions/TaskListsRepository.js"
+import { TaskListsRepository } from "../../../src/ports/permissions-management/TaskListsRepository.js"
 import { TaskListsMongoAdapter } from "../../../src/adapters/permissions-management/TaskListsAdapter.js"
-import { TaskLists } from "../../../src/domain/permissions/TaskLists.js"
+import { TaskLists } from "../../../src/domain/permissions-management/TaskLists.js"
 import { Email } from "../../../src/domain/users-management/User.js"
 
 const dbName: string = "TaskListsRepositoryTests"

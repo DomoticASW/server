@@ -3,9 +3,9 @@ import { Email } from "../../domain/users-management/User.js";
 import { DuplicateIdError, NotFoundError } from "../../ports/Repository.js";
 import mongoose from "mongoose";
 import { orDie, tryPromise } from "effect/Effect";
-import { TaskLists } from "../../domain/permissions/TaskLists.js";
+import { TaskLists } from "../../domain/permissions-management/TaskLists.js";
 import { TaskId } from "../../domain/scripts/Script.js";
-import { TaskListsRepository } from "../../ports/permissions/TaskListsRepository.js";
+import { TaskListsRepository } from "../../ports/permissions-management/TaskListsRepository.js";
 
 export interface TaskListsSchema {
   _id: string,

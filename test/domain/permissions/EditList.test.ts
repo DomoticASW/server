@@ -1,4 +1,4 @@
-import { EditList } from "../../../src/domain/permissions/EditList.js"
+import { EditList } from "../../../src/domain/permissions-management/EditList.js"
 import { ScriptId } from "../../../src/domain/scripts/Script.js";
 import { Email } from "../../../src/domain/users-management/User.js"
  

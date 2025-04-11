@@ -1,4 +1,4 @@
-import { TaskLists } from "../../../src/domain/permissions/TaskLists.js"
+import { TaskLists } from "../../../src/domain/permissions-management/TaskLists.js"
 import { TaskId } from "../../../src/domain/scripts/Script.js"
 import { Email } from "../../../src/domain/users-management/User.js"
  
