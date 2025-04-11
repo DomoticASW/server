@@ -3,8 +3,8 @@ import { Email } from "../../domain/users-management/User.js";
 import { DuplicateIdError, NotFoundError } from "../../ports/Repository.js";
 import mongoose from "mongoose";
 import { orDie, tryPromise } from "effect/Effect";
-import { EditList } from "../../domain/permissions/EditList.js";
-import { EditListRepository } from "../../ports/permissions/EditListRepository.js";
+import { EditList } from "../../domain/permissions-management/EditList.js";
+import { EditListRepository } from "../../ports/permissions-management/EditListRepository.js";
 import { ScriptId } from "../../domain/scripts/Script.js";
 
 export interface EditListSchema {

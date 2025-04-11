@@ -1,9 +1,9 @@
 import mongoose from "mongoose"
 import { Effect } from "effect"
 import { ScriptId } from "../../../src/domain/scripts/Script.js"
-import { EditListRepository } from "../../../src/ports/permissions/EditListRepository.js"
+import { EditListRepository } from "../../../src/ports/permissions-management/EditListRepository.js"
 import { EditListMongoAdapter } from "../../../src/adapters/permissions-management/EditListAdapter.js"
-import { EditList } from "../../../src/domain/permissions/EditList.js"
+import { EditList } from "../../../src/domain/permissions-management/EditList.js"
 import { Email } from "../../../src/domain/users-management/User.js"
 
 const dbName: string = "EditListRepositoryTests"
