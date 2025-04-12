@@ -1,8 +1,8 @@
 import { DeviceId } from "../../../src/domain/devices-management/Device.js"
 import { DeviceGroup, DeviceGroupId } from "../../../src/domain/devices-management/DeviceGroup.js"
 
-function makeDeviceGroup(id: string = "1", name: string = "Bedroom") {
-    return DeviceGroup(DeviceGroupId(id), name)
+function makeDeviceGroup(id: string = "1", name: string = "Bedroom", devices: DeviceId[] = []) {
+    return DeviceGroup(DeviceGroupId(id), name, devices)
 }
 
 test("DeviceGroupId creation", () => {
@@ -15,9 +15,11 @@ test("DeviceGroup creation", () => {
     const idValue = "1"
     const name = "Bedroom"
     const id = DeviceGroupId(idValue)
-    const dg = DeviceGroup(id, name)
+    const devices = [DeviceId("1"), DeviceId("2")]
+    const dg = DeviceGroup(id, name, devices)
     expect(dg.id).toBe(id)
     expect(dg.name).toBe(name)
+    expect(dg.devices).toEqual(devices)
 })
 
 test("DeviceGroup is initially empty", () => {

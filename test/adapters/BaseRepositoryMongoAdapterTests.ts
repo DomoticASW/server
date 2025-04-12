@@ -1,6 +1,7 @@
 import mongoose from "mongoose"
 import { Effect } from "effect"
 import { BaseRepositoryMongoAdapter } from "../../src/adapters/BaseRepositoryMongoAdapter.js"
+import { Repository } from "../../src/ports/Repository.js"
 
 /**
  * Tests the given repo
@@ -17,7 +18,8 @@ export function testRepositoryMongoAdapter<Id, Entity, SchemaId, Schema extends 
     makeId: (id: string) => Id,
     makeEntity: (id?: Id, something?: string) => Entity,
     makeRepository: (connection: mongoose.Connection) => BaseRepositoryMongoAdapter<Id, Entity, SchemaId, Schema>,
-    idToSchemaId: (id: Id) => SchemaId) {
+    idToSchemaId: (id: Id) => SchemaId,
+    otherTests?: (conn: () => mongoose.Connection, repo: () => Repository<Id, Entity>) => void) {
 
     let repo: BaseRepositoryMongoAdapter<Id, Entity, SchemaId, Schema>
     let mongoDBConnection: mongoose.Connection
@@ -158,6 +160,12 @@ export function testRepositoryMongoAdapter<Id, Entity, SchemaId, Schema extends 
                 Effect.runPromise
             )
     })
+
+    if (otherTests) {
+        describe("", () => {
+            otherTests(() => mongoDBConnection, () => repo)
+        })
+    }
 
     afterAll(async () => {
         await mongoDBConnection.close()
