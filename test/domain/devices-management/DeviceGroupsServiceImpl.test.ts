@@ -2,22 +2,24 @@ import { DeviceGroupsService } from "../../../src/ports/devices-management/Devic
 import { DeviceGroupsServiceImpl } from "../../../src/domain/devices-management/DeviceGroupsServiceImpl.js"
 import { Token, UserRole } from "../../../src/domain/users-management/Token.js"
 import { Email } from "../../../src/domain/users-management/User.js"
-import { Effect, pipe } from "effect"
+import { Effect, Either, pipe } from "effect"
 import { InMemoryRepositoryMock } from "../../InMemoryRepositoryMock.js"
 import { DeviceGroup, DeviceGroupId } from "../../../src/domain/devices-management/DeviceGroup.js"
 import * as uuid from "uuid";
 import { Device, DeviceId, DeviceStatus } from "../../../src/domain/devices-management/Device.js"
 import { DevicesService } from "../../../src/ports/devices-management/DevicesService.js"
 import { DeviceNotFoundError } from "../../../src/ports/devices-management/Errors.js"
+import { UsersService } from "../../../src/ports/users-management/UserService.js"
+import { InvalidTokenError, UnauthorizedError } from "../../../src/ports/users-management/Errors.js"
 
 let service: DeviceGroupsService
 let devicesService: DevicesService
 let repo: InMemoryRepositoryMock<DeviceGroupId, DeviceGroup>
 
-function makeToken(): Token {
+function makeToken(role: UserRole = UserRole.Admin): Token {
     return {
         userEmail: Email("ciccio.pasticcio@email.com"),
-        role: UserRole.Admin
+        role: role
     }
 }
 
@@ -40,7 +42,12 @@ beforeEach(() => {
         unsubscribeForDevicePropertyUpdates: () => Effect.succeed(null),
         updateDeviceProperty: () => Effect.succeed(null),
     }
-    service = new DeviceGroupsServiceImpl(repo, devicesService)
+    const alwaysValidTokenUsersService = {
+        verifyToken() {
+            return Effect.succeed(null)
+        }
+    } as unknown as UsersService
+    service = new DeviceGroupsServiceImpl(repo, devicesService, alwaysValidTokenUsersService)
 })
 
 test("getAll retrieves all device groups from the repository", async () => {
@@ -296,3 +303,40 @@ test("removeDeviceFromGroup fails if device not found", async () => {
         Effect.runPromise
     )
 })
+
+describe("all methods fail if the token is invalid", () => {
+    const allMethods: Array<(s: DeviceGroupsService) => Effect.Effect<unknown, unknown>> = [
+        (s) => s.addGroup(makeToken(), "group"),
+        (s) => s.removeGroup(makeToken(), DeviceGroupId("1")),
+        (s) => s.renameGroup(makeToken(), DeviceGroupId("1"), "group"),
+        (s) => s.findGroup(makeToken(), DeviceGroupId("1")),
+        (s) => s.getAllDeviceGroups(makeToken()),
+        (s) => s.addDeviceToGroup(makeToken(), DeviceId("1"), DeviceGroupId("1")),
+        (s) => s.removeDeviceFromGroup(makeToken(), DeviceId("1"), DeviceGroupId("1")),
+    ]
+
+    beforeEach(() => {
+        const alwaysInvalidTokenUsersService = {
+            verifyToken(): Effect.Effect<void, InvalidTokenError> {
+                return Effect.fail({ __brand: "InvalidTokenError", message: "" })
+            }
+        } as unknown as UsersService
+        service = new DeviceGroupsServiceImpl(repo, devicesService, alwaysInvalidTokenUsersService)
+    })
+
+    allMethods.forEach(m => {
+        test(m.toString(), async () => {
+            const res = await pipe(
+                m(service),
+                Effect.either,
+                Effect.runPromise
+            ) as Either.Either<unknown, InvalidTokenError>
+            expect(Either.isLeft(res)).toBeTruthy()
+            expect(pipe(
+                Either.flip(res),
+                Either.getOrThrow
+            ).__brand).toBe("InvalidTokenError")
+        })
+    })
+})
+
