@@ -6,6 +6,7 @@ import { Effect, pipe } from "effect"
 import { InMemoryRepositoryMock } from "../../InMemoryRepositoryMock.js"
 import { DeviceGroup, DeviceGroupId } from "../../../src/domain/devices-management/DeviceGroup.js"
 import * as uuid from "uuid";
+import { DeviceId } from "../../../src/domain/devices-management/Device.js"
 
 let service: DeviceGroupsService
 let repo: InMemoryRepositoryMock<DeviceGroupId, DeviceGroup>
@@ -132,6 +133,7 @@ test("removeGroup fails if no group is found", async () => {
 test("renameGroup renames an existing group", async () => {
     const name1 = "Bedroom"
     const name2 = "Kitchen"
+    expect(repo.callsToUpdate).toBe(0)
     await pipe(
         Effect.gen(function* () {
             yield* service.addGroup(makeToken(), name1)
@@ -144,6 +146,7 @@ test("renameGroup renames an existing group", async () => {
         }),
         Effect.runPromise
     )
+    expect(repo.callsToUpdate).toBe(1)
 })
 
 test("renameGroup fails in case of new name already in use", async () => {
@@ -158,4 +161,50 @@ test("renameGroup fails in case of new name already in use", async () => {
         Effect.runPromise
     )
     expect(updatedDG.name).toBe(name2)
+})
+
+test("addDeviceToGroup adds a new device to a group", async () => {
+    expect(repo.callsToUpdate).toBe(0)
+    const deviceId = DeviceId("1")
+    const dg = await pipe(
+        Effect.gen(function* () {
+            const id = yield* service.addGroup(makeToken(), "Bedroom")
+            yield* service.addDeviceToGroup(makeToken(), deviceId, id)
+            return yield* service.findGroup(makeToken(), id)
+        }),
+        Effect.runPromise
+    )
+    expect(dg.devices).toContainEqual(deviceId)
+    expect(repo.callsToUpdate).toBe(1)
+})
+
+test("removeDeviceFromGroup removes device from a group", async () => {
+    expect(repo.callsToUpdate).toBe(0)
+    const deviceId = DeviceId("1")
+    const dg = await pipe(
+        Effect.gen(function* () {
+            const id = yield* service.addGroup(makeToken(), "Bedroom")
+            yield* service.addDeviceToGroup(makeToken(), deviceId, id)
+            yield* service.removeDeviceFromGroup(makeToken(), deviceId, id)
+            return yield* service.findGroup(makeToken(), id)
+        }),
+        Effect.runPromise
+    )
+    expect(dg.devices).toHaveLength(0)
+    expect(repo.callsToUpdate).toBe(2) // 1 + 1 of adding the device
+})
+
+test("removeDeviceFromGroup succedes if device was not part of the group", async () => {
+    expect(repo.callsToUpdate).toBe(0)
+    const deviceId = DeviceId("1")
+    const dg = await pipe(
+        Effect.gen(function* () {
+            const id = yield* service.addGroup(makeToken(), "Bedroom")
+            yield* service.removeDeviceFromGroup(makeToken(), deviceId, id)
+            return yield* service.findGroup(makeToken(), id)
+        }),
+        Effect.runPromise
+    )
+    expect(dg.devices).toHaveLength(0)
+    expect(repo.callsToUpdate).toBe(1)
 })
