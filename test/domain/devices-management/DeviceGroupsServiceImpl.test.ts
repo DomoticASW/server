@@ -340,3 +340,27 @@ describe("all methods fail if the token is invalid", () => {
     })
 })
 
+describe("'write' methods fail if the user is not an admin (UnauthorizedError)", () => {
+    const allMethods: Array<(s: DeviceGroupsService) => Effect.Effect<unknown, unknown>> = [
+        (s) => s.addGroup(makeToken(UserRole.User), "group"),
+        (s) => s.removeGroup(makeToken(UserRole.User), DeviceGroupId("1")),
+        (s) => s.renameGroup(makeToken(UserRole.User), DeviceGroupId("1"), "group"),
+        (s) => s.addDeviceToGroup(makeToken(UserRole.User), DeviceId("1"), DeviceGroupId("1")),
+        (s) => s.removeDeviceFromGroup(makeToken(UserRole.User), DeviceId("1"), DeviceGroupId("1")),
+    ]
+
+    allMethods.forEach(m => {
+        test(m.toString(), async () => {
+            const res = await pipe(
+                m(service),
+                Effect.either,
+                Effect.runPromise
+            ) as Either.Either<unknown, UnauthorizedError>
+            expect(Either.isLeft(res)).toBeTruthy()
+            expect(pipe(
+                Either.flip(res),
+                Either.getOrThrow
+            ).__brand).toBe("UnauthorizedError")
+        })
+    })
+})

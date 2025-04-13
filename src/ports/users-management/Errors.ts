@@ -11,3 +11,6 @@ export type UserNotFoundError = Brand<Error, "UserNotFoundError">
 export type TokenError = InvalidTokenError | UnauthorizedError
 export type InvalidTokenError = Brand<Error, "InvalidTokenError">
 export type UnauthorizedError = Brand<Error, "UnauthorizedError">
+export function UnauthorizedError(cause?: string): UnauthorizedError {
+    return { message: "You are not authorized to perform this operation", cause: cause, __brand: "UnauthorizedError" }
+}
