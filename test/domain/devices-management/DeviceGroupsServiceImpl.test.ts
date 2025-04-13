@@ -163,6 +163,18 @@ test("renameGroup fails in case of new name already in use", async () => {
     expect(updatedDG.name).toBe(name2)
 })
 
+test("renameGroup fails if group not found", async () => {
+    const id = DeviceGroupId("12345")
+    await pipe(
+        service.renameGroup(makeToken(), id, "newname"),
+        Effect.match({
+            onSuccess() { throw new Error("This operation should have failed") },
+            onFailure(e) { expect(e.__brand).toBe("DeviceGroupNotFoundError") }
+        }),
+        Effect.runPromise
+    )
+})
+
 test("addDeviceToGroup adds a new device to a group", async () => {
     expect(repo.callsToUpdate).toBe(0)
     const deviceId = DeviceId("1")
@@ -176,6 +188,19 @@ test("addDeviceToGroup adds a new device to a group", async () => {
     )
     expect(dg.devices).toContainEqual(deviceId)
     expect(repo.callsToUpdate).toBe(1)
+})
+
+test("addDeviceToGroup fails if group not found", async () => {
+    const id = DeviceGroupId("12345")
+    const deviceId = DeviceId("1")
+    await pipe(
+        service.addDeviceToGroup(makeToken(), deviceId, id),
+        Effect.match({
+            onSuccess() { throw new Error("This operation should have failed") },
+            onFailure(e) { expect(e.__brand).toBe("DeviceGroupNotFoundError") }
+        }),
+        Effect.runPromise
+    )
 })
 
 test("removeDeviceFromGroup removes device from a group", async () => {
@@ -207,4 +232,17 @@ test("removeDeviceFromGroup succedes if device was not part of the group", async
     )
     expect(dg.devices).toHaveLength(0)
     expect(repo.callsToUpdate).toBe(1)
+})
+
+test("removeDeviceFromGroup fails if group not found", async () => {
+    const id = DeviceGroupId("12345")
+    const deviceId = DeviceId("1")
+    await pipe(
+        service.removeDeviceFromGroup(makeToken(), deviceId, id),
+        Effect.match({
+            onSuccess() { throw new Error("This operation should have failed") },
+            onFailure(e) { expect(e.__brand).toBe("DeviceGroupNotFoundError") }
+        }),
+        Effect.runPromise
+    )
 })
