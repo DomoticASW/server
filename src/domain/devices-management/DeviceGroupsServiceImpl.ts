@@ -14,6 +14,7 @@ export class DeviceGroupsServiceImpl implements DeviceGroupsService {
         this.repo = repo
     }
     addGroup(token: Token, name: string): Effect.Effect<DeviceGroupId, DeviceGroupNameAlreadyInUseError | TokenError> {
+        // TODO: check token
         const id = DeviceGroupId(uuid.v4())
         return pipe(
             this.repo.add(DeviceGroup(id, name, [])),
@@ -22,12 +23,14 @@ export class DeviceGroupsServiceImpl implements DeviceGroupsService {
         )
     }
     removeGroup(token: Token, groupId: DeviceGroupId): Effect.Effect<void, DeviceGroupNotFoundError | TokenError> {
+        // TODO: check token
         return pipe(
             this.repo.remove(groupId),
             Effect.mapError(e => DeviceGroupNotFoundError(e.cause)),
         )
     }
     renameGroup(token: Token, groupId: DeviceGroupId, name: string): Effect.Effect<void, DeviceGroupNotFoundError | DeviceGroupNameAlreadyInUseError | TokenError> {
+        // TODO: check token
         return Effect.Do.pipe(
             Effect.bind("group", () => this.findGroup(token, groupId)),
             Effect.bind("_", ({ group }) => {
@@ -48,15 +51,18 @@ export class DeviceGroupsServiceImpl implements DeviceGroupsService {
         )
     }
     findGroup(token: Token, groupId: DeviceGroupId): Effect.Effect<DeviceGroup, DeviceGroupNotFoundError | InvalidTokenError> {
+        // TODO: check token
         return pipe(
             this.repo.find(groupId),
             Effect.mapError(e => DeviceGroupNotFoundError(e.cause))
         )
     }
     getAllDeviceGroups(token: Token): Effect.Effect<Iterable<DeviceGroup>, InvalidTokenError> {
+        // TODO: check token
         return this.repo.getAll()
     }
     addDeviceToGroup(token: Token, deviceId: DeviceId, groupId: DeviceGroupId): Effect.Effect<void, DeviceNotFoundError | DeviceGroupNotFoundError | TokenError> {
+        // TODO: check token
         return Effect.Do.pipe(
             Effect.bind("group", () => this.findGroup(token, groupId)),
             Effect.bind("_", ({ group }) => {
@@ -72,6 +78,7 @@ export class DeviceGroupsServiceImpl implements DeviceGroupsService {
         )
     }
     removeDeviceFromGroup(token: Token, deviceId: DeviceId, groupId: DeviceGroupId): Effect.Effect<void, DeviceNotFoundError | DeviceGroupNotFoundError | TokenError> {
+        // TODO: check token
         return Effect.Do.pipe(
             Effect.bind("group", () => this.findGroup(token, groupId)),
             Effect.bind("_", ({ group }) => {
