@@ -1,4 +1,5 @@
 import { DeviceGroupsService } from "../../ports/devices-management/DeviceGroupsService.js"
+import { DevicesService } from "../../ports/devices-management/DevicesService.js";
 import { DeviceGroupNameAlreadyInUseError, DeviceGroupNotFoundError, DeviceNotFoundError } from "../../ports/devices-management/Errors.js";
 import { Repository } from "../../ports/Repository.js";
 import { TokenError, InvalidTokenError } from "../../ports/users-management/Errors.js";
@@ -10,8 +11,10 @@ import * as uuid from "uuid";
 
 export class DeviceGroupsServiceImpl implements DeviceGroupsService {
     private repo: Repository<DeviceGroupId, DeviceGroup>
-    constructor(repo: Repository<DeviceGroupId, DeviceGroup>) {
+    private devicesService: DevicesService;
+    constructor(repo: Repository<DeviceGroupId, DeviceGroup>, devicesService: DevicesService) {
         this.repo = repo
+        this.devicesService = devicesService
     }
     addGroup(token: Token, name: string): Effect.Effect<DeviceGroupId, DeviceGroupNameAlreadyInUseError | TokenError> {
         // TODO: check token
@@ -65,6 +68,7 @@ export class DeviceGroupsServiceImpl implements DeviceGroupsService {
         // TODO: check token
         return Effect.Do.pipe(
             Effect.bind("group", () => this.findGroup(token, groupId)),
+            Effect.bind("device", () => this.devicesService.find(token, deviceId)),
             Effect.bind("_", ({ group }) => {
                 group.addDeviceToGroup(deviceId)
                 return this.repo.update(group)
@@ -73,7 +77,10 @@ export class DeviceGroupsServiceImpl implements DeviceGroupsService {
                 failure: "UniquenessConstraintViolatedError",
                 onFailure: (e) => Effect.dieMessage("Unexpected error while adding a device to a device group: " + e)
             }),
-            Effect.mapError(() => DeviceGroupNotFoundError()),
+            Effect.mapError((e) => {
+                if (e.__brand == "NotFoundError") return DeviceGroupNotFoundError()
+                else return e
+            }),
             Effect.asVoid
         )
     }
@@ -81,6 +88,7 @@ export class DeviceGroupsServiceImpl implements DeviceGroupsService {
         // TODO: check token
         return Effect.Do.pipe(
             Effect.bind("group", () => this.findGroup(token, groupId)),
+            Effect.bind("device", () => this.devicesService.find(token, deviceId)),
             Effect.bind("_", ({ group }) => {
                 group.removeDeviceFromGroup(deviceId)
                 return this.repo.update(group)
@@ -89,7 +97,10 @@ export class DeviceGroupsServiceImpl implements DeviceGroupsService {
                 failure: "UniquenessConstraintViolatedError",
                 onFailure: (e) => Effect.dieMessage("Unexpected error while adding a device to a device group: " + e)
             }),
-            Effect.mapError(() => DeviceGroupNotFoundError()),
+            Effect.mapError((e) => {
+                if (e.__brand == "NotFoundError") return DeviceGroupNotFoundError()
+                else return e
+            }),
             Effect.asVoid
         )
     }

@@ -6,9 +6,12 @@ import { Effect, pipe } from "effect"
 import { InMemoryRepositoryMock } from "../../InMemoryRepositoryMock.js"
 import { DeviceGroup, DeviceGroupId } from "../../../src/domain/devices-management/DeviceGroup.js"
 import * as uuid from "uuid";
-import { DeviceId } from "../../../src/domain/devices-management/Device.js"
+import { Device, DeviceId, DeviceStatus } from "../../../src/domain/devices-management/Device.js"
+import { DevicesService } from "../../../src/ports/devices-management/DevicesService.js"
+import { DeviceNotFoundError } from "../../../src/ports/devices-management/Errors.js"
 
 let service: DeviceGroupsService
+let devicesService: DevicesService
 let repo: InMemoryRepositoryMock<DeviceGroupId, DeviceGroup>
 
 function makeToken(): Token {
@@ -20,7 +23,24 @@ function makeToken(): Token {
 
 beforeEach(() => {
     repo = new InMemoryRepositoryMock((d) => d.id, (dg1, dg2) => dg1.name != dg2.name)
-    service = new DeviceGroupsServiceImpl(repo)
+    devicesService = {
+        add: () => Effect.succeed(DeviceId("1")),
+        remove: () => Effect.succeed(null),
+        executeAction: () => Effect.succeed(null),
+        getAllDevices: () => Effect.succeed([]),
+        find(token, id) {
+            if (id == DeviceId("1"))
+                return Effect.succeed(Device(DeviceId("1"), "Lamp", new URL("localhost:8080"), DeviceStatus.Online, [], [], []))
+            else
+                return Effect.fail(DeviceNotFoundError())
+        },
+        executeAutomationAction: () => Effect.succeed(null),
+        rename: () => Effect.succeed(null),
+        subscribeForDevicePropertyUpdates: () => Effect.succeed(null),
+        unsubscribeForDevicePropertyUpdates: () => Effect.succeed(null),
+        updateDeviceProperty: () => Effect.succeed(null),
+    }
+    service = new DeviceGroupsServiceImpl(repo, devicesService)
 })
 
 test("getAll retrieves all device groups from the repository", async () => {
@@ -203,6 +223,21 @@ test("addDeviceToGroup fails if group not found", async () => {
     )
 })
 
+test("addDeviceToGroup fails if device not found", async () => {
+    const deviceId = DeviceId("999")
+    await pipe(
+        Effect.gen(function* () {
+            const id = yield* service.addGroup(makeToken(), "Bedroom")
+            yield* service.addDeviceToGroup(makeToken(), deviceId, id)
+        }),
+        Effect.match({
+            onSuccess() { throw new Error("This operation should have failed") },
+            onFailure(e) { expect(e.__brand).toBe("DeviceNotFoundError") }
+        }),
+        Effect.runPromise
+    )
+})
+
 test("removeDeviceFromGroup removes device from a group", async () => {
     expect(repo.callsToUpdate).toBe(0)
     const deviceId = DeviceId("1")
@@ -242,6 +277,21 @@ test("removeDeviceFromGroup fails if group not found", async () => {
         Effect.match({
             onSuccess() { throw new Error("This operation should have failed") },
             onFailure(e) { expect(e.__brand).toBe("DeviceGroupNotFoundError") }
+        }),
+        Effect.runPromise
+    )
+})
+
+test("removeDeviceFromGroup fails if device not found", async () => {
+    const deviceId = DeviceId("999")
+    await pipe(
+        Effect.gen(function* () {
+            const id = yield* service.addGroup(makeToken(), "Bedroom")
+            yield* service.removeDeviceFromGroup(makeToken(), deviceId, id)
+        }),
+        Effect.match({
+            onSuccess() { throw new Error("This operation should have failed") },
+            onFailure(e) { expect(e.__brand).toBe("DeviceNotFoundError") }
         }),
         Effect.runPromise
     )
