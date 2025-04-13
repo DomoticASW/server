@@ -14,7 +14,7 @@ export class DeviceGroupRepositoryMongoAdapter extends BaseRepositoryMongoAdapte
 
     private deviceGroupSchema = new mongoose.Schema<DeviceGroupSchema>({
         _id: { type: String, required: true },
-        name: { type: String, required: true },
+        name: { type: String, required: true, unique: true },
         devices: { type: [String], required: true }
     });
     private DG: mongoose.Model<DeviceGroupSchema>

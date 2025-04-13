@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 import { Effect, pipe } from "effect";
 import { isMongoServerError, MongoDBErrorCodes } from "../utils/MongoDBErrorCodes.js";
-import { Repository, DuplicateIdError, NotFoundError } from "../ports/Repository.js";
+import { Repository, DuplicateIdError, NotFoundError, UniquenessConstraintViolatedError } from "../ports/Repository.js";
 
 export abstract class BaseRepositoryMongoAdapter<Id, Entity, SchemaId, Schema extends { _id: SchemaId }> implements Repository<Id, Entity> {
     private connection: mongoose.Connection;
@@ -10,25 +10,37 @@ export abstract class BaseRepositoryMongoAdapter<Id, Entity, SchemaId, Schema ex
         this.connection = connection
     }
 
-    add(entity: Entity): Effect.Effect<void, DuplicateIdError> {
+    add(entity: Entity): Effect.Effect<void, DuplicateIdError | UniquenessConstraintViolatedError> {
         const promise = async () => await this.toDocument(entity).save()
         return Effect.tryPromise({
             try: promise,
             catch(error) {
-                if (isMongoServerError(error, MongoDBErrorCodes.DuplicateKey))
-                    return DuplicateIdError()
-                else {
+                if (isMongoServerError(error, MongoDBErrorCodes.DuplicateKey)) {
+                    const typedError = error as { keyPattern: string }
+                    if (JSON.stringify(typedError.keyPattern).includes("_id")) {
+                        return DuplicateIdError()
+                    } else {
+                        return UniquenessConstraintViolatedError()
+                    }
+                } else {
                     throw error
                 }
             },
         })
     }
-    update(entity: Entity): Effect.Effect<void, NotFoundError> {
+    update(entity: Entity): Effect.Effect<void, NotFoundError | UniquenessConstraintViolatedError> {
         const id = this.toDocument(entity)._id
         const promise = async () => await this.model().findByIdAndUpdate(id, this.toDocument(entity))
         return pipe(
-            Effect.tryPromise(promise),
-            Effect.orDie,
+            Effect.tryPromise({
+                try: promise,
+                catch(error) {
+                    if (isMongoServerError(error, MongoDBErrorCodes.DuplicateKey))
+                        return UniquenessConstraintViolatedError()
+                    else
+                        throw error
+                },
+            }),
             Effect.flatMap(document => {
                 if (document) {
                     return Effect.succeed(null)

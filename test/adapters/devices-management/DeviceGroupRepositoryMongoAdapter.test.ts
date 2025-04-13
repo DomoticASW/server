@@ -36,6 +36,40 @@ const otherTests = (conn: () => mongoose.Connection, repo: () => Repository<Devi
         )
         expect(persistedDg.devices).toEqual(devices)
     })
+
+    test("DeviceGroup name must be unique when creating new one", async () => {
+        const dg1 = DeviceGroup(DeviceGroupId("1"), "Bedroom", [])
+        const dg2 = DeviceGroup(DeviceGroupId("2"), "Bedroom", [])
+        await pipe(
+            Effect.gen(function* () {
+                yield* repo().add(dg1)
+                yield* repo().add(dg2)
+            }),
+            Effect.match({
+                onSuccess() { throw new Error("This operation should have failed") },
+                onFailure(error) { expect(error.__brand).toBe("UniquenessConstraintViolatedError") },
+            }),
+            Effect.runPromise
+        )
+    })
+
+    test("DeviceGroup name must be unique when updating a device", async () => {
+        const dg1 = DeviceGroup(DeviceGroupId("1"), "Bedroom", [])
+        const dg2 = DeviceGroup(DeviceGroupId("2"), "Kitchen", [])
+        await pipe(
+            Effect.gen(function* () {
+                yield* repo().add(dg1)
+                yield* repo().add(dg2)
+                dg2.name = dg1.name
+                yield* repo().update(dg2)
+            }),
+            Effect.match({
+                onSuccess() { throw new Error("This operation should have failed") },
+                onFailure(error) { expect(error.__brand).toBe("UniquenessConstraintViolatedError") },
+            }),
+            Effect.runPromise
+        )
+    })
 }
 
 // Running tests here
