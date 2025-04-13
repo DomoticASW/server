@@ -33,7 +33,9 @@ class DeviceGroupImpl implements DeviceGroup {
     }
 
     addDeviceToGroup(deviceId: DeviceId): void {
-        this._devices.push(deviceId)
+        if (!this._devices.find(d => d == deviceId)) {
+            this._devices.push(deviceId)
+        }
     }
     removeDeviceFromGroup(deviceId: DeviceId): void {
         const index = this.devices.findIndex(d => d == deviceId)

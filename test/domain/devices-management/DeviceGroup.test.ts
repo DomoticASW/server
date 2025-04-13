@@ -34,6 +34,15 @@ test("Add device to device group", () => {
     expect(dg.devices).toContain(deviceId)
 })
 
+test("Add device to device group does not create duplicates", () => {
+    const dg = makeDeviceGroup()
+    const deviceId = DeviceId("1")
+    dg.addDeviceToGroup(deviceId)
+    dg.addDeviceToGroup(deviceId)
+    expect(dg.devices).toHaveLength(1)
+    expect(dg.devices).toContain(deviceId)
+})
+
 test("Remove device from group", () => {
     const dg = makeDeviceGroup()
     const deviceId = DeviceId("1")
