@@ -9,5 +9,5 @@ export type DuplicateIdError = Brand<Error, "DuplicateIdError">
 export type NotFoundError = Brand<Error, "NotFoundError">
 export type UserNotFoundError = Brand<Error, "UserNotFoundError">
 export type TokenError = Brand<Error, "TokenError">
-export type InvalidTokenError = Brand<Error, "InvalidTokenError">
-export type UnauthorizedError = Brand<Error, "UnauthorizedError">
+export type InvalidTokenError = Brand<TokenError, "InvalidTokenError">
+export type UnauthorizedError = Brand<TokenError, "UnauthorizedError">

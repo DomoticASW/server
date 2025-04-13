@@ -1,30 +1,39 @@
-import { DuplicateIdError, NotFoundError, Repository } from "../src/ports/Repository.js";
+import { DuplicateIdError, NotFoundError, Repository, UniquenessConstraintViolatedError } from "../src/ports/Repository.js";
 import { Effect } from "effect";
 
 export class InMemoryRepositoryMock<Id, Entity> implements Repository<Id, Entity> {
     private map: Map<Id, Entity> = new Map()
     private idFromEntity: (e: Entity) => Id
-    constructor(idFromEntity: (e: Entity) => Id) {
+    private checkUniqueness: (e1: Entity, e2: Entity) => boolean;
+    constructor(idFromEntity: (e: Entity) => Id, checkUniqueness: (e1: Entity, e2: Entity) => boolean) {
         this.idFromEntity = idFromEntity
+        this.checkUniqueness = checkUniqueness
     }
 
     callsToAdd = 0
-    add(entity: Entity): Effect.Effect<void, DuplicateIdError> {
+    add(entity: Entity): Effect.Effect<void, DuplicateIdError | UniquenessConstraintViolatedError> {
         this.callsToAdd += 1
         if (this.map.has(this.idFromEntity(entity))) {
             return Effect.fail(DuplicateIdError())
+        }
+        if (Array.from(this.map.values()).find(e => !this.checkUniqueness(e, entity))) {
+            return Effect.fail(UniquenessConstraintViolatedError())
         }
         this.map.set(this.idFromEntity(entity), entity)
         return Effect.succeed(null)
     }
 
     callsToUpdate = 0
-    update(entity: Entity): Effect.Effect<void, NotFoundError> {
+    update(entity: Entity): Effect.Effect<void, NotFoundError | UniquenessConstraintViolatedError> {
         this.callsToUpdate += 1
-        if (!this.map.has(this.idFromEntity(entity))) {
+        const id = this.idFromEntity(entity)
+        if (!this.map.has(id)) {
             return Effect.fail(NotFoundError())
         }
-        this.map.set(this.idFromEntity(entity), entity)
+        if (Array.from(this.map.values()).find(e => this.idFromEntity(e) != id && !this.checkUniqueness(e, entity))) {
+            return Effect.fail(UniquenessConstraintViolatedError())
+        }
+        this.map.set(id, entity)
         return Effect.succeed(null)
     }
 

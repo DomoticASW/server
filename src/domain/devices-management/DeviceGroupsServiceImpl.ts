@@ -6,6 +6,7 @@ import { Token } from "../users-management/Token.js";
 import { DeviceId } from "./Device.js";
 import { DeviceGroupId, DeviceGroup } from "./DeviceGroup.js";
 import { Effect, pipe } from "effect";
+import * as uuid from "uuid";
 
 export class DeviceGroupsServiceImpl implements DeviceGroupsService {
     private repo: Repository<DeviceGroupId, DeviceGroup>
@@ -13,8 +14,7 @@ export class DeviceGroupsServiceImpl implements DeviceGroupsService {
         this.repo = repo
     }
     addGroup(token: Token, name: string): Effect.Effect<DeviceGroupId, DeviceGroupNameAlreadyInUseError | TokenError> {
-        // name is used as ID in order to guarantee it's uniqueness without the need of locking the DB
-        const id = DeviceGroupId(name)
+        const id = DeviceGroupId(uuid.v4())
         return pipe(
             this.repo.add(DeviceGroup(id, name, [])),
             Effect.mapError(e => DeviceGroupNameAlreadyInUseError(e.cause)),
@@ -28,9 +28,24 @@ export class DeviceGroupsServiceImpl implements DeviceGroupsService {
         )
     }
     renameGroup(token: Token, groupId: DeviceGroupId, name: string): Effect.Effect<void, DeviceGroupNotFoundError | DeviceGroupNameAlreadyInUseError | TokenError> {
-        // Renaming a group will change only its name and not id in case some other entity
-        // uses the id to reference this group
-        throw new Error("Method not implemented.");
+        return Effect.Do.pipe(
+            Effect.bind("group", () => this.findGroup(token, groupId)),
+            Effect.bind("_", ({ group }) => {
+                group.name = name
+                return this.repo.update(group)
+            }),
+            Effect.mapError(e => {
+                switch (e.__brand) {
+                    case "UniquenessConstraintViolatedError":
+                        return DeviceGroupNameAlreadyInUseError()
+                    case "NotFoundError":
+                        return DeviceGroupNotFoundError()
+                    default:
+                        return e
+                }
+            }),
+            Effect.asVoid
+        )
     }
     findGroup(token: Token, groupId: DeviceGroupId): Effect.Effect<DeviceGroup, DeviceGroupNotFoundError | InvalidTokenError> {
         return pipe(

@@ -5,6 +5,7 @@ import { Email } from "../../../src/domain/users-management/User.js"
 import { Effect, pipe } from "effect"
 import { InMemoryRepositoryMock } from "../../InMemoryRepositoryMock.js"
 import { DeviceGroup, DeviceGroupId } from "../../../src/domain/devices-management/DeviceGroup.js"
+import * as uuid from "uuid";
 
 let service: DeviceGroupsService
 let repo: InMemoryRepositoryMock<DeviceGroupId, DeviceGroup>
@@ -17,7 +18,7 @@ function makeToken(): Token {
 }
 
 beforeEach(() => {
-    repo = new InMemoryRepositoryMock((d) => d.id)
+    repo = new InMemoryRepositoryMock((d) => d.id, (dg1, dg2) => dg1.name != dg2.name)
     service = new DeviceGroupsServiceImpl(repo)
 })
 
@@ -55,7 +56,7 @@ test("add method adds a group given a group name with empty devices", async () =
     )
     expect(dgs.length).toBe(1)
     const dg = dgs[0]
-    expect(dg.id).toBe(name)
+    expect(uuid.validate(dg.id)).toBeTruthy()
     expect(dg.name).toBe(name)
     expect(dg.devices).toEqual([])
 })
@@ -80,8 +81,8 @@ test("find method actually searches into the repository", async () => {
     expect(repo.callsToFind).toBe(0)
     const dg = await pipe(
         Effect.gen(function* () {
-            yield* service.addGroup(makeToken(), name)
-            return yield* service.findGroup(makeToken(), DeviceGroupId(name))
+            const id = yield* service.addGroup(makeToken(), name)
+            return yield* service.findGroup(makeToken(), id)
         }),
         Effect.runPromise
     )
@@ -91,7 +92,7 @@ test("find method actually searches into the repository", async () => {
 
 test("find fails if no device group is found", async () => {
     await pipe(
-        service.findGroup(makeToken(), DeviceGroupId("Bedroom")),
+        service.findGroup(makeToken(), DeviceGroupId("12345")),
         Effect.match({
             onSuccess() { throw new Error("This operation should have failed") },
             onFailure(e) { expect(e.__brand).toBe("DeviceGroupNotFoundError") }
@@ -105,9 +106,9 @@ test("removeGroup removes a group from the repository", async () => {
     expect(repo.callsToRemove).toBe(0)
     const [initialCount, finalCount] = await pipe(
         Effect.gen(function* () {
-            yield* service.addGroup(makeToken(), name)
+            const id = yield* service.addGroup(makeToken(), name)
             const dgsBefore = yield* service.getAllDeviceGroups(makeToken())
-            yield* service.removeGroup(makeToken(), DeviceGroupId(name))
+            yield* service.removeGroup(makeToken(), id)
             const dgsAfter = yield* service.getAllDeviceGroups(makeToken())
             return [Array.from(dgsBefore).length, Array.from(dgsAfter).length]
         }),
@@ -119,11 +120,42 @@ test("removeGroup removes a group from the repository", async () => {
 
 test("removeGroup fails if no group is found", async () => {
     await pipe(
-        service.removeGroup(makeToken(), DeviceGroupId("Bedroom")),
+        service.removeGroup(makeToken(), DeviceGroupId("1234")),
         Effect.match({
             onSuccess() { throw new Error("This operation should have failed") },
             onFailure(e) { expect(e.__brand).toBe("DeviceGroupNotFoundError") }
         }),
         Effect.runPromise
     )
+})
+
+test("renameGroup renames an existing group", async () => {
+    const name1 = "Bedroom"
+    const name2 = "Kitchen"
+    await pipe(
+        Effect.gen(function* () {
+            yield* service.addGroup(makeToken(), name1)
+            const id = yield* service.addGroup(makeToken(), name2)
+            yield* service.renameGroup(makeToken(), id, name1)
+        }),
+        Effect.match({
+            onSuccess() { throw new Error("This operation should have failed") },
+            onFailure(e) { expect(e.__brand).toBe("DeviceGroupNameAlreadyInUseError") }
+        }),
+        Effect.runPromise
+    )
+})
+
+test("renameGroup fails in case of new name already in use", async () => {
+    const name1 = "Bedroom"
+    const name2 = "Kitchen"
+    const updatedDG = await pipe(
+        Effect.gen(function* () {
+            const id = yield* service.addGroup(makeToken(), name1)
+            yield* service.renameGroup(makeToken(), id, name2)
+            return yield* service.findGroup(makeToken(), id)
+        }),
+        Effect.runPromise
+    )
+    expect(updatedDG.name).toBe(name2)
 })
