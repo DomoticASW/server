@@ -57,9 +57,33 @@ export class DeviceGroupsServiceImpl implements DeviceGroupsService {
         return this.repo.getAll()
     }
     addDeviceToGroup(token: Token, deviceId: DeviceId, groupId: DeviceGroupId): Effect.Effect<void, DeviceNotFoundError | DeviceGroupNotFoundError | TokenError> {
-        throw new Error("Method not implemented.");
+        return Effect.Do.pipe(
+            Effect.bind("group", () => this.findGroup(token, groupId)),
+            Effect.bind("_", ({ group }) => {
+                group.addDeviceToGroup(deviceId)
+                return this.repo.update(group)
+            }),
+            Effect.catch("__brand", {
+                failure: "UniquenessConstraintViolatedError",
+                onFailure: (e) => Effect.dieMessage("Unexpected error while adding a device to a device group: " + e)
+            }),
+            Effect.mapError(() => DeviceGroupNotFoundError()),
+            Effect.asVoid
+        )
     }
     removeDeviceFromGroup(token: Token, deviceId: DeviceId, groupId: DeviceGroupId): Effect.Effect<void, DeviceNotFoundError | DeviceGroupNotFoundError | TokenError> {
-        throw new Error("Method not implemented.");
+        return Effect.Do.pipe(
+            Effect.bind("group", () => this.findGroup(token, groupId)),
+            Effect.bind("_", ({ group }) => {
+                group.removeDeviceFromGroup(deviceId)
+                return this.repo.update(group)
+            }),
+            Effect.catch("__brand", {
+                failure: "UniquenessConstraintViolatedError",
+                onFailure: (e) => Effect.dieMessage("Unexpected error while adding a device to a device group: " + e)
+            }),
+            Effect.mapError(() => DeviceGroupNotFoundError()),
+            Effect.asVoid
+        )
     }
 }
