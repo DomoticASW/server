@@ -6,7 +6,6 @@ import { Token } from "../users-management/Token.js";
 import { DeviceId } from "./Device.js";
 import { DeviceGroupId, DeviceGroup } from "./DeviceGroup.js";
 import { Effect, pipe } from "effect";
-import { v4 as uuidv4 } from 'uuid';
 
 export class DeviceGroupsServiceImpl implements DeviceGroupsService {
     private repo: Repository<DeviceGroupId, DeviceGroup>
@@ -14,7 +13,8 @@ export class DeviceGroupsServiceImpl implements DeviceGroupsService {
         this.repo = repo
     }
     addGroup(token: Token, name: string): Effect.Effect<DeviceGroupId, DeviceGroupNameAlreadyInUseError | TokenError> {
-        const id = DeviceGroupId(uuidv4())
+        // name is used as ID in order to guarantee it's uniqueness without the need of locking the DB
+        const id = DeviceGroupId(name)
         return pipe(
             this.repo.add(DeviceGroup(id, name, [])),
             Effect.mapError(e => DeviceGroupNameAlreadyInUseError(e.cause)),
@@ -28,6 +28,8 @@ export class DeviceGroupsServiceImpl implements DeviceGroupsService {
         )
     }
     renameGroup(token: Token, groupId: DeviceGroupId, name: string): Effect.Effect<void, DeviceGroupNotFoundError | DeviceGroupNameAlreadyInUseError | TokenError> {
+        // Renaming a group will change only its name and not id in case some other entity
+        // uses the id to reference this group
         throw new Error("Method not implemented.");
     }
     findGroup(token: Token, groupId: DeviceGroupId): Effect.Effect<DeviceGroup, DeviceGroupNotFoundError | InvalidTokenError> {
