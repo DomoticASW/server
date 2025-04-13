@@ -5,7 +5,6 @@ import { Email } from "../../../src/domain/users-management/User.js"
 import { Effect, pipe } from "effect"
 import { InMemoryRepositoryMock } from "../../InMemoryRepositoryMock.js"
 import { DeviceGroup, DeviceGroupId } from "../../../src/domain/devices-management/DeviceGroup.js"
-import * as uuid from 'uuid';
 
 let service: DeviceGroupsService
 let repo: InMemoryRepositoryMock<DeviceGroupId, DeviceGroup>
@@ -56,7 +55,7 @@ test("add method adds a group given a group name with empty devices", async () =
     )
     expect(dgs.length).toBe(1)
     const dg = dgs[0]
-    expect(uuid.validate(dg.id)).toBeTruthy()
+    expect(dg.id).toBe(name)
     expect(dg.name).toBe(name)
     expect(dg.devices).toEqual([])
 })
