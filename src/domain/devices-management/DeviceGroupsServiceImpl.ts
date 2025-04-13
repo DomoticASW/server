@@ -6,6 +6,7 @@ import { Token } from "../users-management/Token.js";
 import { DeviceId } from "./Device.js";
 import { DeviceGroupId, DeviceGroup } from "./DeviceGroup.js";
 import { Effect, pipe } from "effect";
+import { v4 as uuidv4 } from 'uuid';
 
 export class DeviceGroupsServiceImpl implements DeviceGroupsService {
     private repo: Repository<DeviceGroupId, DeviceGroup>
@@ -13,7 +14,7 @@ export class DeviceGroupsServiceImpl implements DeviceGroupsService {
         this.repo = repo
     }
     addGroup(token: Token, name: string): Effect.Effect<DeviceGroupId, DeviceGroupNameAlreadyInUseError | TokenError> {
-        const id = DeviceGroupId(name)
+        const id = DeviceGroupId(uuidv4())
         return pipe(
             this.repo.add(DeviceGroup(id, name, [])),
             Effect.mapError(e => DeviceGroupNameAlreadyInUseError(e.cause)),
