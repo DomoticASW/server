@@ -12,7 +12,7 @@ export interface UserDevicePermissionSchema {
   deviceId: string,
 }
 
-export class UserDevicePermissionMongoAdapter implements UserDevicePermissionRepository {
+export class UserDevicePermissionRepositoryMongoAdapter implements UserDevicePermissionRepository {
 
   private userDevicePermissionSchema = new mongoose.Schema<UserDevicePermissionSchema>({
     email: { type: String, required: true },

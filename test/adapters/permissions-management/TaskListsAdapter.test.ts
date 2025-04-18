@@ -2,7 +2,7 @@ import mongoose from "mongoose"
 import { Effect } from "effect"
 import { TaskId } from "../../../src/domain/scripts/Script.js"
 import { TaskListsRepository } from "../../../src/ports/permissions-management/TaskListsRepository.js"
-import { TaskListsMongoAdapter } from "../../../src/adapters/permissions-management/TaskListsAdapter.js"
+import { TaskListsRepositoryMongoAdapter } from "../../../src/adapters/permissions-management/TaskListsRepositoryMongoAdapter.js"
 import { TaskLists } from "../../../src/domain/permissions-management/TaskLists.js"
 import { Email } from "../../../src/domain/users-management/User.js"
 
@@ -13,7 +13,7 @@ let taskLists: TaskLists
 
 beforeAll(async () => {
   dbConnection = await mongoose.createConnection(`mongodb://localhost:27018/${dbName}`).asPromise();
-  repo = new TaskListsMongoAdapter(dbConnection);
+  repo = new TaskListsRepositoryMongoAdapter(dbConnection);
   taskLists = TaskLists(TaskId("1"), [], [])
 });
 
@@ -21,7 +21,7 @@ beforeEach(async () => {
   const collections = await dbConnection.listCollections()
   await Promise.all(collections.map(c => dbConnection.dropCollection(c.name)))
 
-  repo = new TaskListsMongoAdapter(dbConnection);
+  repo = new TaskListsRepositoryMongoAdapter(dbConnection);
 });
 
 test("The repository is initially empty", async () => {

@@ -12,7 +12,7 @@ export interface EditListSchema {
   users: string[],
 }
 
-export class EditListMongoAdapter implements EditListRepository {
+export class EditListRepositoryMongoAdapter implements EditListRepository {
 
   private editListSchema = new mongoose.Schema<EditListSchema>({
     _id: { type: String, required: true },

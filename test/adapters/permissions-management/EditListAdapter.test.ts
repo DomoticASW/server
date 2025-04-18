@@ -2,7 +2,7 @@ import mongoose from "mongoose"
 import { Effect } from "effect"
 import { ScriptId } from "../../../src/domain/scripts/Script.js"
 import { EditListRepository } from "../../../src/ports/permissions-management/EditListRepository.js"
-import { EditListMongoAdapter } from "../../../src/adapters/permissions-management/EditListAdapter.js"
+import { EditListRepositoryMongoAdapter } from "../../../src/adapters/permissions-management/EditListRepositoryMongoAdapter.js"
 import { EditList } from "../../../src/domain/permissions-management/EditList.js"
 import { Email } from "../../../src/domain/users-management/User.js"
 
@@ -13,7 +13,7 @@ let editList: EditList
 
 beforeAll(async () => {
   dbConnection = await mongoose.createConnection(`mongodb://localhost:27018/${dbName}`).asPromise();
-  repo = new EditListMongoAdapter(dbConnection);
+  repo = new EditListRepositoryMongoAdapter(dbConnection);
   editList = EditList(ScriptId("1", "Task"), [])
 });
 
@@ -21,7 +21,7 @@ beforeEach(async () => {
   const collections = await dbConnection.listCollections()
   await Promise.all(collections.map(c => dbConnection.dropCollection(c.name)))
 
-  repo = new EditListMongoAdapter(dbConnection);
+  repo = new EditListRepositoryMongoAdapter(dbConnection);
 });
 
 test("The repository is initially empty", async () => {

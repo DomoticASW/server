@@ -13,7 +13,7 @@ export interface TaskListsSchema {
   whitelist: string[],
 }
 
-export class TaskListsMongoAdapter implements TaskListsRepository {
+export class TaskListsRepositoryMongoAdapter implements TaskListsRepository {
 
   private taskListsSchema = new mongoose.Schema<TaskListsSchema>({
     _id: { type: String, required: true },
