@@ -11,9 +11,9 @@ export interface DevicesService {
     rename(token: Token, deviceId: DeviceId, name: string): Effect<void, DeviceNotFoundError | TokenError>;
     find(token: Token, deviceId: DeviceId): Effect<Device, DeviceNotFoundError | InvalidTokenError>;
     getAllDevices(token: Token): Effect<Iterable<Device>, InvalidTokenError>;
-    executeAction(token: Token, deviceId: DeviceId, actionId: DeviceActionId, input: unknown): Effect<void, InvalidInputError | DeviceActionError | DeviceActionNotFound | DeviceNotFound | InvalidTokenError | PermissionError>;
-    executeAutomationAction(deviceId: DeviceId, actionId: DeviceActionId, input: unknown): Effect<void, InvalidInputError | DeviceActionError | DeviceActionNotFound | DeviceNotFound>;
-    updateDeviceProperty(deviceId: DeviceId, propertyId: DevicePropertyId, value: unknown): Effect<void, InvalidInputError | DeviceNotFound | DevicePropertyNotFound>;
+    executeAction(token: Token, deviceId: DeviceId, actionId: DeviceActionId, input: unknown): Effect<void, InvalidInputError | DeviceActionError | DeviceActionNotFound | DeviceNotFoundError | InvalidTokenError | PermissionError>;
+    executeAutomationAction(deviceId: DeviceId, actionId: DeviceActionId, input: unknown): Effect<void, InvalidInputError | DeviceActionError | DeviceActionNotFound | DeviceNotFoundError>;
+    updateDeviceProperty(deviceId: DeviceId, propertyId: DevicePropertyId, value: unknown): Effect<void, InvalidInputError | DeviceNotFoundError | DevicePropertyNotFound>;
     subscribeForDevicePropertyUpdates(subscriber: DevicePropertyUpdatesSubscriber): void;
     unsubscribeForDevicePropertyUpdates(subscriber: DevicePropertyUpdatesSubscriber): void;
 }
