@@ -8,7 +8,7 @@ export type EmailAlreadyInUseError = Brand<Error, "EmailAlreadyInUseError">
 export type DuplicateIdError = Brand<Error, "DuplicateIdError">
 export type NotFoundError = Brand<Error, "NotFoundError">
 export type UserNotFoundError = Brand<Error, "UserNotFoundError">
-export type TokenError = Brand<Error, "TokenError">
+export type TokenError = InvalidTokenError | UnauthorizedError
 export type InvalidTokenError = Brand<Error, "InvalidTokenError">
 export type UnauthorizedError = Brand<Error, "UnauthorizedError">
 
@@ -25,6 +25,27 @@ export function EmailAlreadyInUseError(cause?: string): EmailAlreadyInUseError {
     return { message: "Email already in use", cause: cause, __brand: "EmailAlreadyInUseError" }
 }
 
-export function userNotFoundError(cause?: string): UserNotFoundError {
+export function UserNotFoundError(cause?: string): UserNotFoundError {
     return { message: "User not found", cause: cause, __brand: "UserNotFoundError" }
 }
+
+export function InvalidTokenError(cause?: string): InvalidTokenError {
+    return { message: "Invalid token", cause: cause, __brand: "InvalidTokenError" }
+}
+
+export function UnauthorizedError(cause?: string): UnauthorizedError {
+    return { message: "Unauthorized", cause: cause, __brand: "UnauthorizedError" }
+}
+
+export function InvalidCredentialsError(cause?: string): InvalidCredentialsError {
+    return { message: "Invalid credentials", cause: cause, __brand: "InvalidCredentialsError" }
+}
+
+export function InvalidTokenFormatError(cause?: string): InvalidTokenFormatError {
+    return { message: "Invalid token format", cause: cause, __brand: "InvalidTokenFormatError" }
+}
+
+export function invalidTokenFormatError(cause?: string): invalidTokenFormatError {
+    return { message: "Invalid token format", cause: cause, __brand: "invalidTokenFormatError" }
+}
+
