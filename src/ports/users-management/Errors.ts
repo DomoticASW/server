@@ -24,6 +24,15 @@ export function EmailAlreadyInUseError(cause?: string): EmailAlreadyInUseError {
     return { message: "Email already in use", cause: cause, __brand: "EmailAlreadyInUseError" }
 }
 
-export function userNotFoundError(cause?: string): UserNotFoundError {
-    return { message: "User not found", cause: cause, __brand: "UserNotFoundError" }
+export function InvalidCredentialsError(cause?: string): InvalidCredentialsError {
+    return { message: "Invalid credentials", cause: cause, __brand: "InvalidCredentialsError" }
 }
+
+export function InvalidTokenFormatError(cause?: string): InvalidTokenFormatError {
+    return { message: "Invalid token format", cause: cause, __brand: "InvalidTokenFormatError" }
+}
+
+export function invalidTokenFormatError(cause?: string): invalidTokenFormatError {
+    return { message: "Invalid token format", cause: cause, __brand: "invalidTokenFormatError" }
+}
+
