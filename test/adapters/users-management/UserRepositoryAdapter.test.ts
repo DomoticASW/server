@@ -54,7 +54,7 @@ test("Try to remove a user", async () => {
     await Effect.runPromise(repo.add(user));
     const res1 = await Effect.runPromise(repo.getAll())
     expect(res1).toHaveLength(1)
-    await Effect.runPromise(repo.remove(user));
+    await Effect.runPromise(repo.remove(user.email));
     const res2 = await Effect.runPromise(repo.getAll())
     expect(res2).toHaveLength(0)
 })
