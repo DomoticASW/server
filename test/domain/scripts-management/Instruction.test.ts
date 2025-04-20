@@ -6,6 +6,7 @@ import { NumberGOperator, NumberLEOperator } from "../../../src/domain/scripts-m
 import { TaskId } from "../../../src/domain/scripts-management/Script.js"
 import { Email } from "../../../src/domain/users-management/User.js"
 import { Type } from "../../../src/ports/devices-management/Types.js"
+import { DevicesServiceMock, NotificationsServiceMock, ScriptsServiceMock } from "./mocks.test.js"
 
 test("An execution environment can be created", () => {
   const env = ExecutionEnvironment()
@@ -25,7 +26,7 @@ test("A constant value can be created", () => {
 })
 
 test("A send notification instruction can be created", () => {
-  const instruction = SendNotificationInstruction(Email("email"), "this is a message")
+  const instruction = SendNotificationInstruction(Email("email"), "this is a message", NotificationsServiceMock())
   expect(instruction.email).toBe("email")
   expect(instruction.message).toBe("this is a message")
 })
@@ -36,12 +37,12 @@ test("A wait instruction can be created", () => {
 })
 
 test("A start task instruction can be created", () => {
-  const instruction = StartTaskInstruction(TaskId("1"))
+  const instruction = StartTaskInstruction(TaskId("1"), ScriptsServiceMock())
   expect(instruction.taskId).toBe("1")
 })
 
 test("A device action instruction can be created", () => {
-  const instruction = DeviceActionInstruction(DeviceId("deviceId"), DeviceActionId("deviceActionId"), 10)
+  const instruction = DeviceActionInstruction(DeviceId("deviceId"), DeviceActionId("deviceActionId"), 10, DevicesServiceMock())
   expect(instruction.deviceId).toBe("deviceId")
   expect(instruction.deviceActionId).toBe("deviceActionId")
   expect(instruction.input).toBe(10)
@@ -67,7 +68,7 @@ test("A create constant instruction add a value to the env when executed", async
 })
 
 test("A create device property constant instruction can be created", () => {
-  const instruction = CreateDevicePropertyConstantInstruction("constantName", Type.IntType, DeviceId("deviceId"), DevicePropertyId("devicePropertyId"))
+  const instruction = CreateDevicePropertyConstantInstruction("constantName", Type.IntType, DeviceId("deviceId"), DevicePropertyId("devicePropertyId"), DevicesServiceMock())
   expect(instruction.name).toBe("constantName")
   expect(instruction.type).toBe(Type.IntType)
   expect(instruction.deviceId).toBe("deviceId")

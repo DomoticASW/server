@@ -6,11 +6,15 @@ import { Condition, ConstantValue, CreateConstantInstruction, CreateDeviceProper
 import { TaskId } from "./Script.js";
 import { runPromise, tryPromise } from "effect/Effect";
 import { orDie } from "effect/Effect";
+import { ScriptsService } from "../../ports/scripts-management/ScriptsService.js";
+import { NotificationsService } from "../../ports/notifications-management/NotificationsService.js";
+import { DevicesService } from "../../ports/devices-management/DevicesService.js";
 
-export function SendNotificationInstruction(email: Email, message: string): SendNotificationInstruction {
+export function SendNotificationInstruction(email: Email, message: string, notificationsService: NotificationsService): SendNotificationInstruction {
   return {
     email: email,
     message: message,
+    notificationsService: notificationsService,
     execute(env) {
       //TODO: Send the notification via the notification service
       return pipe(
@@ -34,9 +38,10 @@ export function WaitInstruction(seconds: number): WaitInstruction {
   }
 }
 
-export function StartTaskInstruction(taskId: TaskId): StartTaskInstruction {
+export function StartTaskInstruction(taskId: TaskId, scriptsService: ScriptsService): StartTaskInstruction {
   return {
     taskId: taskId,
+    scriptsService: scriptsService,
     execute(env) {
       //TODO: Execute the task, need of the scripts service to be implemented
       return pipe(
@@ -47,11 +52,12 @@ export function StartTaskInstruction(taskId: TaskId): StartTaskInstruction {
   }
 }
 
-export function DeviceActionInstruction(deviceId: DeviceId, deviceActionId: DeviceActionId, input: unknown): DeviceActionInstruction {
+export function DeviceActionInstruction(deviceId: DeviceId, deviceActionId: DeviceActionId, input: unknown, devicesService: DevicesService): DeviceActionInstruction {
   return {
     deviceId: deviceId,
     deviceActionId: deviceActionId,
     input: input,
+    devicesService: devicesService,
     execute(env) {
       //TODO: Execute the action on the device via the devices service
       return pipe(
@@ -80,12 +86,13 @@ export function CreateConstantInstruction<T>(name: string, type: Type, value: T)
   }
 }
 
-export function CreateDevicePropertyConstantInstruction<T>(name: string, type: Type, deviceId: DeviceId, devicePropertyId: DevicePropertyId): CreateDevicePropertyConstantInstruction<T> {
+export function CreateDevicePropertyConstantInstruction<T>(name: string, type: Type, deviceId: DeviceId, devicePropertyId: DevicePropertyId, devicesService: DevicesService): CreateDevicePropertyConstantInstruction<T> {
   return {
     name: name,
     type: type,
     deviceId: deviceId,
     devicePropertyId: devicePropertyId,
+    devicesService: devicesService,
     execute(env) {
       //TODO: Get the value of the property from the device via the device service and add it to the env constants
       return pipe(

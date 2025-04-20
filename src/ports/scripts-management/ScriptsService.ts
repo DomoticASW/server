@@ -11,7 +11,7 @@ import { TaskBuilder } from "../../domain/scripts-management/ScriptBuilder.js";
 import { PermissionError } from "../permissions/Errors.js";
 >>>>>>> a9fd43e (chore: changed names of packages of scripts into scripts-management):src/ports/scripts-management/ScriptsService.ts
 
-export interface ScriptService {
+export interface ScriptsService {
   findTask(token: Token, taskId: TaskId): Effect<Task, InvalidTokenError | ScriptNotFoundError>
   getAllTasks(token: Token): Effect<Iterable<Task>, InvalidTokenError>
   createTask(token: Token, task: TaskBuilder): Effect<TaskId, InvalidTokenError | TaskNameAlreadyInUse | InvalidTaskError>

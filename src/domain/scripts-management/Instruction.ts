@@ -4,6 +4,9 @@ import { TaskId } from "./Script.js"
 import { Type } from "../../ports/devices-management/Types.js"
 import { Effect } from "effect/Effect"
 import { ScriptError } from "../../ports/scripts-management/Errors.js"
+import { NotificationsService } from "../../ports/notifications-management/NotificationsService.js"
+import { ScriptsService } from "../../ports/scripts-management/ScriptsService.js"
+import { DevicesService } from "../../ports/devices-management/DevicesService.js"
 
 export interface Instruction {
   execute(env: ExecutionEnvironment): Effect<ExecutionEnvironment, ScriptError>
@@ -11,7 +14,8 @@ export interface Instruction {
 
 export interface SendNotificationInstruction extends Instruction {
   email: Email
-  message: string
+  message: string,
+  notificationsService: NotificationsService
 }
 
 export interface WaitInstruction extends Instruction {
@@ -19,13 +23,15 @@ export interface WaitInstruction extends Instruction {
 }
 
 export interface StartTaskInstruction extends Instruction {
-  taskId: TaskId
+  taskId: TaskId,
+  scriptsService: ScriptsService
 }
 
 export interface DeviceActionInstruction extends Instruction {
   deviceId: DeviceId
   deviceActionId: DeviceActionId
-  input: unknown
+  input: unknown,
+  devicesService: DevicesService
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -40,7 +46,8 @@ export interface CreateConstantInstruction<T> extends ConstantInstruction<T> {
 
 export interface CreateDevicePropertyConstantInstruction<T> extends ConstantInstruction<T> {
   deviceId: DeviceId
-  devicePropertyId: DevicePropertyId
+  devicePropertyId: DevicePropertyId,
+  devicesService: DevicesService
 }
 
 export interface IfInstruction extends Instruction {
