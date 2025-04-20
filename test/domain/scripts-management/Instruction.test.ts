@@ -6,7 +6,7 @@ import { NumberGOperator, NumberLEOperator } from "../../../src/domain/scripts-m
 import { TaskId } from "../../../src/domain/scripts-management/Script.js"
 import { Email } from "../../../src/domain/users-management/User.js"
 import { Type } from "../../../src/ports/devices-management/Types.js"
-import { DevicesServiceMock, NotificationsServiceMock, ScriptsServiceMock } from "./mocks.test.js"
+import { DevicesServiceMock, NotificationsServiceMock, ScriptsServiceMock } from "./mocks.js"
 
 test("An execution environment can be created", () => {
   const env = ExecutionEnvironment()
@@ -178,7 +178,6 @@ test("An else instruction can be created", async () => {
   const falseElseIfInstruction = ElseInstruction(thenInstructions, elseInstructions, negatedCondition)
 
   //ACT
-  console.log("START")
   const stringInstruction1 = (await Effect.runPromise(elseIfInstruction.execute(env))).constants.get(thenInstruction)
   const stringInstruction2 = (await Effect.runPromise(falseElseIfInstruction.execute(env))).constants.get(elseInstruction)
 
@@ -190,4 +189,11 @@ test("An else instruction can be created", async () => {
   expect(stringInstruction2).toBeDefined()
   expect((await Effect.runPromise(elseInstruction.execute(env)))
     .constants.get(elseInstruction)).toStrictEqual(stringInstruction2)
+})
+
+test("A wait instruction should stop the task for a given period of time", async () => {
+  const instruction = WaitInstruction(1)
+  const start = Date.now()
+  await Effect.runPromise(instruction.execute(ExecutionEnvironment()))
+  expect(Date.now()).toBeGreaterThan(start + 0.999 * 1000)
 })
