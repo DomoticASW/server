@@ -4,12 +4,13 @@ import { DeviceActionId, DeviceId, DevicePropertyId } from "../devices-managemen
 import { Email } from "../users-management/User.js";
 import { Condition, ConstantValue, CreateConstantInstruction, CreateDevicePropertyConstantInstruction, DeviceActionInstruction, ElseInstruction, ExecutionEnvironmentFromConstants, IfInstruction, Instruction, SendNotificationInstruction, StartTaskInstruction, WaitInstruction } from "./Instruction.js";
 import { TaskId } from "./Script.js";
-import { andThen, runPromise, sleep, succeed, tryPromise } from "effect/Effect";
+import { andThen, map, mapError, runPromise, sleep, succeed, tryPromise } from "effect/Effect";
 import { orDie } from "effect/Effect";
 import { ScriptsService } from "../../ports/scripts-management/ScriptsService.js";
 import { NotificationsService } from "../../ports/notifications-management/NotificationsService.js";
 import { DevicesService } from "../../ports/devices-management/DevicesService.js";
 import { millis } from "effect/Duration";
+import { ScriptError } from "../../ports/scripts-management/Errors.js";
 
 export function SendNotificationInstruction(email: Email, message: string, notificationsService: NotificationsService): SendNotificationInstruction {
   return {
@@ -17,10 +18,10 @@ export function SendNotificationInstruction(email: Email, message: string, notif
     message: message,
     notificationsService: notificationsService,
     execute(env) {
-      //TODO: Send the notification via the notification service
       return pipe(
-        tryPromise(async () => env),
-        orDie
+        notificationsService.sendNotification(email, message),
+        map(() => env),
+        mapError(error => ScriptError(error.message))
       )
     },
   }
@@ -45,10 +46,7 @@ export function StartTaskInstruction(taskId: TaskId, scriptsService: ScriptsServ
     scriptsService: scriptsService,
     execute(env) {
       //TODO: Execute the task, need of the scripts service to be implemented
-      return pipe(
-        tryPromise(async () => env),
-        orDie
-      )
+      return succeed(env)
     },
   }
 }
@@ -61,10 +59,7 @@ export function DeviceActionInstruction(deviceId: DeviceId, deviceActionId: Devi
     devicesService: devicesService,
     execute(env) {
       //TODO: Execute the action on the device via the devices service
-      return pipe(
-        tryPromise(async () => env),
-        orDie
-      )
+      return succeed(env)
     },
   }
 }
@@ -96,10 +91,7 @@ export function CreateDevicePropertyConstantInstruction<T>(name: string, type: T
     devicesService: devicesService,
     execute(env) {
       //TODO: Get the value of the property from the device via the device service and add it to the env constants
-      return pipe(
-        tryPromise(async () => env),
-        orDie
-      )
+      return succeed(env)
     }
   }
 }

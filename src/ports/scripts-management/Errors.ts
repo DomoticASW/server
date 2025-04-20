@@ -8,3 +8,7 @@ export type InvalidTaskError = Brand<Error, "InvalidTaskError">
 export type AutomationNameAlreadyInUse = Brand<Error, "AutomationNameAlreadyInUse">
 export type InvalidAutomationError = Brand<Error, "InvalidAutomationError">
 export type ScriptError = Brand<Error, "ScriptError">
+
+export function ScriptError(cause?: string): ScriptError {
+  return { message: "There was an error in the script execution", cause: cause, __brand: "ScriptError" }
+}
