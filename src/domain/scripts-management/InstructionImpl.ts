@@ -29,9 +29,11 @@ export function WaitInstruction(seconds: number): WaitInstruction {
   return {
     seconds: seconds,
     execute(env) {
-      //TODO: Wait the seconds to procede
       return pipe(
-        tryPromise(async () => env),
+        tryPromise(async () => {
+          await new Promise(resolve => setTimeout(resolve, seconds * 1000));
+          return env
+        }),
         orDie
       )
     },
