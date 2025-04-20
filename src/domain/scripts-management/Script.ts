@@ -1,5 +1,7 @@
+import { Effect } from "effect/Effect"
+import { ScriptError } from "../../ports/scripts-management/Errors.js"
 import { Brand } from "../../utils/Brand.js"
-import { Instruction } from "./Instruction.js"
+import { ExecutionEnvironment, Instruction } from "./Instruction.js"
 import { Trigger } from "./Trigger.js"
 
 export interface Script<Id extends ScriptId> {
@@ -8,7 +10,7 @@ export interface Script<Id extends ScriptId> {
 
   instructions: Array<Instruction>
 
-  execute(): void
+  execute(): Effect<ExecutionEnvironment, ScriptError>
 }
 
 export type Task = Script<TaskId>
@@ -26,18 +28,17 @@ export type AutomationId = Brand<string, "AutomationId">
 export function TaskId(id: string): TaskId { return id as TaskId }
 export function AutomationId(id: string): AutomationId { return id as AutomationId }
 
-export function Task(id: TaskId, name: string, instructions: Array<Instruction>): Task {
-  return {
-    id: id,
-    name: name,
-    instructions: instructions,
-    execute() {
-      // How can this be tested without a spy?
-      // let env = ExecutionEnvironment()
+// export function Task(id: TaskId, name: string, instructions: Array<Instruction>): Task {
+//   return {
+//     id: id,
+//     name: name,
+//     instructions: instructions,
+//     execute() {
+//       // let env = ExecutionEnvironment()
 
-      // this.instructions.forEach(instruction =>
-      //   env = instruction.execute(env)
-      // )
-    },
-  }
-}
+//       // this.instructions.forEach(instruction =>
+//       //   env = instruction.execute(env)
+//       // )
+//     },
+//   }
+// }

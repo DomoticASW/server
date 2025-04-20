@@ -2,9 +2,11 @@ import { DeviceActionId, DeviceId, DevicePropertyId } from "../devices-managemen
 import { Email } from "../users-management/User.js"
 import { TaskId } from "./Script.js"
 import { Type } from "../../ports/devices-management/Types.js"
+import { Effect } from "effect/Effect"
+import { ScriptError } from "../../ports/scripts-management/Errors.js"
 
 export interface Instruction {
-  execute(env: ExecutionEnvironment): ExecutionEnvironment
+  execute(env: ExecutionEnvironment): Effect<ExecutionEnvironment, ScriptError>
 }
 
 export interface SendNotificationInstruction extends Instruction {

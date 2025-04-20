@@ -1,3 +1,4 @@
+import { Effect } from "effect"
 import { DeviceActionId, DeviceId, DevicePropertyId } from "../../../src/domain/devices-management/Device.js"
 import { Condition, ConstantValue, ExecutionEnvironment, ExecutionEnvironmentFromConstants } from "../../../src/domain/scripts-management/Instruction.js"
 import { CreateConstantInstruction, CreateDevicePropertyConstantInstruction, DeviceActionInstruction, ElseInstruction, IfInstruction, SendNotificationInstruction, StartTaskInstruction, WaitInstruction } from "../../../src/domain/scripts-management/InstructionImpl.js"
@@ -53,13 +54,14 @@ test("A create constant instruction can be created", () => {
   expect(instruction.value).toBe(10);
 })
 
-test("A create constant instruction add a value to the env when executed", () => {
+test("A create constant instruction add a value to the env when executed", async () => {
   const instruction = CreateConstantInstruction("constantName", Type.IntType, 10)
   const env = ExecutionEnvironment()
-  expect(instruction.execute(env).constants.size).toBe(1)
+  const result = await Effect.runPromise(instruction.execute(env))
+  expect(result.constants.size).toBe(1)
   expect(env.constants.size).toBe(0)
 
-  const constant = instruction.execute(env).constants.get(instruction);
+  const constant = result.constants.get(instruction);
   expect(constant).toBeDefined();
   expect(constant?.value).toBe(10);
 })
@@ -72,31 +74,39 @@ test("A create device property constant instruction can be created", () => {
   expect(instruction.devicePropertyId).toBe("devicePropertyId")
 })
 
-test("A condition can be created", () => {
+test("A condition can be created", async () => {
   const instruction1 = CreateConstantInstruction("constantName1", Type.IntType, 15)
   const instruction2 = CreateConstantInstruction("constantName2", Type.IntType, 10)
   const condition = Condition(instruction1, instruction2, NumberGOperator())
   const condition2 = Condition(instruction1, instruction2, NumberLEOperator())
 
   const env = ExecutionEnvironment()
-  const newEnv = instruction2.execute(instruction1.execute(env))
+  const newEnv = await Effect.runPromise(
+    instruction2.execute(
+      await Effect.runPromise(instruction1.execute(env))
+    )
+  )
   expect(condition.evaluate(newEnv)).toBe(true)
   expect(condition2.evaluate(newEnv)).toBe(false)
 })
 
-test("A condition can be created with a negate bool", () => {
+test("A condition can be created with a negate bool", async () => {
   const instruction1 = CreateConstantInstruction("constantName1", Type.IntType, 15)
   const instruction2 = CreateConstantInstruction("constantName2", Type.IntType, 10)
   const condition = Condition(instruction1, instruction2, NumberGOperator(), true)
   const condition2 = Condition(instruction1, instruction2, NumberLEOperator(), true)
 
   const env = ExecutionEnvironment()
-  const newEnv = instruction2.execute(instruction1.execute(env))
+  const newEnv = await Effect.runPromise(
+    instruction2.execute(
+      await Effect.runPromise(instruction1.execute(env))
+    )
+  )
   expect(condition.evaluate(newEnv)).toBe(false)
   expect(condition2.evaluate(newEnv)).toBe(true)
 })
 
-test("An if instruction can be created", () => {
+test("An if instruction can be created", async () => {
   //SETUP instructions, conditions and environment
   const left = CreateConstantInstruction("constantName1", Type.IntType, 15)
   const right = CreateConstantInstruction("constantName2", Type.IntType, 10)
@@ -112,29 +122,37 @@ test("An if instruction can be created", () => {
   const negatedCondition = Condition(left, right, NumberGOperator(), true)
   
   const setupEnv = ExecutionEnvironment()
-  const env = right.execute(left.execute(setupEnv))
+  const env = await Effect.runPromise(
+    right.execute(
+      await Effect.runPromise(left.execute(setupEnv))
+    )
+  )
   
   const ifInstruction = IfInstruction(thenInstructions, condition)
   const falseIfInstruction = IfInstruction(thenInstructions, negatedCondition)
   
   //ACT
-  const stringInstruction1 = ifInstruction.execute(env).constants.get(thenInstruction1)
-  const stringInstruction2 = ifInstruction.execute(env).constants.get(thenInstruction2)
-  const undefinedInstruction1 = falseIfInstruction.execute(env).constants.get(thenInstruction1)
-  const undefinedInstruction2 = falseIfInstruction.execute(env).constants.get(thenInstruction1)
+  const ifResult = await Effect.runPromise(ifInstruction.execute(env))
+  const falseIfResult = await Effect.runPromise(falseIfInstruction.execute(env))
+  const stringInstruction1 = ifResult.constants.get(thenInstruction1)
+  const stringInstruction2 = ifResult.constants.get(thenInstruction2)
+  const undefinedInstruction1 = falseIfResult.constants.get(thenInstruction1)
+  const undefinedInstruction2 = falseIfResult.constants.get(thenInstruction1)
 
   //ASSERT
   expect(stringInstruction1).toBeDefined()
-  expect(thenInstruction1.execute(env).constants.get(thenInstruction1)).toStrictEqual(stringInstruction1)
+  expect((await Effect.runPromise(thenInstruction1.execute(env)))
+    .constants.get(thenInstruction1)).toStrictEqual(stringInstruction1)
 
   expect(stringInstruction2).toBeDefined()
-  expect(thenInstruction2.execute(env).constants.get(thenInstruction2)).toStrictEqual(stringInstruction2)
+  expect((await Effect.runPromise(thenInstruction2.execute(env)))
+    .constants.get(thenInstruction2)).toStrictEqual(stringInstruction2)
 
   expect(undefinedInstruction1).not.toBeDefined()
   expect(undefinedInstruction2).not.toBeDefined()
 })
 
-test("An else instruction can be created", () => {
+test("An else instruction can be created", async () => {
   //SETUP instructions, conditions and environment
   const left = CreateConstantInstruction("constantName1", Type.IntType, 15)
   const right = CreateConstantInstruction("constantName2", Type.IntType, 10)
@@ -153,19 +171,22 @@ test("An else instruction can be created", () => {
   const negatedCondition = Condition(left, right, NumberGOperator(), true)
   
   const setupEnv = ExecutionEnvironment()
-  const env = right.execute(left.execute(setupEnv))
+  const env = await Effect.runPromise(right.execute(await Effect.runPromise(left.execute(setupEnv))))
   
   const elseIfInstruction = ElseInstruction(thenInstructions, elseInstructions, condition)
   const falseElseIfInstruction = ElseInstruction(thenInstructions, elseInstructions, negatedCondition)
 
   //ACT
-  const stringInstruction1 = elseIfInstruction.execute(env).constants.get(thenInstruction)
-  const stringInstruction2 = falseElseIfInstruction.execute(env).constants.get(elseInstruction)
+  console.log("START")
+  const stringInstruction1 = (await Effect.runPromise(elseIfInstruction.execute(env))).constants.get(thenInstruction)
+  const stringInstruction2 = (await Effect.runPromise(falseElseIfInstruction.execute(env))).constants.get(elseInstruction)
 
   //ASSERT
   expect(stringInstruction1).toBeDefined()
-  expect(thenInstruction.execute(env).constants.get(thenInstruction)).toStrictEqual(stringInstruction1)
+  expect((await Effect.runPromise(thenInstruction.execute(env)))
+    .constants.get(thenInstruction)).toStrictEqual(stringInstruction1)
 
   expect(stringInstruction2).toBeDefined()
-  expect(elseInstruction.execute(env).constants.get(elseInstruction)).toStrictEqual(stringInstruction2)
+  expect((await Effect.runPromise(elseInstruction.execute(env)))
+    .constants.get(elseInstruction)).toStrictEqual(stringInstruction2)
 })
