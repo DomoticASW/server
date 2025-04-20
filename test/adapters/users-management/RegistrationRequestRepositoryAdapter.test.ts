@@ -1,7 +1,7 @@
 import mongoose from "mongoose"
 import { RegistrationRequestRepository } from "../../../src/ports/users-management/RegistrationRequestRepository.js"
 import { RegistrationRequest } from "../../../src/domain/users-management/RegistrationRequest.js"
-import { RegistartionRequestRepositoryAdapter } from "../../../src/adapters/users-management/RegistrationRequestRepositoryAdapter.js"
+import { RegistrationRequestRepositoryAdapter } from "../../../src/adapters/users-management/RegistrationRequestRepositoryAdapter.js"
 import { Email, Nickname, PasswordHash } from "../../../src/domain/users-management/User.js"
 import { Effect } from "effect"
 
@@ -12,7 +12,7 @@ let registrationRequest: RegistrationRequest
 
 beforeAll(async () => {
     dbConnection = await mongoose.createConnection(`mongodb://localhost:27018/${dbName}`).asPromise();
-    repo = new RegistartionRequestRepositoryAdapter(dbConnection);
+    repo = new RegistrationRequestRepositoryAdapter(dbConnection);
     registrationRequest = RegistrationRequest(Nickname("Ciccio"), Email("ciao@gmail.com"), PasswordHash("passwordHash"));
 });
 
@@ -20,7 +20,7 @@ beforeEach(async () => {
     const RR = await dbConnection.listCollections()
     await Promise.all(RR.map(c => dbConnection.dropCollection(c.name)))
     
-    repo = new RegistartionRequestRepositoryAdapter(dbConnection);
+    repo = new RegistrationRequestRepositoryAdapter(dbConnection);
 });
 
 test("The repository is initially empty", async () => {
