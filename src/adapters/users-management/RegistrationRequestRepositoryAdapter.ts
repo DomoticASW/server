@@ -12,7 +12,7 @@ export interface RegistrationRequestSchema {
     passwordHash: string
 }
 
-export class RegistartionRequestRepositoryAdapter implements RegistrationRequestRepository {
+export class RegistrationRequestRepositoryAdapter implements RegistrationRequestRepository {
     
     private registrationRequestSchema = new mongoose.Schema<RegistrationRequestSchema>({
         nickname: { type: String, required: true },
