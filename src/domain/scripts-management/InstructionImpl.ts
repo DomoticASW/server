@@ -4,11 +4,12 @@ import { DeviceActionId, DeviceId, DevicePropertyId } from "../devices-managemen
 import { Email } from "../users-management/User.js";
 import { Condition, ConstantValue, CreateConstantInstruction, CreateDevicePropertyConstantInstruction, DeviceActionInstruction, ElseInstruction, ExecutionEnvironmentFromConstants, IfInstruction, Instruction, SendNotificationInstruction, StartTaskInstruction, WaitInstruction } from "./Instruction.js";
 import { TaskId } from "./Script.js";
-import { runPromise, tryPromise } from "effect/Effect";
+import { andThen, runPromise, sleep, succeed, tryPromise } from "effect/Effect";
 import { orDie } from "effect/Effect";
 import { ScriptsService } from "../../ports/scripts-management/ScriptsService.js";
 import { NotificationsService } from "../../ports/notifications-management/NotificationsService.js";
 import { DevicesService } from "../../ports/devices-management/DevicesService.js";
+import { millis } from "effect/Duration";
 
 export function SendNotificationInstruction(email: Email, message: string, notificationsService: NotificationsService): SendNotificationInstruction {
   return {
@@ -30,10 +31,8 @@ export function WaitInstruction(seconds: number): WaitInstruction {
     seconds: seconds,
     execute(env) {
       return pipe(
-        tryPromise(async () => {
-          await new Promise(resolve => setTimeout(resolve, seconds * 1000));
-          return env
-        }),
+        sleep(millis(seconds * 1000)),
+        andThen(() => succeed(env)),
         orDie
       )
     },
