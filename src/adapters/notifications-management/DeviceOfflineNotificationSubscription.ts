@@ -4,7 +4,7 @@ import { DeviceId } from "../../domain/devices-management/Device.js";
 import { DeviceOfflineNotificationSubscription } from "../../domain/notifications-management/DeviceOfflineNotificationSubscription.js";
 import { Email } from "../../domain/users-management/User.js";
 import { DeviceOfflineNotificationSubscriptionRepository } from "../../ports/notifications-management/DeviceOfflineNotificationSubscriptionRepository.js";
-import { DuplicateIdError, NotFoundError } from "../../ports/Repository.js";
+import { DuplicateIdError, NotFoundError } from "../../ports/users-management/Errors.js";
 import mongoose from "mongoose";
 import { pipe } from "effect";
 

@@ -4,7 +4,7 @@ import { flatMap, orDie, succeed, tryPromise } from "effect/Effect";
 import { RegistrationRequestRepository } from "../../../src/ports/users-management/RegistrationRequestRepository.js";
 import { Email, Nickname, PasswordHash } from "../../domain/users-management/User.js";
 import { RegistrationRequest } from "../../domain/users-management/RegistrationRequest.js";
-import { DuplicateIdError, NotFoundError } from "../../ports/Repository.js";
+import { DuplicateIdError, NotFoundError } from "../../ports/users-management/Errors.js";
 
 export interface RegistrationRequestSchema {
     nickname: string,
@@ -57,10 +57,10 @@ export class RegistartionRequestRepositoryAdapter implements RegistrationRequest
         }).pipe(orDie);
     }
     
-    remove(entity: RegistrationRequest): Effect.Effect<void, NotFoundError> {
+    remove(id: Email): Effect.Effect<void, NotFoundError> {
         return tryPromise({
             try: async () => {
-                const RR = await this.registrationRequest.findOneAndDelete(entity.email);
+                const RR = await this.registrationRequest.findOneAndDelete({ email: id });
                 if (!RR) {
                     throw NotFoundError();
                 }

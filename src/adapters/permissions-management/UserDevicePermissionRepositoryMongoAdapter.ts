@@ -2,8 +2,13 @@ import { Effect, pipe } from "effect";
 import { DeviceId } from "../../domain/devices-management/Device.js";
 import { UserDevicePermission } from "../../domain/permissions-management/UserDevicePermission.js";
 import { Email } from "../../domain/users-management/User.js";
+<<<<<<< HEAD:src/adapters/permissions-management/UserDevicePermissionRepositoryMongoAdapter.ts
 import { UserDevicePermissionRepository } from "../../ports/permissions-management/UserDevicePermissionRepository.js";
 import { DuplicateIdError, NotFoundError } from "../../ports/Repository.js";
+=======
+import { UserDevicePermissionRepository } from "../../ports/permissions/UserDevicePermissionRepository.js";
+import { DuplicateIdError, NotFoundError } from "../../ports/users-management/Errors.js";
+>>>>>>> 8773785 (fix: update error imports):src/adapters/permissions-management/UserDevicePermissionAdapter.ts
 import mongoose from "mongoose";
 import { flatMap, orDie, succeed, fail, tryPromise } from "effect/Effect";
 
