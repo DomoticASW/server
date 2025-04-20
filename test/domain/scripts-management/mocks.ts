@@ -12,20 +12,43 @@ import { ScriptsService } from "../../../src/ports/scripts-management/ScriptsSer
 import { TaskId, Task, AutomationId, Automation } from "../../../src/domain/scripts-management/Script.js";
 import { TaskBuilder } from "../../../src/domain/scripts-management/ScriptBuilder.js";
 import { ScriptNotFoundError, TaskNameAlreadyInUse, InvalidTaskError, AutomationNameAlreadyInUse, InvalidAutomationError } from "../../../src/ports/scripts-management/Errors.js";
+import { succeed, fail } from "effect/Exit";
 
-export function NotificationsServiceMock(): NotificationsService {
+export function UserNotFoundErrorMock(cause?: string): UserNotFoundError {
+  return { message: "The user has not been found", cause: cause, __brand: "UserNotFoundError" }
+}
+
+export interface Spy<T> {
+  call(): number
+  get(): T
+}
+
+export function Spy<T>(object: T): Spy<T> {
   return {
-    subscribeForDeviceOfflineNotifications: function (token: Token, deviceId: DeviceId): Effect<void, DeviceNotFoundError | InvalidTokenError> {
-      throw new Error("Function not implemented.");
-    },
-    unsubscribeForDeviceOfflineNotifications: function (token: Token, deviceId: DeviceId): Effect<void, DeviceNotFoundError | InvalidTokenError> {
-      throw new Error("Function not implemented.");
-    },
-    sendNotification: function (email: Email, message: string): Effect<void, UserNotFoundError> {
-      throw new Error("Function not implemented.");
-    },
-    deviceStatusChanged: function (deviceId: DeviceId, status: DeviceStatus): void {
-      throw new Error("Function not implemented.");
+    call: () => 0,
+    get: () => object
+  }
+}
+
+export function NotificationsServiceSpy(existingEmail: Email): Spy<NotificationsService> {
+  let call = 0
+  return {
+    call: () => call,
+    get: () => {
+      return {
+        subscribeForDeviceOfflineNotifications: function (token: Token, deviceId: DeviceId): Effect<void, DeviceNotFoundError | InvalidTokenError> {
+          return succeed(null)
+        },
+        unsubscribeForDeviceOfflineNotifications: function (token: Token, deviceId: DeviceId): Effect<void, DeviceNotFoundError | InvalidTokenError> {
+          return succeed(null)
+        },
+        sendNotification: function (email: Email, message: string): Effect<void, UserNotFoundError> {
+          call++
+          return email == existingEmail ? succeed(null) : fail(UserNotFoundErrorMock())
+        },
+        deviceStatusChanged: function (deviceId: DeviceId, status: DeviceStatus): void {
+        }
+      }
     }
   }
 }
@@ -45,7 +68,7 @@ export function ScriptsServiceMock(): ScriptsService {
       throw new Error("Function not implemented.");
     },
     executeTask: function (token: Token, taskId: TaskId): Effect<void, InvalidTokenError | ScriptNotFoundError | PermissionError> {
-      throw new Error("Function not implemented.");
+      return succeed(null)
     },
     findAutomation: function (token: Token, automationId: AutomationId): Effect<Automation, InvalidTokenError | ScriptNotFoundError> {
       throw new Error("Function not implemented.");
@@ -83,7 +106,7 @@ export function DevicesServiceMock(): DevicesService {
       throw new Error("Function not implemented.");
     },
     executeAction: function (token: Token, deviceId: DeviceId, actionId: DeviceActionId, input: unknown): Effect<void, InvalidInputError | DeviceActionError | DeviceActionNotFound | DeviceNotFoundError | InvalidTokenError | PermissionError> {
-      throw new Error("Function not implemented.");
+      return succeed(null)
     },
     executeAutomationAction: function (deviceId: DeviceId, actionId: DeviceActionId, input: unknown): Effect<void, InvalidInputError | DeviceActionError | DeviceActionNotFound | DeviceNotFoundError> {
       throw new Error("Function not implemented.");

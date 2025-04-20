@@ -1,4 +1,4 @@
-import { Effect } from "effect"
+import { Effect, pipe } from "effect"
 import { DeviceActionId, DeviceId, DevicePropertyId } from "../../../src/domain/devices-management/Device.js"
 import { Condition, ConstantValue, ExecutionEnvironment, ExecutionEnvironmentFromConstants } from "../../../src/domain/scripts-management/Instruction.js"
 import { CreateConstantInstruction, CreateDevicePropertyConstantInstruction, DeviceActionInstruction, ElseInstruction, IfInstruction, SendNotificationInstruction, StartTaskInstruction, WaitInstruction } from "../../../src/domain/scripts-management/InstructionImpl.js"
@@ -6,7 +6,8 @@ import { NumberGOperator, NumberLEOperator } from "../../../src/domain/scripts-m
 import { TaskId } from "../../../src/domain/scripts-management/Script.js"
 import { Email } from "../../../src/domain/users-management/User.js"
 import { Type } from "../../../src/ports/devices-management/Types.js"
-import { DevicesServiceMock, NotificationsServiceMock, ScriptsServiceMock } from "./mocks.js"
+import { DevicesServiceMock, NotificationsServiceSpy, ScriptsServiceMock, UserNotFoundErrorMock } from "./mocks.js"
+import { ScriptError } from "../../../src/ports/scripts-management/Errors.js"
 
 test("An execution environment can be created", () => {
   const env = ExecutionEnvironment()
@@ -26,7 +27,7 @@ test("A constant value can be created", () => {
 })
 
 test("A send notification instruction can be created", () => {
-  const instruction = SendNotificationInstruction(Email("email"), "this is a message", NotificationsServiceMock())
+  const instruction = SendNotificationInstruction(Email("email"), "this is a message", NotificationsServiceSpy(Email("email")).get())
   expect(instruction.email).toBe("email")
   expect(instruction.message).toBe("this is a message")
 })
@@ -196,4 +197,42 @@ test("A wait instruction should stop the task for a given period of time", async
   const start = Date.now()
   await Effect.runPromise(instruction.execute(ExecutionEnvironment()))
   expect(Date.now()).toBeGreaterThan(start + 0.999 * 1000)
+})
+
+test("A send notification instruction should use a notification service to send a notification", async () => {
+  const email = Email("email")
+  const service = NotificationsServiceSpy(email)
+  const instruction = SendNotificationInstruction(email, "this is a message", service.get())
+
+  expect(service.call()).toBe(0)
+  await Effect.runPromise(instruction.execute(ExecutionEnvironment()))
+
+  expect(service.call()).toBe(1)
+  await Effect.runPromise(instruction.execute(ExecutionEnvironment()))
+  expect(service.call()).toBe(2)
+})
+
+test("A script error can be created", () => {
+  const error: ScriptError = ScriptError("this is the cause")
+  expect(error.message).toBe("There was an error in the script execution")
+  expect(error.cause).toBe("this is the cause")
+  expect(error.__brand).toBe("ScriptError")
+})
+
+test("A send notification instruction should return an error if the user does not exists", async () => {
+  const email = Email("email")
+  const service = NotificationsServiceSpy(email)
+  const instruction = SendNotificationInstruction(Email("otherEmail"), "this is a message", service.get())
+
+  await pipe(
+    instruction.execute(ExecutionEnvironment()),
+    Effect.match({
+      onSuccess() {},
+      onFailure(err) {
+        expect(err.__brand).toBe("ScriptError")
+        expect(err.cause).toBe(UserNotFoundErrorMock().message)
+      }
+    }),
+    Effect.runPromise
+  )
 })
