@@ -18,3 +18,6 @@ export function InvalidTokenError(cause?: string): InvalidTokenError {
 export function UnauthorizedError(cause?: string): UnauthorizedError {
     return { message: "Unauthorized token", cause: cause, __brand: "UnauthorizedError" }
 }
+export function UserNotFoundError(cause?: string): UserNotFoundError {
+    return { message: "User not found", cause: cause, __brand: "UserNotFoundError" }
+}
