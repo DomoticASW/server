@@ -7,3 +7,4 @@ export type TaskNameAlreadyInUse = Brand<Error, "TaskNameAlreadyInUse">
 export type InvalidTaskError = Brand<Error, "InvalidTaskError">
 export type AutomationNameAlreadyInUse = Brand<Error, "AutomationNameAlreadyInUse">
 export type InvalidAutomationError = Brand<Error, "InvalidAutomationError">
+export type ScriptError = Brand<Error, "ScriptError">

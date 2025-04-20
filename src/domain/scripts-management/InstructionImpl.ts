@@ -1,8 +1,11 @@
+import { pipe } from "effect";
 import { Type } from "../../ports/devices-management/Types.js";
 import { DeviceActionId, DeviceId, DevicePropertyId } from "../devices-management/Device.js";
 import { Email } from "../users-management/User.js";
 import { Condition, ConstantValue, CreateConstantInstruction, CreateDevicePropertyConstantInstruction, DeviceActionInstruction, ElseInstruction, ExecutionEnvironmentFromConstants, IfInstruction, Instruction, SendNotificationInstruction, StartTaskInstruction, WaitInstruction } from "./Instruction.js";
 import { TaskId } from "./Script.js";
+import { runPromise, tryPromise } from "effect/Effect";
+import { orDie } from "effect/Effect";
 
 export function SendNotificationInstruction(email: Email, message: string): SendNotificationInstruction {
   return {
@@ -10,7 +13,10 @@ export function SendNotificationInstruction(email: Email, message: string): Send
     message: message,
     execute(env) {
       //TODO: Send the notification via the notification service
-      return env
+      return pipe(
+        tryPromise(async () => env),
+        orDie
+      )
     },
   }
 }
@@ -20,7 +26,10 @@ export function WaitInstruction(seconds: number): WaitInstruction {
     seconds: seconds,
     execute(env) {
       //TODO: Wait the seconds to procede
-      return env
+      return pipe(
+        tryPromise(async () => env),
+        orDie
+      )
     },
   }
 }
@@ -30,7 +39,10 @@ export function StartTaskInstruction(taskId: TaskId): StartTaskInstruction {
     taskId: taskId,
     execute(env) {
       //TODO: Execute the task, need of the scripts service to be implemented
-      return env
+      return pipe(
+        tryPromise(async () => env),
+        orDie
+      )
     },
   }
 }
@@ -42,7 +54,10 @@ export function DeviceActionInstruction(deviceId: DeviceId, deviceActionId: Devi
     input: input,
     execute(env) {
       //TODO: Execute the action on the device via the devices service
-      return env
+      return pipe(
+        tryPromise(async () => env),
+        orDie
+      )
     },
   }
 }
@@ -53,9 +68,14 @@ export function CreateConstantInstruction<T>(name: string, type: Type, value: T)
     type: type,
     value: value,
     execute(env) {
-      const newEnv = ExecutionEnvironmentFromConstants(env.constants)
-      newEnv.constants.set(this, ConstantValue(value))
-      return newEnv
+      return pipe(
+        tryPromise(async () => {
+          const newEnv = ExecutionEnvironmentFromConstants(env.constants)
+          newEnv.constants.set(this, ConstantValue(value))
+          return newEnv
+        }),
+        orDie
+      )
     }
   }
 }
@@ -68,7 +88,10 @@ export function CreateDevicePropertyConstantInstruction<T>(name: string, type: T
     devicePropertyId: devicePropertyId,
     execute(env) {
       //TODO: Get the value of the property from the device via the device service and add it to the env constants
-      return env
+      return pipe(
+        tryPromise(async () => env),
+        orDie
+      )
     }
   }
 }
@@ -78,15 +101,20 @@ export function IfInstruction(instructions: Array<Instruction>, condition: Condi
     then: instructions,
     condition: condition,
     execute(env) {
-      let newEnv = ExecutionEnvironmentFromConstants(env.constants)
+      return pipe(
+        tryPromise(async () => {
+          let newEnv = ExecutionEnvironmentFromConstants(env.constants)
 
-      if (condition.evaluate(newEnv)) {
-        this.then.forEach(instruction => {
-          newEnv = instruction.execute(newEnv)
-        });
-      }
+          if (condition.evaluate(newEnv)) {
+            for(const instruction of this.then) {
+              newEnv = await runPromise(instruction.execute(newEnv))
+            }
+          }
 
-      return newEnv
+          return newEnv
+        }),
+        orDie
+      )
     },
   }
 }
@@ -97,17 +125,19 @@ export function ElseInstruction(thenInstructions: Array<Instruction>, elseInstru
     else: elseInstructions,
     condition: condition,
     execute(env) {
-      let newEnv = ExecutionEnvironmentFromConstants(env.constants)
+      return pipe(
+        tryPromise(async () => {
+          let newEnv = ExecutionEnvironmentFromConstants(env.constants)
+          const instructions = condition.evaluate(newEnv) ? this.then : this.else
 
-      Array
-      .from(condition.evaluate(newEnv) ? this.then : this.else)
-      .forEach(
-        instruction => {
-          newEnv = instruction.execute(newEnv)
-        }
+          for(const instruction of instructions) {
+            newEnv = await runPromise(instruction.execute(newEnv))
+          }
+
+          return newEnv
+        }),
+        orDie
       )
-
-      return newEnv
     },
   }
 }
