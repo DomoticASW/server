@@ -1,4 +1,4 @@
-import { DuplicateIdError, NotFoundError } from "../../src/ports/Repository.js"
+import { DuplicateIdError, NotFoundError } from "../../src/ports/users-management/Errors.js"
 
 test("DuplicateIdError cause add correcly", () => {
   const cause = "Device id already taken"

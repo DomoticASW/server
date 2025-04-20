@@ -1,7 +1,8 @@
 import mongoose from "mongoose";
 import { Effect, pipe } from "effect";
 import { isMongoServerError, MongoDBErrorCodes } from "../utils/MongoDBErrorCodes.js";
-import { Repository, DuplicateIdError, NotFoundError } from "../ports/Repository.js";
+import { DuplicateIdError, NotFoundError } from "../ports/users-management/Errors.js";
+import { Repository } from "../ports/Repository.js";
 
 export abstract class BaseRepositoryMongoAdapter<Id, Entity, SchemaId, Schema extends { _id: SchemaId }> implements Repository<Id, Entity> {
     private connection: mongoose.Connection;
