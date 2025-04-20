@@ -68,10 +68,10 @@ export class UserRepositoryAdapter implements UserRepository {
         }).pipe(orDie);
     }
 
-    remove(entity: User): Effect.Effect<void, NotFoundError> {
+    remove(id: Email): Effect.Effect<void, NotFoundError> {
         return tryPromise({
             try: async () => {
-                const user = await this.userRequest.findOneAndDelete(entity.email);
+                const user = await this.userRequest.findOneAndDelete({ email: id });
                 if (!user) {
                     throw NotFoundError();
                 }
