@@ -6,7 +6,7 @@ import { NumberGOperator, NumberLEOperator } from "../../../src/domain/scripts-m
 import { TaskId } from "../../../src/domain/scripts-management/Script.js"
 import { Email } from "../../../src/domain/users-management/User.js"
 import { Type } from "../../../src/ports/devices-management/Types.js"
-import { DevicesServiceMock, NotificationsServiceSpy, ScriptsServiceSpy, SpyTaskMock, UserNotFoundErrorMock } from "./mocks.js"
+import { DevicesServiceSpy, NotificationsServiceSpy, ScriptsServiceSpy, DeviceMock, SpyTaskMock, UserNotFoundErrorMock } from "./mocks.js"
 import { ScriptError, ScriptNotFoundError } from "../../../src/ports/scripts-management/Errors.js"
 
 test("An execution environment can be created", () => {
@@ -43,7 +43,7 @@ test("A start task instruction can be created", () => {
 })
 
 test("A device action instruction can be created", () => {
-  const instruction = DeviceActionInstruction(DeviceId("deviceId"), DeviceActionId("deviceActionId"), 10, DevicesServiceMock())
+  const instruction = DeviceActionInstruction(DeviceId("deviceId"), DeviceActionId("deviceActionId"), 10, DevicesServiceSpy().get())
   expect(instruction.deviceId).toBe("deviceId")
   expect(instruction.deviceActionId).toBe("deviceActionId")
   expect(instruction.input).toBe(10)
@@ -69,7 +69,7 @@ test("A create constant instruction add a value to the env when executed", async
 })
 
 test("A create device property constant instruction can be created", () => {
-  const instruction = CreateDevicePropertyConstantInstruction("constantName", Type.IntType, DeviceId("deviceId"), DevicePropertyId("devicePropertyId"), DevicesServiceMock())
+  const instruction = CreateDevicePropertyConstantInstruction("constantName", Type.IntType, DeviceId("deviceId"), DevicePropertyId("devicePropertyId"), DevicesServiceSpy().get())
   expect(instruction.name).toBe("constantName")
   expect(instruction.type).toBe(Type.IntType)
   expect(instruction.deviceId).toBe("deviceId")
@@ -272,4 +272,13 @@ test("A start task instruction should return an error if the task does not exist
     }),
     Effect.runPromise
   )
+})
+
+test("A DeviceActionInstruction should execute an action on a device with a given input", async () => {
+  const device = DeviceMock()
+  const devicesService = DevicesServiceSpy(device)
+  const instruction = DeviceActionInstruction(device.id, device.actions.at(0)!.id, 10, devicesService.get())
+
+  await Effect.runPromise(instruction.execute(ExecutionEnvironment()))
+  expect(devicesService.call()).toBe(1)
 })
