@@ -35,6 +35,10 @@ export class UserRepositoryAdapter implements UserRepository {
     add(entity: User): Effect.Effect<void, DuplicateIdError> {
         return tryPromise({
             try: async () => {
+                const existing = await this.userRequest.findOne({ email: entity.email });
+                if (existing) {
+                    throw DuplicateIdError();
+                }
                 const user = new this.userRequest({
                     nickname: entity.nickname,
                     email: entity.email,
