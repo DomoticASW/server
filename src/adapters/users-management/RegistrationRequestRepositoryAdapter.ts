@@ -34,6 +34,10 @@ export class RegistrationRequestRepositoryAdapter implements RegistrationRequest
     add(entity: RegistrationRequest): Effect.Effect<void, DuplicateIdError> {
         return tryPromise({
             try: async () => {
+                const existing = await this.registrationRequest.findOne({ email: entity.email });
+                if (existing) {
+                    throw DuplicateIdError();
+                }
                 const RR = new this.registrationRequest({ nickname: entity.nickname, email: entity.email, passwordHash: entity.passwordHash });
                 await RR.save();
             },
