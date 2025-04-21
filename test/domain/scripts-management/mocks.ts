@@ -56,7 +56,7 @@ export function NotificationsServiceSpy(existingEmail: Email): Spy<Notifications
   }
 }
 
-export function SpyTaskMock(): Spy<Task> {
+export function SpyTaskMock(hasToFail: boolean = false): Spy<Task> {
   let call = 0
   return {
     call: () => call,
@@ -67,7 +67,7 @@ export function SpyTaskMock(): Spy<Task> {
         instructions: [],
         execute: function (): Effect<ExecutionEnvironment, ScriptError> {
           call++
-          return succeed(ExecutionEnvironment())
+          return hasToFail ? fail(ScriptError()) : succeed(ExecutionEnvironment())
         }
       }
     }
@@ -85,7 +85,7 @@ export function ScriptsServiceSpy(task: Task): Spy<ScriptsService> {
         },
         findTaskUnsafe: function (taskId: TaskId): Effect<Task, ScriptNotFoundError> {
           call++
-          return succeed(task)
+          return taskId == task.id ? succeed(task) : fail(ScriptNotFoundError())
         },
         getAllTasks: function (token: Token): Effect<Iterable<Task>, InvalidTokenError> {
           throw new Error("Function not implemented.");

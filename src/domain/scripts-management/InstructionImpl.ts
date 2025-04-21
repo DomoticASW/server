@@ -19,7 +19,7 @@ export function SendNotificationInstruction(email: Email, message: string, notif
       return pipe(
         notificationsService.sendNotification(email, message),
         map(() => env),
-        mapError(error => ScriptError(error.message))
+        mapError(error => ScriptError(error.message + ", " + error.cause))
       )
     },
   }
@@ -51,7 +51,7 @@ export function StartTaskInstruction(taskId: TaskId, scriptsService: ScriptsServ
             andThen(() => succeed(env))
           )
         ),
-        orDie
+        mapError(error => ScriptError(error.message + ", " + error.cause))
       )
     },
   }

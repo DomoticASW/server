@@ -41,7 +41,7 @@ test("Cannot add to the repository two notification with same id", async () => {
   await pipe(
       repo.add(notification),
       Effect.match({
-          onSuccess() { },
+          onSuccess() { throw Error("Should not be here") },
           onFailure(err) { expect(err.__brand).toBe("DuplicateIdError") }
       }),
       Effect.runPromise
@@ -63,7 +63,7 @@ test("If a notification does not exists on the db sends an error when trying to 
   await pipe(
     repo.find(notification),
     Effect.match({
-        onSuccess() { },
+        onSuccess() { throw Error("Should not be here") },
         onFailure(err) { expect(err.__brand).toBe("NotFoundError") }
     }),
     Effect.runPromise
@@ -82,7 +82,7 @@ test("Update returns an error if the entity is not present", async () => {
   await pipe(
     repo.update(notification),
     Effect.match({
-      onSuccess() {},
+      onSuccess() { throw Error("Should not be here") },
       onFailure(error) {
         expect(error.__brand).toBe("NotFoundError");
       },
@@ -103,7 +103,7 @@ test("Trying to remove a notification from the repo if not present returns an er
   await pipe(
     repo.remove(notification),
     Effect.match({
-      onSuccess() {},
+      onSuccess() { throw Error("Should not be here") },
       onFailure(error) {
         expect(error.__brand).toBe("NotFoundError");
       },
