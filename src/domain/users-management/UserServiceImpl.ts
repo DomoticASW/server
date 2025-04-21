@@ -1,14 +1,14 @@
-import { Effect } from "effect/Effect";
-import jwt from 'jsonwebtoken';
-import { User, Nickname, Email, PasswordHash, Role } from "./User.js";
-import { Effect as Eff } from "effect";
 import { pipe } from "effect";
-import { RegistrationRequest } from "./RegistrationRequest.js";
-import { EmailAlreadyInUseError, UserNotFoundError, TokenError, InvalidTokenError, InvalidCredentialsError, InvalidTokenFormatError, UnauthorizedError, } from "../../ports/users-management/Errors.js";
+import jwt from 'jsonwebtoken';
 import { Token } from "./Token.js";
+import { Effect } from "effect/Effect";
+import { Effect as Eff } from "effect";
+import { RegistrationRequest } from "./RegistrationRequest.js";
+import { User, Nickname, Email, PasswordHash, Role } from "./User.js";
 import { UsersService } from "../../ports/users-management/UserService.js";
 import { UserRepositoryAdapter } from "../../adapters/users-management/UserRepositoryAdapter.js";
 import { RegistrationRequestRepositoryAdapter } from "../../adapters/users-management/RegistrationRequestRepositoryAdapter.js";
+import { EmailAlreadyInUseError, UserNotFoundError, TokenError, InvalidTokenError, InvalidCredentialsError, InvalidTokenFormatError, UnauthorizedError, } from "../../ports/users-management/Errors.js";
 
 export class UsersServiceImpl implements UsersService {
     
@@ -74,9 +74,12 @@ export class UsersServiceImpl implements UsersService {
 
     removeUser(token: Token, email: Email): Effect<void, UserNotFoundError | TokenError> {
         return pipe(
-            Eff.if(token.role == Role.Admin, {
-                onTrue: () => this.verifyToken(token),
-                onFalse: () => Eff.fail(UnauthorizedError())
+            this.verifyToken(token),
+            Eff.flatMap(() => {
+                if (token.role == Role.Admin && token.userEmail == email) {
+                    return Eff.fail(UnauthorizedError())
+                }
+                return Eff.succeed(null)
             }),
             Eff.flatMap(() => this.userRepository.remove(email)),
             Eff.mapError(e => {
@@ -90,21 +93,19 @@ export class UsersServiceImpl implements UsersService {
         )
     }
 
-    // ??? email, emailAlreadyInUseError
     updateUserData(
         token: Token,
-        email: Email,
         nickname?: Nickname,
         password?: PasswordHash
-    ): Effect<void, UserNotFoundError | EmailAlreadyInUseError | TokenError> {
+    ): Effect<void, UserNotFoundError | TokenError> {
         return pipe(
             Eff.if(token.role == Role.Admin, {
                 onTrue: () => this.verifyToken(token),
                 onFalse: () => Eff.fail(UnauthorizedError())
             }),
-            Eff.flatMap(() => this.userRepository.find(email)),
+            Eff.flatMap(() => this.userRepository.find(token.userEmail)),
             Eff.flatMap((user) => {
-                const updatedUser = User(nickname ?? user.nickname, email, password ?? user.passwordHash, user.role);
+                const updatedUser = User(nickname ?? user.nickname, token.userEmail, password ?? user.passwordHash, user.role);
                 return this.userRepository.update(updatedUser)
             }),
             Eff.mapError(e => {
@@ -120,22 +121,15 @@ export class UsersServiceImpl implements UsersService {
     
     getAllUsers(token: Token): Effect<Iterable<User>, InvalidTokenError> {
         return pipe(
-            Eff.if(token.role == Role.Admin, {
-                onTrue: () => this.verifyToken(token),
-                onFalse: () => Eff.fail(UnauthorizedError())
-            }),
+            this.verifyToken(token),
             Eff.flatMap(() => this.userRepository.getAll()),
             Eff.mapError(() => InvalidTokenError())
         );
     }
 
-    // ??? find
     getUserData(token: Token): Effect<User, InvalidTokenError> {
         return pipe(
-            Eff.if(token.role == Role.Admin, {
-                onTrue: () => this.verifyToken(token),
-                onFalse: () => Eff.fail(UnauthorizedError())
-            }),
+            this.verifyToken(token),
             Eff.flatMap(() => this.userRepository.find(token.userEmail)),
             Eff.mapError(() => InvalidTokenError())
         );
