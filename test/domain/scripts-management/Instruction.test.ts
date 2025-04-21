@@ -8,6 +8,7 @@ import { Email } from "../../../src/domain/users-management/User.js"
 import { Type } from "../../../src/ports/devices-management/Types.js"
 import { DevicesServiceSpy, NotificationsServiceSpy, ScriptsServiceSpy, DeviceMock, SpyTaskMock, UserNotFoundErrorMock } from "./mocks.js"
 import { ScriptError, ScriptNotFoundError } from "../../../src/ports/scripts-management/Errors.js"
+import { DeviceNotFoundError } from "../../../src/ports/devices-management/Errors.js"
 
 test("An execution environment can be created", () => {
   const env = ExecutionEnvironment()
@@ -281,4 +282,22 @@ test("A DeviceActionInstruction should execute an action on a device with a give
 
   await Effect.runPromise(instruction.execute(ExecutionEnvironment()))
   expect(devicesService.call()).toBe(1)
+})
+
+test("A DeviceActionInstruction should return an error if the execution of the action gives an error", async () => {
+  const device = DeviceMock()
+  const devicesService = DevicesServiceSpy(device)
+  const instruction = DeviceActionInstruction(DeviceId("otherId"), device.actions.at(0)!.id, 10, devicesService.get())
+
+  await pipe(
+    instruction.execute(ExecutionEnvironment()),
+    Effect.match({
+      onSuccess() { throw Error("Should not be here") },
+      onFailure(err) {
+        expect(err.__brand).toBe("ScriptError")
+        expect(err.cause).toBe(DeviceNotFoundError().message + ", " + DeviceNotFoundError().cause)
+      }
+    }),
+    Effect.runPromise
+  )
 })

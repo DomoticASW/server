@@ -67,7 +67,7 @@ export function DeviceActionInstruction(deviceId: DeviceId, deviceActionId: Devi
       return pipe(
         devicesService.executeAutomationAction(deviceId, deviceActionId, input),
         map(() => env),
-        orDie
+        mapError(error => ScriptError(error.message + ", " + error.cause))
       )
     },
   }
