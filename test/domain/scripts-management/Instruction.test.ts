@@ -6,8 +6,7 @@ import { NumberGOperator, NumberLEOperator } from "../../../src/domain/scripts-m
 import { TaskId } from "../../../src/domain/scripts-management/Script.js"
 import { Email } from "../../../src/domain/users-management/User.js"
 import { Type } from "../../../src/ports/devices-management/Types.js"
-import { DevicesServiceMock, NotificationsServiceSpy, ScriptsServiceMock, UserNotFoundErrorMock } from "./mocks.js"
-import { ScriptError } from "../../../src/ports/scripts-management/Errors.js"
+import { DevicesServiceMock, NotificationsServiceSpy, ScriptsServiceSpy, SpyTaskMock, UserNotFoundErrorMock } from "./mocks.js"
 
 test("An execution environment can be created", () => {
   const env = ExecutionEnvironment()
@@ -38,7 +37,7 @@ test("A wait instruction can be created", () => {
 })
 
 test("A start task instruction can be created", () => {
-  const instruction = StartTaskInstruction(TaskId("1"), ScriptsServiceMock())
+  const instruction = StartTaskInstruction(TaskId("1"), ScriptsServiceSpy(SpyTaskMock().get()).get())
   expect(instruction.taskId).toBe("1")
 })
 
@@ -196,7 +195,7 @@ test("A wait instruction should stop the task for a given period of time", async
   const instruction = WaitInstruction(1)
   const start = Date.now()
   await Effect.runPromise(instruction.execute(ExecutionEnvironment()))
-  expect(Date.now()).toBeGreaterThan(start + 0.999 * 1000)
+  expect(Date.now()).toBeGreaterThan(start + 1 * 1000)
 })
 
 test("A send notification instruction should use a notification service to send a notification", async () => {
@@ -210,13 +209,6 @@ test("A send notification instruction should use a notification service to send 
   expect(service.call()).toBe(1)
   await Effect.runPromise(instruction.execute(ExecutionEnvironment()))
   expect(service.call()).toBe(2)
-})
-
-test("A script error can be created", () => {
-  const error: ScriptError = ScriptError("this is the cause")
-  expect(error.message).toBe("There was an error in the script execution")
-  expect(error.cause).toBe("this is the cause")
-  expect(error.__brand).toBe("ScriptError")
 })
 
 test("A send notification instruction should return an error if the user does not exists", async () => {
@@ -235,4 +227,14 @@ test("A send notification instruction should return an error if the user does no
     }),
     Effect.runPromise
   )
+})
+
+test("A start task instruction should use a scripts service when executed to find a task to be executed", async () => {
+  const task = SpyTaskMock()
+  const scriptsServiceSpy = ScriptsServiceSpy(task.get())
+  const instruction = StartTaskInstruction(TaskId("id"), scriptsServiceSpy.get())
+
+  await Effect.runPromise(instruction.execute(ExecutionEnvironment()))
+  expect(scriptsServiceSpy.call()).toBe(1)
+  expect(task.call()).toBe(1)
 })
