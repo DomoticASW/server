@@ -184,7 +184,7 @@ export function DevicesServiceSpy(device: Device = DeviceMock(), testingAction: 
           if (testingAction) {
             call++
           }
-          return succeed(null)
+          return deviceId == device.id ? succeed(null) : fail(DeviceNotFoundError())
         },
         updateDeviceProperty: function (deviceId: DeviceId, propertyId: DevicePropertyId, value: unknown): Effect<void, InvalidInputError | DeviceNotFoundError | DevicePropertyNotFound> {
           throw new Error("Function not implemented.");
