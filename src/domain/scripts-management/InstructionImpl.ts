@@ -64,8 +64,11 @@ export function DeviceActionInstruction(deviceId: DeviceId, deviceActionId: Devi
     input: input,
     devicesService: devicesService,
     execute(env) {
-      //TODO: Execute the action on the device via the devices service
-      return succeed(env)
+      return pipe(
+        devicesService.executeAutomationAction(deviceId, deviceActionId, input),
+        map(() => env),
+        orDie
+      )
     },
   }
 }
