@@ -1,5 +1,5 @@
 import mongoose from "mongoose"
-import { Effect } from "effect"
+import { Effect, pipe } from "effect"
 import { UserRepository } from "../../../src/ports/users-management/UserRepository.js"
 import { Email, Nickname, PasswordHash, Role, User } from "../../../src/domain/users-management/User.js"
 import { UserRepositoryAdapter } from "../../../src/adapters/users-management/UserRepositoryAdapter.js"
@@ -34,6 +34,12 @@ test("Try to add a User", async () => {
     expect(users).toContainEqual(user)
 });
 
+test("Try to add a User with the same email", async () => {
+    await Effect.runPromise(repo.add(user));
+    await expect(Effect.runPromise(repo.add(user)))
+      .rejects.toThrow("DuplicateIdError");
+});
+
 test("Try to find a User", async () => {
     await Effect.runPromise(repo.add(user))
     const result = await Effect.runPromise(repo.find(user.email))
@@ -57,8 +63,8 @@ test("Try to remove a user", async () => {
     await Effect.runPromise(repo.remove(user.email));
     const res2 = await Effect.runPromise(repo.getAll())
     expect(res2).toHaveLength(0)
-})
+});
 
 afterAll(async () => {
     await dbConnection.close()
-})
+});
