@@ -35,6 +35,12 @@ test("Try to add a RegistrationRequest", async () => {
     expect(RR).toContainEqual(registrationRequest);
 });
 
+test("Try to add a User with the same email", async () => {
+    await Effect.runPromise(repo.add(registrationRequest));
+    await expect(Effect.runPromise(repo.add(registrationRequest)))
+      .rejects.toThrow("DuplicateIdError");
+});
+
 test("Try to find a RegistrationRequest", async () => {
     await Effect.runPromise(repo.add(registrationRequest));
     const result = await Effect.runPromise(repo.find(registrationRequest.email));

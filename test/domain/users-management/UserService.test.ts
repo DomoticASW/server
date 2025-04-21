@@ -1,4 +1,4 @@
-import { Effect } from "effect"
+import { Effect, pipe } from "effect"
 import { UsersServiceImpl } from "../../../src/domain/users-management/UserServiceImpl.js";
 import { UserRepositoryAdapter } from "../../../src/adapters/users-management/UserRepositoryAdapter.js";
 import { RegistrationRequestRepositoryAdapter } from "../../../src/adapters/users-management/RegistrationRequestRepositoryAdapter.js"
@@ -6,6 +6,7 @@ import { Nickname, Email, PasswordHash, Role, User } from "../../../src/domain/u
 import { Token } from "../../../src/domain/users-management/Token.js";
 import mongoose from "mongoose";
 import jwt from "jsonwebtoken";
+import { EmailAlreadyInUseError } from "../../../src/ports/users-management/Errors.js";
 
 const dbName: string = "userServiceTests"
 let dbConnection: mongoose.Connection;
@@ -44,9 +45,14 @@ describe("UsersServiceImpl", () => {
     test("publishRegistrationRequest - should fail if email already in use", async () => {
         await Effect.runPromise(usersService.publishRegistrationRequest(testNickname, testEmail, testPassword));
         
-        await expect(
-            Effect.runPromise(usersService.publishRegistrationRequest(testNickname, testEmail, testPassword))
-        ).rejects.toThrow("EmailAlreadyInUseError");
+        await pipe(
+            usersService.publishRegistrationRequest(testNickname, testEmail, testPassword),
+            Effect.match({
+                onSuccess() { throw new Error("This operation should have failed") },
+                onFailure(error) { expect(error.__brand).toBe("EmailAlreadyInUseError") }
+            }),
+            Effect.runPromise
+        )
     });
 
     test("approveRegistrationRequest - should create user from registration request", async () => {
@@ -80,19 +86,26 @@ describe("UsersServiceImpl", () => {
         expect(users).toHaveLength(0);
     });
 
+    test("removeUser - should fail if admin tries to remove himself", async () => {
+        await Effect.runPromise(usersRepo.add(User(testNickname, testEmail, testPassword, Role.Admin)));
+        await expect(
+            Effect.runPromise(usersService.removeUser(adminToken, testEmail))
+        ).rejects.toThrow("UnauthorizedError");
+    });
+
     test("updateUserData - should update user information", async () => {
         const newNickname = Nickname("NewNickname");
         await Effect.runPromise(usersRepo.add(User(testNickname, testEmail, testPassword, Role.User)));
         
         await Effect.runPromise(
-            usersService.updateUserData(adminToken, testEmail, newNickname, undefined)
+            usersService.updateUserData(adminToken, newNickname, testPassword)
         );
         
         const updatedUser = await Effect.runPromise(usersRepo.find(testEmail));
         expect(updatedUser.nickname).toEqual(newNickname);
     });
 
-    test("getAllUsers - should return all users for admin", async () => {
+    test("getAllUsers - should return all users", async () => {
         await Effect.runPromise(usersRepo.add(User(testNickname, testEmail, testPassword, Role.User)));
         
         const users = await Effect.runPromise(usersService.getAllUsers(adminToken));
