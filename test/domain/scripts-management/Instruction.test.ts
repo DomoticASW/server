@@ -7,6 +7,7 @@ import { TaskId } from "../../../src/domain/scripts-management/Script.js"
 import { Email } from "../../../src/domain/users-management/User.js"
 import { Type } from "../../../src/ports/devices-management/Types.js"
 import { DevicesServiceMock, NotificationsServiceSpy, ScriptsServiceSpy, SpyTaskMock, UserNotFoundErrorMock } from "./mocks.js"
+import { ScriptError, ScriptNotFoundError } from "../../../src/ports/scripts-management/Errors.js"
 
 test("An execution environment can be created", () => {
   const env = ExecutionEnvironment()
@@ -219,10 +220,10 @@ test("A send notification instruction should return an error if the user does no
   await pipe(
     instruction.execute(ExecutionEnvironment()),
     Effect.match({
-      onSuccess() {},
+      onSuccess() { throw Error("Should not be here") },
       onFailure(err) {
         expect(err.__brand).toBe("ScriptError")
-        expect(err.cause).toBe(UserNotFoundErrorMock().message)
+        expect(err.cause).toBe(UserNotFoundErrorMock().message + ", " + UserNotFoundErrorMock().cause)
       }
     }),
     Effect.runPromise
@@ -232,9 +233,43 @@ test("A send notification instruction should return an error if the user does no
 test("A start task instruction should use a scripts service when executed to find a task to be executed", async () => {
   const task = SpyTaskMock()
   const scriptsServiceSpy = ScriptsServiceSpy(task.get())
-  const instruction = StartTaskInstruction(TaskId("id"), scriptsServiceSpy.get())
+  const instruction = StartTaskInstruction(task.get().id, scriptsServiceSpy.get())
 
   await Effect.runPromise(instruction.execute(ExecutionEnvironment()))
   expect(scriptsServiceSpy.call()).toBe(1)
   expect(task.call()).toBe(1)
+})
+
+test("A start task instruction should return an error if the task does not exists or if the task returns an error", async () => {
+  const task = SpyTaskMock().get()
+  const scriptsServiceSpy = ScriptsServiceSpy(task).get()
+  const instruction = StartTaskInstruction(TaskId("otherId"), scriptsServiceSpy)
+
+  const taskFailed = SpyTaskMock(true).get()
+  const scriptsServiceSpy2 = ScriptsServiceSpy(taskFailed).get()
+  const instruction2 = StartTaskInstruction(taskFailed.id, scriptsServiceSpy2)
+
+  await pipe(
+    instruction.execute(ExecutionEnvironment()),
+    Effect.match({
+      onSuccess() { throw Error("Should not be here") },
+      onFailure(err) {
+        expect(err.__brand).toBe("ScriptError")
+        expect(err.cause).toBe(ScriptNotFoundError().message + ", " + ScriptNotFoundError().cause)
+      }
+    }),
+    Effect.runPromise
+  )
+
+  await pipe(
+    instruction2.execute(ExecutionEnvironment()),
+    Effect.match({
+      onSuccess() { throw Error("Should not be here") },
+      onFailure(err) {
+        expect(err.__brand).toBe("ScriptError")
+        expect(err.cause).toBe(ScriptError().message + ", " + ScriptError().cause)
+      }
+    }),
+    Effect.runPromise
+  )
 })
