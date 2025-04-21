@@ -11,9 +11,11 @@ export abstract class BaseRepositoryMongoAdapter<Id, Entity, SchemaId, Schema ex
     }
 
     add(entity: Entity): Effect.Effect<void, DuplicateIdError | UniquenessConstraintViolatedError> {
-        const promise = async () => await this.toDocument(entity).save()
         return Effect.tryPromise({
-            try: promise,
+            try: async () => {
+                await this.init()
+                await this.toDocument(entity).save()
+            },
             catch(error) {
                 if (isMongoServerError(error, MongoDBErrorCodes.DuplicateKey)) {
                     const typedError = error as { keyPattern: string }
@@ -30,10 +32,12 @@ export abstract class BaseRepositoryMongoAdapter<Id, Entity, SchemaId, Schema ex
     }
     update(entity: Entity): Effect.Effect<void, NotFoundError | UniquenessConstraintViolatedError> {
         const id = this.toDocument(entity)._id
-        const promise = async () => await this.model().findByIdAndUpdate(id, this.toDocument(entity))
         return pipe(
             Effect.tryPromise({
-                try: promise,
+                try: async () => {
+                    await this.init()
+                    return await this.model().findByIdAndUpdate(id, this.toDocument(entity))
+                },
                 catch(error) {
                     if (isMongoServerError(error, MongoDBErrorCodes.DuplicateKey))
                         return UniquenessConstraintViolatedError()
@@ -51,9 +55,11 @@ export abstract class BaseRepositoryMongoAdapter<Id, Entity, SchemaId, Schema ex
         )
     }
     remove(id: Id): Effect.Effect<void, NotFoundError> {
-        const promise = async () => await this.model().findByIdAndDelete(id)
         return pipe(
-            Effect.tryPromise(promise),
+            Effect.tryPromise(async () => {
+                await this.init()
+                return await this.model().findByIdAndDelete(id)
+            }),
             Effect.orDie,
             Effect.flatMap(document => {
                 if (document) {
@@ -66,15 +72,20 @@ export abstract class BaseRepositoryMongoAdapter<Id, Entity, SchemaId, Schema ex
     }
     getAll(): Effect.Effect<Iterable<Entity>, never> {
         return pipe(
-            Effect.tryPromise(async () => await this.model().find()),
+            Effect.tryPromise(async () => {
+                await this.init()
+                return await this.model().find()
+            }),
             Effect.map(documents => documents.map(d => this.toEntity(d))),
             Effect.orDie
         )
     }
     find(id: Id): Effect.Effect<Entity, NotFoundError> {
-        const promise = async () => await this.model().findById(id)
         return pipe(
-            Effect.tryPromise(promise),
+            Effect.tryPromise(async () => {
+                await this.init()
+                return await this.model().findById(id)
+            }),
             Effect.orDie,
             Effect.flatMap(document => {
                 if (document) {
@@ -84,6 +95,14 @@ export abstract class BaseRepositoryMongoAdapter<Id, Entity, SchemaId, Schema ex
                 }
             })
         )
+    }
+
+    private didInit = false;
+    private async init(): Promise<void> {
+        if (!this.didInit) {
+            this.didInit = true
+            await this.model().ensureIndexes()
+        }
     }
 
     protected abstract toDocument(e: Entity): mongoose.Document<unknown, object, Schema> & Schema
