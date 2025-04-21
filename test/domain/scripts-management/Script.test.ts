@@ -1,6 +1,14 @@
 // import { CreateConstantInstruction } from "../../../src/domain/scripts-management/InstructionImpl.js"
 import { AutomationId, TaskId } from "../../../src/domain/scripts-management/Script.js"
+import { ScriptError } from "../../../src/ports/scripts-management/Errors.js"
 // import { Type } from "../../../src/ports/devices-management/Types.js"
+
+test("A script error can be created", () => {
+  const error: ScriptError = ScriptError("this is the cause")
+  expect(error.message).toBe("There was an error in the script execution")
+  expect(error.cause).toBe("this is the cause")
+  expect(error.__brand).toBe("ScriptError")
+})
 
 test("A taskId can be created", () => {
   const taskId = TaskId("1")

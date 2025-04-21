@@ -1,15 +1,13 @@
-import { pipe } from "effect";
+import { Duration, pipe } from "effect";
 import { Type } from "../../ports/devices-management/Types.js";
 import { DeviceActionId, DeviceId, DevicePropertyId } from "../devices-management/Device.js";
 import { Email } from "../users-management/User.js";
 import { Condition, ConstantValue, CreateConstantInstruction, CreateDevicePropertyConstantInstruction, DeviceActionInstruction, ElseInstruction, ExecutionEnvironmentFromConstants, IfInstruction, Instruction, SendNotificationInstruction, StartTaskInstruction, WaitInstruction } from "./Instruction.js";
 import { TaskId } from "./Script.js";
-import { andThen, map, mapError, runPromise, sleep, succeed, tryPromise } from "effect/Effect";
-import { orDie } from "effect/Effect";
+import { andThen, map, mapError, runPromise, sleep, succeed, tryPromise, orDie, flatMap } from "effect/Effect";
 import { ScriptsService } from "../../ports/scripts-management/ScriptsService.js";
 import { NotificationsService } from "../../ports/notifications-management/NotificationsService.js";
 import { DevicesService } from "../../ports/devices-management/DevicesService.js";
-import { millis } from "effect/Duration";
 import { ScriptError } from "../../ports/scripts-management/Errors.js";
 
 export function SendNotificationInstruction(email: Email, message: string, notificationsService: NotificationsService): SendNotificationInstruction {
@@ -32,7 +30,7 @@ export function WaitInstruction(seconds: number): WaitInstruction {
     seconds: seconds,
     execute(env) {
       return pipe(
-        sleep(millis(seconds * 1000)),
+        sleep(Duration.seconds(seconds)),
         andThen(() => succeed(env)),
         orDie
       )
@@ -45,8 +43,16 @@ export function StartTaskInstruction(taskId: TaskId, scriptsService: ScriptsServ
     taskId: taskId,
     scriptsService: scriptsService,
     execute(env) {
-      //TODO: Execute the task, need of the scripts service to be implemented
-      return succeed(env)
+      return pipe(
+        scriptsService.findTaskUnsafe(taskId),
+        flatMap(task =>
+          pipe(
+            task.execute(),
+            andThen(() => succeed(env))
+          )
+        ),
+        orDie
+      )
     },
   }
 }

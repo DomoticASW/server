@@ -13,10 +13,12 @@ import { PermissionError } from "../permissions/Errors.js";
 
 export interface ScriptsService {
   findTask(token: Token, taskId: TaskId): Effect<Task, InvalidTokenError | ScriptNotFoundError>
+  findTaskUnsafe(taskId: TaskId): Effect<Task, ScriptNotFoundError>
+
   getAllTasks(token: Token): Effect<Iterable<Task>, InvalidTokenError>
   createTask(token: Token, task: TaskBuilder): Effect<TaskId, InvalidTokenError | TaskNameAlreadyInUse | InvalidTaskError>
   editTask(token: Token, taskId: TaskId, task: TaskBuilder): Effect<void, InvalidTokenError | PermissionError | ScriptNotFoundError | TaskNameAlreadyInUse | InvalidTaskError>
-  executeTask(token: Token, taskId: TaskId): Effect<void, InvalidTokenError | ScriptNotFoundError | PermissionError>
+  startTask(token: Token, taskId: TaskId): Effect<void, InvalidTokenError | ScriptNotFoundError | PermissionError>
 
   findAutomation(token: Token, automationId: AutomationId): Effect<Automation, InvalidTokenError | ScriptNotFoundError>
   getAllAutomations(token: Token): Effect<Iterable<Automation>, InvalidTokenError>
