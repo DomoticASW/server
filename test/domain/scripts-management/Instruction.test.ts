@@ -7,7 +7,7 @@ import { TaskId } from "../../../src/domain/scripts-management/Script.js"
 import { Email } from "../../../src/domain/users-management/User.js"
 import { Type } from "../../../src/ports/devices-management/Types.js"
 import { DevicesServiceSpy, NotificationsServiceSpy, ScriptsServiceSpy, DeviceMock, SpyTaskMock, UserNotFoundErrorMock } from "./mocks.js"
-import { ScriptError, ScriptNotFoundError } from "../../../src/ports/scripts-management/Errors.js"
+import { InvalidConstantType, ScriptError, ScriptNotFoundError } from "../../../src/ports/scripts-management/Errors.js"
 import { DeviceNotFoundError } from "../../../src/ports/devices-management/Errors.js"
 
 test("An execution environment can be created", () => {
@@ -339,6 +339,24 @@ test("A CreateDevicePropertyConstantInstruction execution should return a Script
       onFailure(err) {
         expect(err.__brand).toBe("ScriptError")
         expect(err.cause).toBe(DeviceNotFoundError().message + ", " + DeviceNotFoundError().cause)
+      }
+    }),
+    Effect.runPromise
+  )
+})
+
+test("A CreateDevicePropertyConstantInstruction execution should return a ScriptError if the type is wrong", async () => {
+  const device = DeviceMock()
+  const devicesService = DevicesServiceSpy(device, false)
+  const instruction = CreateDevicePropertyConstantInstruction("constantName", Type.StringType, device.id, device.properties.at(0)!.id, devicesService.get())
+
+  await pipe(
+    instruction.execute(ExecutionEnvironment()),
+    Effect.match({
+      onSuccess() { throw Error("Should not be here") },
+      onFailure(err) {
+        expect(err.__brand).toBe("ScriptError")
+        expect(err.cause).toBe(InvalidConstantType().message + ", " + InvalidConstantType(Type.StringType + " != " + device.properties.at(0)!.typeConstraints.type).cause)
       }
     }),
     Effect.runPromise
