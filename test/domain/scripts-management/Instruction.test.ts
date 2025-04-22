@@ -9,6 +9,7 @@ import { Type } from "../../../src/ports/devices-management/Types.js"
 import { DevicesServiceSpy, NotificationsServiceSpy, ScriptsServiceSpy, DeviceMock, SpyTaskMock, UserNotFoundErrorMock } from "./mocks.js"
 import { InvalidConstantType, ScriptError, ScriptNotFoundError } from "../../../src/ports/scripts-management/Errors.js"
 import { DeviceNotFoundError } from "../../../src/ports/devices-management/Errors.js"
+import { Color } from "../../../src/domain/devices-management/Types.js"
 
 test("An execution environment can be created", () => {
   const env = ExecutionEnvironment()
@@ -70,12 +71,103 @@ test("A create constant instruction add a value to the env when executed", async
 })
 
 test("A create constant instruction add a value to the env when executed with the right type", async () => {
-  const instruction = CreateConstantInstruction("constantName", Type.StringType, "hello!")
-  const env = ExecutionEnvironment()
-  const result = await Effect.runPromise(instruction.execute(env))
+  function createVoid(): void {}
+  const voidValue = createVoid()
+  const color = Color(10, 10, 10)
 
-  const constant = result.constants.get(instruction);
-  expect(constant?.value).toBe<string>("hello!");
+  const instruction = CreateConstantInstruction("constantName", Type.StringType, "hello!")
+  const instruction2 = CreateConstantInstruction("constantName", Type.IntType, 10)
+  const instruction3 = CreateConstantInstruction("constantName", Type.DoubleType, 10.5)
+  const instruction4 = CreateConstantInstruction("constantName", Type.ColorType, color)
+  const instruction5 = CreateConstantInstruction("constantName", Type.VoidType, voidValue)
+
+  const env = ExecutionEnvironment()
+  const result1 = await Effect.runPromise(instruction.execute(env))
+  const result2 = await Effect.runPromise(instruction2.execute(env))
+  const result3 = await Effect.runPromise(instruction3.execute(env))
+  const result4 = await Effect.runPromise(instruction4.execute(env))
+  const result5 = await Effect.runPromise(instruction5.execute(env))
+
+  const constant1 = result1.constants.get(instruction);
+  const constant2 = result2.constants.get(instruction2);
+  const constant3 = result3.constants.get(instruction3);
+  const constant4 = result4.constants.get(instruction4);
+  const constant5 = result5.constants.get(instruction5);
+
+  expect(constant1?.value).toBe<string>("hello!");
+  expect(constant2?.value).toBe<number>(10);
+  expect(constant3?.value).toBe<number>(10.5);
+  expect(constant4?.value).toBe<Color>(color);
+  expect(constant5?.value).toBe<void>(voidValue);
+})
+
+test("A create constant instruction execution should return a ScriptError if the type is wrong", async () => {
+  function voidValue(): void {}
+  const instruction = CreateConstantInstruction("constantName", Type.StringType, 10)
+  const instruction2 = CreateConstantInstruction("constantName", Type.IntType, "hello!")
+  const instruction3 = CreateConstantInstruction("constantName", Type.ColorType, voidValue())
+  const instruction4 = CreateConstantInstruction("constantName", Type.DoubleType, Color(10, 10, 10))
+  const instruction5 = CreateConstantInstruction("constantName", Type.VoidType, 10.5)
+
+  await pipe(
+    instruction.execute(ExecutionEnvironment()),
+    Effect.match({
+      onSuccess() { throw Error("Should not be here") },
+      onFailure(err) {
+        expect(err.__brand).toBe("ScriptError")
+        expect(err.cause).toBe(InvalidConstantType().message + ": " + Type.StringType)
+      }
+    }),
+    Effect.runPromise
+  )
+
+  await pipe(
+    instruction2.execute(ExecutionEnvironment()),
+    Effect.match({
+      onSuccess() { throw Error("Should not be here") },
+      onFailure(err) {
+        expect(err.__brand).toBe("ScriptError")
+        expect(err.cause).toBe(InvalidConstantType().message + ": " + Type.IntType)
+      }
+    }),
+    Effect.runPromise
+  )
+
+  await pipe(
+    instruction3.execute(ExecutionEnvironment()),
+    Effect.match({
+      onSuccess() { throw Error("Should not be here") },
+      onFailure(err) {
+        expect(err.__brand).toBe("ScriptError")
+        expect(err.cause).toBe(InvalidConstantType().message + ": " + Type.ColorType)
+      }
+    }),
+    Effect.runPromise
+  )
+
+  await pipe(
+    instruction4.execute(ExecutionEnvironment()),
+    Effect.match({
+      onSuccess() { throw Error("Should not be here") },
+      onFailure(err) {
+        expect(err.__brand).toBe("ScriptError")
+        expect(err.cause).toBe(InvalidConstantType().message + ": " + Type.DoubleType)
+      }
+    }),
+    Effect.runPromise
+  )
+
+  await pipe(
+    instruction5.execute(ExecutionEnvironment()),
+    Effect.match({
+      onSuccess() { throw Error("Should not be here") },
+      onFailure(err) {
+        expect(err.__brand).toBe("ScriptError")
+        expect(err.cause).toBe(InvalidConstantType().message + ": " + Type.VoidType)
+      }
+    }),
+    Effect.runPromise
+  )
 })
 
 test("A create device property constant instruction can be created", () => {
@@ -356,7 +448,7 @@ test("A CreateDevicePropertyConstantInstruction execution should return a Script
       onSuccess() { throw Error("Should not be here") },
       onFailure(err) {
         expect(err.__brand).toBe("ScriptError")
-        expect(err.cause).toBe(InvalidConstantType().message + ", " + InvalidConstantType(Type.StringType + " != " + device.properties.at(0)!.typeConstraints.type).cause)
+        expect(err.cause).toBe(InvalidConstantType().message + ", " + Type.StringType + " is not " + device.properties.at(0)!.typeConstraints.type)
       }
     }),
     Effect.runPromise
