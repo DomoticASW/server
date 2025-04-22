@@ -8,7 +8,7 @@ import { Email } from "../../../src/domain/users-management/User.js"
 import { Type } from "../../../src/ports/devices-management/Types.js"
 import { DevicesServiceSpy, NotificationsServiceSpy, ScriptsServiceSpy, DeviceMock, SpyTaskMock, UserNotFoundErrorMock } from "./mocks.js"
 import { InvalidConstantType, ScriptError, ScriptNotFoundError } from "../../../src/ports/scripts-management/Errors.js"
-import { DeviceNotFoundError } from "../../../src/ports/devices-management/Errors.js"
+import { DeviceNotFoundError, DevicePropertyNotFound } from "../../../src/ports/devices-management/Errors.js"
 import { Color } from "../../../src/domain/devices-management/Types.js"
 
 test("An execution environment can be created", () => {
@@ -431,6 +431,24 @@ test("A CreateDevicePropertyConstantInstruction execution should return a Script
       onFailure(err) {
         expect(err.__brand).toBe("ScriptError")
         expect(err.cause).toBe(DeviceNotFoundError().message + ", " + DeviceNotFoundError().cause)
+      }
+    }),
+    Effect.runPromise
+  )
+})
+
+test("A CreateDevicePropertyConstantInstruction execution should return a ScriptError if the property has not been found on the device", async () => {
+  const device = DeviceMock()
+  const devicesService = DevicesServiceSpy(device, false)
+  const instruction = CreateDevicePropertyConstantInstruction("constantName", Type.IntType, device.id, DevicePropertyId("otherId"), devicesService.get())
+
+  await pipe(
+    instruction.execute(ExecutionEnvironment()),
+    Effect.match({
+      onSuccess() { throw Error("Should not be here") },
+      onFailure(err) {
+        expect(err.__brand).toBe("ScriptError")
+        expect(err.cause).toBe(DevicePropertyNotFound().message + `, Property ${DevicePropertyId("otherId")} not found in device ${device.id}`)
       }
     }),
     Effect.runPromise
