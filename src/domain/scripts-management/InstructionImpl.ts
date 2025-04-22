@@ -4,12 +4,13 @@ import { DeviceActionId, DeviceId, DevicePropertyId } from "../devices-managemen
 import { Email } from "../users-management/User.js";
 import { Condition, ConstantValue, CreateConstantInstruction, CreateDevicePropertyConstantInstruction, DeviceActionInstruction, ElseInstruction, ExecutionEnvironmentFromConstants, IfInstruction, Instruction, SendNotificationInstruction, StartTaskInstruction, WaitInstruction } from "./Instruction.js";
 import { TaskId } from "./Script.js";
-import { andThen, map, mapError, runPromise, sleep, succeed, tryPromise, orDie, flatMap } from "effect/Effect";
+import { andThen, map, mapError, sleep, succeed, tryPromise, orDie, flatMap, sync, reduce, fail, fromNullable } from "effect/Effect";
 import { ScriptsService } from "../../ports/scripts-management/ScriptsService.js";
 import { NotificationsService } from "../../ports/notifications-management/NotificationsService.js";
 import { DevicesService } from "../../ports/devices-management/DevicesService.js";
 import { InvalidConstantType, ScriptError } from "../../ports/scripts-management/Errors.js";
 import { Color } from "../devices-management/Types.js";
+import { DevicePropertyNotFound } from "../../ports/devices-management/Errors.js";
 
 export function SendNotificationInstruction(email: Email, message: string, notificationsService: NotificationsService): SendNotificationInstruction {
   return {
@@ -137,21 +138,21 @@ export function CreateDevicePropertyConstantInstruction<T>(name: string, type: T
         devicesService.findUnsafe(deviceId),
         flatMap(device => {
           const property = device.properties.find(property => property.id === devicePropertyId)
-          if(property) {
-            return pipe(
-              tryPromise(async () => {
-                if (type != property.typeConstraints.type) {
-                  throw Error()
-                }
-                const newEnv = ExecutionEnvironmentFromConstants(env.constants)
-                newEnv.constants.set(this, ConstantValue(property.value))
-                return newEnv
-              }),
-              mapError(() => InvalidConstantType(type + " is not " + property.typeConstraints.type))
-            )
-          } else {
-            return fail()
-          }
+          return pipe(
+            property,
+            fromNullable,
+            mapError(() => DevicePropertyNotFound(`Property ${devicePropertyId} not found in device ${device.id}`)),
+            flatMap((prop) =>
+              type !== prop.typeConstraints.type
+                ? fail(InvalidConstantType(`${type} is not ${prop.typeConstraints.type}`))
+                : succeed(prop)
+            ),
+            map((prop) => {
+              const newEnv = ExecutionEnvironmentFromConstants(env.constants)
+              newEnv.constants.set(this, ConstantValue(prop.value))
+              return newEnv
+            })
+          )
         }),
         mapError(error => ScriptError(error.message + ", " + error.cause)),
       )
@@ -164,19 +165,14 @@ export function IfInstruction(instructions: Array<Instruction>, condition: Condi
     then: instructions,
     condition: condition,
     execute(env) {
+      const newEnv = ExecutionEnvironmentFromConstants(env.constants)
       return pipe(
-        tryPromise(async () => {
-          let newEnv = ExecutionEnvironmentFromConstants(env.constants)
-
-          if (condition.evaluate(newEnv)) {
-            for(const instruction of this.then) {
-              newEnv = await runPromise(instruction.execute(newEnv))
-            }
-          }
-
-          return newEnv
-        }),
-        orDie
+        sync(() => condition.evaluate(newEnv)),
+        flatMap((shouldRun) =>
+          shouldRun
+            ? reduce(this.then, newEnv, (env, instr) => instr.execute(env))
+            : succeed(newEnv)
+        )
       )
     },
   }
@@ -188,18 +184,14 @@ export function ElseInstruction(thenInstructions: Array<Instruction>, elseInstru
     else: elseInstructions,
     condition: condition,
     execute(env) {
+      const newEnv = ExecutionEnvironmentFromConstants(env.constants)
       return pipe(
-        tryPromise(async () => {
-          let newEnv = ExecutionEnvironmentFromConstants(env.constants)
-          const instructions = condition.evaluate(newEnv) ? this.then : this.else
-
-          for(const instruction of instructions) {
-            newEnv = await runPromise(instruction.execute(newEnv))
-          }
-
-          return newEnv
-        }),
-        orDie
+        sync(() => condition.evaluate(newEnv)),
+        flatMap((shouldRun) =>
+          shouldRun
+            ? reduce(this.then, newEnv, (env, instr) => instr.execute(env))
+            : reduce(this.else, newEnv, (env, instr) => instr.execute(env))
+        )
       )
     },
   }
