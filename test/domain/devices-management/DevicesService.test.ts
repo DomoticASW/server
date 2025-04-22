@@ -68,3 +68,41 @@ test("uses DeviceFactory to construct devices", () => {
     const expected = Effect.runSync(deviceFactory.create(deviceUrl))
     expect(device).toEqual(expected)
 })
+
+test("find retrieves devices by id", () => {
+    const [id, device] = pipe(
+        Effect.gen(function* () {
+            const id = yield* service.add(makeToken(), new URL("http://localhost"))
+            const device = yield* service.find(makeToken(), id)
+            return [id, device] as [DeviceId, Device]
+        }),
+        Effect.runSync
+    )
+    expect(device.id).toEqual(id)
+})
+
+test("find returns an error in case device is not found", () => {
+    expect(() => pipe(
+        service.find(makeToken(), DeviceId(new URL("http://localhost").toString())),
+        Effect.runSync
+    )).toThrow("DeviceNotFoundError")
+})
+
+test("remove removes devices by id", () => {
+    const devices = pipe(
+        Effect.gen(function* () {
+            const id = yield* service.add(makeToken(), new URL("http://localhost"))
+            yield* service.remove(makeToken(), id)
+            return yield* service.getAllDevices(makeToken())
+        }),
+        Effect.runSync
+    )
+    expect(devices).toHaveLength(0)
+})
+
+test("remove returns an error in case device is not found", () => {
+    expect(() => pipe(
+        service.remove(makeToken(), DeviceId(new URL("http://localhost").toString())),
+        Effect.runSync
+    )).toThrow("DeviceNotFoundError")
+})
