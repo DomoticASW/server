@@ -116,7 +116,7 @@ export function CreateDevicePropertyConstantInstruction<T>(name: string, type: T
             return fail()
           }
         }),
-        mapError(() => ScriptError()),
+        mapError(error => ScriptError(error.message + ", " + error.cause)),
       )
     }
   }

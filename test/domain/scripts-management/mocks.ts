@@ -181,7 +181,7 @@ export function DevicesServiceSpy(device: Device = DeviceMock(), testingAction: 
           if (!testingAction) {
             call++
           }
-          return succeed(device)
+          return device.id == deviceId ? succeed(device) : fail(DeviceNotFoundError())
         },
         getAllDevices: function (token: Token): Effect<Iterable<Device>, InvalidTokenError> {
           throw new Error("Function not implemented.");
