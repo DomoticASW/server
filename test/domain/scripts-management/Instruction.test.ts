@@ -326,3 +326,21 @@ test("A CreateDevicePropertyConstantInstruction should create a constant with th
   expect(constant).toBeDefined();
   expect(constant?.value).toBe<number>(device.properties.at(0)!.value as number)
 })
+
+test("A CreateDevicePropertyConstantInstruction execution should return a ScriptError if the device has not been found", async () => {
+  const device = DeviceMock()
+  const devicesService = DevicesServiceSpy(device, false)
+  const instruction = CreateDevicePropertyConstantInstruction("constantName", Type.IntType, DeviceId("otherId"), device.properties.at(0)!.id, devicesService.get())
+
+  await pipe(
+    instruction.execute(ExecutionEnvironment()),
+    Effect.match({
+      onSuccess() { throw Error("Should not be here") },
+      onFailure(err) {
+        expect(err.__brand).toBe("ScriptError")
+        expect(err.cause).toBe(DeviceNotFoundError().message + ", " + DeviceNotFoundError().cause)
+      }
+    }),
+    Effect.runPromise
+  )
+})
