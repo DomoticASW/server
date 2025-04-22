@@ -9,6 +9,7 @@ import { ScriptsService } from "../../ports/scripts-management/ScriptsService.js
 import { NotificationsService } from "../../ports/notifications-management/NotificationsService.js";
 import { DevicesService } from "../../ports/devices-management/DevicesService.js";
 import { InvalidConstantType, ScriptError } from "../../ports/scripts-management/Errors.js";
+import { Color } from "../devices-management/Types.js";
 
 export function SendNotificationInstruction(email: Email, message: string, notificationsService: NotificationsService): SendNotificationInstruction {
   return {
@@ -81,11 +82,44 @@ export function CreateConstantInstruction<T>(name: string, type: Type, value: T)
     execute(env) {
       return pipe(
         tryPromise(async () => {
+          switch (this.type) {
+            case "IntType":
+              if (typeof value !== "number") {
+                throw Error()
+              }
+              break
+            case "DoubleType":
+              if (typeof value !== "number") {
+                throw Error()
+              }
+              break
+            case "BooleanType":
+              if (typeof value !== "boolean") {
+                throw Error()
+              }
+              break
+            case "ColorType":
+              if (!(value as Color)) {
+                throw Error()
+              }
+              break
+            case "StringType":
+              if (typeof value !== "string") {
+                throw Error()
+              }
+              break
+            case "VoidType":
+              if (typeof value !== "undefined") {
+                throw Error()
+              }
+              break
+          }
+
           const newEnv = ExecutionEnvironmentFromConstants(env.constants)
           newEnv.constants.set(this, ConstantValue(value))
           return newEnv
         }),
-        orDie
+        mapError(() => ScriptError(InvalidConstantType().message + ": " + type))
       )
     }
   }
@@ -113,7 +147,7 @@ export function CreateDevicePropertyConstantInstruction<T>(name: string, type: T
                 newEnv.constants.set(this, ConstantValue(property.value))
                 return newEnv
               }),
-              mapError(() => InvalidConstantType(type + " != " + property.typeConstraints.type))
+              mapError(() => InvalidConstantType(type + " is not " + property.typeConstraints.type))
             )
           } else {
             return fail()
