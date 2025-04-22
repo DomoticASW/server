@@ -5,13 +5,13 @@ import { PermissionError } from "../../ports/permissions-management/Errors.js";
 import { TokenError, InvalidTokenError } from "../../ports/users-management/Errors.js";
 import { Token } from "../users-management/Token.js";
 import { DeviceId, Device, DeviceActionId, DevicePropertyId } from "./Device.js";
-import { Repository } from "../../ports/Repository.js";
 import { DeviceFactory } from "../../ports/devices-management/DeviceFactory.js";
+import { DeviceRepository } from "../../ports/devices-management/DeviceRepository.js";
 
 export class DevicesServiceImpl implements DevicesService {
-    private repo: Repository<DeviceId, Device>
+    private repo: DeviceRepository
     private deviceFactory: DeviceFactory
-    constructor(repository: Repository<DeviceId, Device>, deviceFactory: DeviceFactory) {
+    constructor(repository: DeviceRepository, deviceFactory: DeviceFactory) {
         this.repo = repository
         this.deviceFactory = deviceFactory
     }
@@ -25,7 +25,6 @@ export class DevicesServiceImpl implements DevicesService {
             Effect.map(({ device }) => device.id),
             Effect.mapError((e) => {
                 switch (e.__brand) {
-                    case "UniquenessConstraintViolatedError":
                     case "DuplicateIdError":
                         return DeviceAlreadyRegisteredError()
                     default:
@@ -47,7 +46,22 @@ export class DevicesServiceImpl implements DevicesService {
         )
     }
     rename(token: Token, deviceId: DeviceId, name: string): Effect.Effect<void, DeviceNotFoundError | TokenError> {
-        throw new Error("Method not implemented.");
+        return Effect.Do.pipe(
+            Effect.bind("device", () => this.find(token, deviceId)),
+            Effect.bind("_", ({ device }) => {
+                device.name = name
+                return this.repo.update(device)
+            }),
+            Effect.mapError((e) => {
+                switch (e.__brand) {
+                    case "NotFoundError":
+                        return DeviceNotFoundError(e.cause)
+                    default:
+                        return e
+                }
+            }),
+            Effect.asVoid
+        )
     }
     find(token: Token, deviceId: DeviceId): Effect.Effect<Device, DeviceNotFoundError | InvalidTokenError> {
         // TODO: check token

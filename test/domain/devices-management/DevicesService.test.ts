@@ -7,10 +7,11 @@ import { InMemoryRepositoryMock } from "../../InMemoryRepositoryMock.js"
 import { DevicesServiceImpl } from "../../../src/domain/devices-management/DevicesServiceImpl.js"
 import { DeviceFactory } from "../../../src/ports/devices-management/DeviceFactory.js"
 import { DeviceUnreachableError } from "../../../src/ports/devices-management/Errors.js"
+import { DeviceRepository } from "../../../src/ports/devices-management/DeviceRepository.js"
 
 let service: DevicesService
 let deviceFactory: DeviceFactory
-let repo: InMemoryRepositoryMock<DeviceId, Device>
+let repo: DeviceRepository
 
 function makeToken(role: UserRole = UserRole.Admin): Token {
     return {
@@ -20,7 +21,7 @@ function makeToken(role: UserRole = UserRole.Admin): Token {
 }
 
 beforeEach(() => {
-    repo = new InMemoryRepositoryMock((d) => d.id, () => true)
+    repo = new InMemoryRepositoryMock((d) => d.id)
     deviceFactory = {
         create(deviceUrl: URL): Effect.Effect<Device, DeviceUnreachableError> {
             return Effect.succeed(Device(DeviceId(deviceUrl.toString()), "device", deviceUrl, DeviceStatus.Online, [], [], []))
@@ -103,6 +104,26 @@ test("remove removes devices by id", () => {
 test("remove returns an error in case device is not found", () => {
     expect(() => pipe(
         service.remove(makeToken(), DeviceId(new URL("http://localhost").toString())),
+        Effect.runSync
+    )).toThrow("DeviceNotFoundError")
+})
+
+test("rename renames device with given id", () => {
+    const newName = "newName"
+    const device = pipe(
+        Effect.gen(function* () {
+            const id = yield* service.add(makeToken(), new URL("http://localhost"))
+            yield* service.rename(makeToken(), id, newName)
+            return yield* service.find(makeToken(), id)
+        }),
+        Effect.runSync
+    )
+    expect(device.name).toEqual(newName)
+})
+
+test("rename returns an error in case device is not found", () => {
+    expect(() => pipe(
+        service.rename(makeToken(), DeviceId(new URL("http://localhost").toString()), "newName"),
         Effect.runSync
     )).toThrow("DeviceNotFoundError")
 })
