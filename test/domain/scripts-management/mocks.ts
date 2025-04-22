@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { andThen, Effect, map, sleep } from "effect/Effect";
-import { Device, DeviceAction, DeviceActionId, DeviceId, DevicePropertyId, DeviceStatus } from "../../../src/domain/devices-management/Device.js";
+import { Device, DeviceAction, DeviceActionId, DeviceId, DeviceProperty, DevicePropertyId, DeviceStatus } from "../../../src/domain/devices-management/Device.js";
 import { Token, UserRole } from "../../../src/domain/users-management/Token.js";
 import { Email } from "../../../src/domain/users-management/User.js";
 import { DeviceActionError, DeviceActionNotFound, DeviceNotFoundError, DevicePropertyNotFound, DeviceUnreachableError, InvalidInputError } from "../../../src/ports/devices-management/Errors.js";
@@ -127,7 +127,7 @@ export function DeviceMock(): Device {
     address: URL.prototype,
     status: DeviceStatus.Online,
     properties: [
-
+      DevicePropertyMock()
     ],
     actions: [
       DeviceActionMock()
@@ -136,6 +136,15 @@ export function DeviceMock(): Device {
     executeAction(actionId, input) {
       return succeed(null)
     }
+  }
+}
+
+function DevicePropertyMock(): DeviceProperty<number> {
+  return {
+    id: DevicePropertyId("propertyId"),
+    name: "",
+    value: 10,
+    typeConstraints: NoneInt()
   }
 }
 
@@ -166,13 +175,13 @@ export function DevicesServiceSpy(device: Device = DeviceMock(), testingAction: 
           throw new Error("Function not implemented.");
         },
         find: function (token: Token, deviceId: DeviceId): Effect<Device, DeviceNotFoundError | InvalidTokenError> {
+          throw new Error("Function not implemented.");
+        },
+        findUnsafe: function (deviceId: DeviceId): Effect<Device, DeviceNotFoundError> {
           if (!testingAction) {
             call++
           }
           return succeed(device)
-        },
-        findUnsafe: function (deviceId: DeviceId): Effect<Device, DeviceNotFoundError> {
-          throw new Error("Function not implemented.");
         },
         getAllDevices: function (token: Token): Effect<Iterable<Device>, InvalidTokenError> {
           throw new Error("Function not implemented.");

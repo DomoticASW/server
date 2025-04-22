@@ -99,8 +99,25 @@ export function CreateDevicePropertyConstantInstruction<T>(name: string, type: T
     devicePropertyId: devicePropertyId,
     devicesService: devicesService,
     execute(env) {
-      //TODO: Get the value of the property from the device via the device service and add it to the env constants
-      return succeed(env)
+      return pipe(
+        devicesService.findUnsafe(deviceId),
+        flatMap(device => {
+          const property = device.properties.find(property => property.id === devicePropertyId)
+          if(property) {
+            return pipe(
+              tryPromise(async () => {
+                const newEnv = ExecutionEnvironmentFromConstants(env.constants)
+                newEnv.constants.set(this, ConstantValue(property.value))
+                return newEnv
+              }),
+              orDie
+            )
+          } else {
+            return fail()
+          }
+        }),
+        mapError(() => ScriptError()),
+      )
     }
   }
 }
