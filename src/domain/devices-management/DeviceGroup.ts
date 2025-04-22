@@ -13,8 +13,8 @@ export interface DeviceGroup {
     removeDeviceFromGroup(deviceId: DeviceId): void;
 }
 
-export function DeviceGroup(id: DeviceGroupId, name: string): DeviceGroup {
-    return new DeviceGroupImpl(id, name)
+export function DeviceGroup(id: DeviceGroupId, name: string, devices: DeviceId[]): DeviceGroup {
+    return new DeviceGroupImpl(id, name, devices)
 }
 
 class DeviceGroupImpl implements DeviceGroup {
@@ -22,10 +22,10 @@ class DeviceGroupImpl implements DeviceGroup {
     name: string;
     private _devices: DeviceId[];
 
-    constructor(id: DeviceGroupId, name: string) {
+    constructor(id: DeviceGroupId, name: string, devices: DeviceId[]) {
         this.id = id
         this.name = name
-        this._devices = []
+        this._devices = [...devices]
     }
 
     get devices(): DeviceId[] {
@@ -33,7 +33,9 @@ class DeviceGroupImpl implements DeviceGroup {
     }
 
     addDeviceToGroup(deviceId: DeviceId): void {
-        this._devices.push(deviceId)
+        if (!this._devices.find(d => d == deviceId)) {
+            this._devices.push(deviceId)
+        }
     }
     removeDeviceFromGroup(deviceId: DeviceId): void {
         const index = this.devices.findIndex(d => d == deviceId)

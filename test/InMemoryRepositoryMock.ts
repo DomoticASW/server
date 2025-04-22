@@ -1,0 +1,65 @@
+import { DuplicateIdError, NotFoundError, Repository, UniquenessConstraintViolatedError } from "../src/ports/Repository.js";
+import { Effect } from "effect";
+
+export class InMemoryRepositoryMock<Id, Entity> implements Repository<Id, Entity> {
+    private map: Map<Id, Entity> = new Map()
+    private idFromEntity: (e: Entity) => Id
+    private checkUniqueness: (e1: Entity, e2: Entity) => boolean;
+    constructor(idFromEntity: (e: Entity) => Id, checkUniqueness: (e1: Entity, e2: Entity) => boolean) {
+        this.idFromEntity = idFromEntity
+        this.checkUniqueness = checkUniqueness
+    }
+
+    callsToAdd = 0
+    add(entity: Entity): Effect.Effect<void, DuplicateIdError | UniquenessConstraintViolatedError> {
+        this.callsToAdd += 1
+        if (this.map.has(this.idFromEntity(entity))) {
+            return Effect.fail(DuplicateIdError())
+        }
+        if (Array.from(this.map.values()).find(e => !this.checkUniqueness(e, entity))) {
+            return Effect.fail(UniquenessConstraintViolatedError())
+        }
+        this.map.set(this.idFromEntity(entity), entity)
+        return Effect.succeed(null)
+    }
+
+    callsToUpdate = 0
+    update(entity: Entity): Effect.Effect<void, NotFoundError | UniquenessConstraintViolatedError> {
+        this.callsToUpdate += 1
+        const id = this.idFromEntity(entity)
+        if (!this.map.has(id)) {
+            return Effect.fail(NotFoundError())
+        }
+        if (Array.from(this.map.values()).find(e => this.idFromEntity(e) != id && !this.checkUniqueness(e, entity))) {
+            return Effect.fail(UniquenessConstraintViolatedError())
+        }
+        this.map.set(id, entity)
+        return Effect.succeed(null)
+    }
+
+    callsToRemove = 0
+    remove(id: Id): Effect.Effect<void, NotFoundError> {
+        this.callsToRemove += 1
+        if (!this.map.delete(id)) {
+            return Effect.fail(NotFoundError())
+        }
+        return Effect.succeed(null)
+    }
+
+    callsToGetAll = 0
+    getAll(): Effect.Effect<Iterable<Entity>, never, never> {
+        this.callsToGetAll += 1
+        return Effect.succeed(Array.from(this.map.values()))
+    }
+
+    callsToFind = 0
+    find(id: Id): Effect.Effect<Entity, NotFoundError, never> {
+        this.callsToFind += 1
+        const e = this.map.get(id)
+        if (e) {
+            return Effect.succeed(e)
+        } else {
+            return Effect.fail(NotFoundError())
+        }
+    }
+}
