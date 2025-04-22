@@ -66,7 +66,16 @@ test("A create constant instruction add a value to the env when executed", async
 
   const constant = result.constants.get(instruction);
   expect(constant).toBeDefined();
-  expect(constant?.value).toBe(10);
+  expect(constant?.value).toBe<number>(10);
+})
+
+test("A create constant instruction add a value to the env when executed with the right type", async () => {
+  const instruction = CreateConstantInstruction("constantName", Type.StringType, "hello!")
+  const env = ExecutionEnvironment()
+  const result = await Effect.runPromise(instruction.execute(env))
+
+  const constant = result.constants.get(instruction);
+  expect(constant?.value).toBe<string>("hello!");
 })
 
 test("A create device property constant instruction can be created", () => {
@@ -300,4 +309,20 @@ test("A DeviceActionInstruction should return an error if the execution of the a
     }),
     Effect.runPromise
   )
+})
+
+test("A CreateDevicePropertyConstantInstruction should create a constant with the value of a device property", async () => {
+  const device = DeviceMock()
+  const devicesService = DevicesServiceSpy(device, false)
+  const instruction = CreateDevicePropertyConstantInstruction("constantName", Type.IntType, device.id, device.properties.at(0)!.id, devicesService.get())
+
+  const env = ExecutionEnvironment()
+  const result = await Effect.runPromise(instruction.execute(env))
+  expect(result.constants.size).toBe(1)
+  expect(env.constants.size).toBe(0)
+  expect(devicesService.call()).toBe(1)
+
+  const constant = result.constants.get(instruction);
+  expect(constant).toBeDefined();
+  expect(constant?.value).toBe<number>(device.properties.at(0)!.value as number)
 })
