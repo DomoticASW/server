@@ -8,7 +8,7 @@ import { andThen, map, mapError, runPromise, sleep, succeed, tryPromise, orDie, 
 import { ScriptsService } from "../../ports/scripts-management/ScriptsService.js";
 import { NotificationsService } from "../../ports/notifications-management/NotificationsService.js";
 import { DevicesService } from "../../ports/devices-management/DevicesService.js";
-import { ScriptError } from "../../ports/scripts-management/Errors.js";
+import { InvalidConstantType, ScriptError } from "../../ports/scripts-management/Errors.js";
 
 export function SendNotificationInstruction(email: Email, message: string, notificationsService: NotificationsService): SendNotificationInstruction {
   return {
@@ -106,11 +106,14 @@ export function CreateDevicePropertyConstantInstruction<T>(name: string, type: T
           if(property) {
             return pipe(
               tryPromise(async () => {
+                if (type != property.typeConstraints.type) {
+                  throw Error()
+                }
                 const newEnv = ExecutionEnvironmentFromConstants(env.constants)
                 newEnv.constants.set(this, ConstantValue(property.value))
                 return newEnv
               }),
-              orDie
+              mapError(() => InvalidConstantType(type + " != " + property.typeConstraints.type))
             )
           } else {
             return fail()
