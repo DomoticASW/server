@@ -7,7 +7,7 @@ import { DeviceActionError, DeviceActionNotFound, DeviceNotFoundError, DevicePro
 import { NotificationsService } from "../../../src/ports/notifications-management/NotificationsService.js";
 import { InvalidTokenError, TokenError, UserNotFoundError } from "../../../src/ports/users-management/Errors.js";
 import { DevicePropertyUpdatesSubscriber, DevicesService } from "../../../src/ports/devices-management/DevicesService.js";
-import { PermissionError } from "../../../src/ports/permissions/Errors.js";
+import { PermissionError } from "../../../src/ports/permissions-management/Errors.js";
 import { ScriptsService } from "../../../src/ports/scripts-management/ScriptsService.js";
 import { TaskId, Task, AutomationId, Automation } from "../../../src/domain/scripts-management/Script.js";
 import { TaskBuilder } from "../../../src/domain/scripts-management/ScriptBuilder.js";

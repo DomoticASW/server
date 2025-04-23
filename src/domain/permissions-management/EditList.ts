@@ -10,8 +10,8 @@ export interface EditList {
   removeUserToUsers(user: Email): void
 }
 
-export function EditList(id: ScriptId): EditList {
-  return new EditListImpl(id);
+export function EditList(id: ScriptId, users: Email[]): EditList {
+  return new EditListImpl(id, users);
 }
 
 class EditListImpl implements EditList {
@@ -19,9 +19,9 @@ class EditListImpl implements EditList {
 
   private _users: Email[];
 
-  constructor(id: ScriptId) {
+  constructor(id: ScriptId, users: Email[]) {
     this.id = id;
-    this._users = [];
+    this._users = users;
   }
 
   get users(): Email[] {

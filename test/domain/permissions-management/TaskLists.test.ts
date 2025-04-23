@@ -1,9 +1,9 @@
-import { TaskLists } from "../../../src/domain/permissions/TaskLists.js"
 import { TaskId } from "../../../src/domain/scripts-management/Script.js"
+import { TaskLists } from "../../../src/domain/permissions-management/TaskLists.js"
 import { Email } from "../../../src/domain/users-management/User.js"
  
  function makeTaskLists(id: string = "1") {
-    return TaskLists(TaskId(id))
+    return TaskLists(TaskId(id), [], [])
  }
  
  test("TaskLists testing field", () => {
@@ -26,6 +26,24 @@ import { Email } from "../../../src/domain/users-management/User.js"
     taskLists.addEmailToWhitelist(email)
     expect(taskLists.whitelist).toHaveLength(1)
     expect(taskLists.whitelist).toEqual([email])
+  })
+
+  test("TaskLists try to add email to blacklist that is already in whitelist", () => {
+    const taskLists = makeTaskLists()
+    const email = Email("test@gmail.com")
+    taskLists.addEmailToWhitelist(email)
+    taskLists.addEmailToBlacklist(email)
+    expect(taskLists.whitelist).toHaveLength(1)
+    expect(taskLists.blacklist).toHaveLength(0)
+  })
+
+  test("TaskLists try to add email to whitelist that is already in blacklist", () => {
+    const taskLists = makeTaskLists()
+    const email = Email("test@gmail.com")
+    taskLists.addEmailToBlacklist(email)
+    taskLists.addEmailToWhitelist(email)
+    expect(taskLists.blacklist).toHaveLength(1)
+    expect(taskLists.whitelist).toHaveLength(0)
   })
 
   test("TaskLists try to remove email from blacklist", () => {

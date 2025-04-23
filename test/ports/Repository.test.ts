@@ -1,4 +1,4 @@
-import { DuplicateIdError, NotFoundError } from "../../src/ports/Repository.js"
+import { DuplicateIdError, NotFoundError, UniquenessConstraintViolatedError } from "../../src/ports/Repository.js"
 
 test("DuplicateIdError cause add correcly", () => {
   const cause = "Device id already taken"
@@ -42,4 +42,20 @@ test("NotFoundError has a cause", () => {
 test("NotFoundError has a brand", () => {
     const error = NotFoundError();
     expect(error.__brand).toBe("NotFoundError");
+});
+
+test("UniquenessConstraintViolatedError has a message", () => {
+    const error = UniquenessConstraintViolatedError();
+    expect(error.message).toBe("A uniqueness constraint was violated")
+    expect(error.cause).toBeUndefined()
+});
+
+test("UniquenessConstraintViolatedError has a cause", () => {
+    const error = UniquenessConstraintViolatedError("This is the cause");
+    expect(error.cause).toBe("This is the cause")
+});
+
+test("UniquenessConstraintViolatedError has a brand", () => {
+    const error = UniquenessConstraintViolatedError();
+    expect(error.__brand).toBe("UniquenessConstraintViolatedError");
 });
