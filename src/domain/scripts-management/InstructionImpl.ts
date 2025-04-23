@@ -4,7 +4,7 @@ import { DeviceActionId, DeviceId, DevicePropertyId } from "../devices-managemen
 import { Email } from "../users-management/User.js";
 import { Condition, ConstantValue, CreateConstantInstruction, CreateDevicePropertyConstantInstruction, DeviceActionInstruction, ElseInstruction, ExecutionEnvironmentFromConstants, IfInstruction, Instruction, SendNotificationInstruction, StartTaskInstruction, WaitInstruction } from "./Instruction.js";
 import { TaskId } from "./Script.js";
-import { andThen, map, mapError, sleep, succeed, tryPromise, orDie, flatMap, sync, reduce, fail, fromNullable } from "effect/Effect";
+import { andThen, map, mapError, sleep, succeed, orDie, flatMap, sync, reduce, fail, fromNullable } from "effect/Effect";
 import { ScriptsService } from "../../ports/scripts-management/ScriptsService.js";
 import { NotificationsService } from "../../ports/notifications-management/NotificationsService.js";
 import { DevicesService } from "../../ports/devices-management/DevicesService.js";
@@ -75,6 +75,19 @@ export function DeviceActionInstruction(deviceId: DeviceId, deviceActionId: Devi
   }
 }
 
+function isColor(value: unknown): value is Color {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "r" in value &&
+    "g" in value &&
+    "b" in value &&
+    typeof (value as { r: unknown }).r === "number" &&
+    typeof (value as { g: unknown }).g === "number" &&
+    typeof (value as { b: unknown }).b === "number"
+  );
+}
+
 export function CreateConstantInstruction<T>(name: string, type: Type, value: T): CreateConstantInstruction<T> {
   return {
     name: name,
@@ -82,45 +95,37 @@ export function CreateConstantInstruction<T>(name: string, type: Type, value: T)
     value: value,
     execute(env) {
       return pipe(
-        tryPromise(async () => {
-          switch (this.type) {
-            case "IntType":
-              if (typeof value !== "number") {
-                throw Error()
-              }
-              break
-            case "DoubleType":
-              if (typeof value !== "number") {
-                throw Error()
-              }
-              break
-            case "BooleanType":
-              if (typeof value !== "boolean") {
-                throw Error()
-              }
-              break
-            case "ColorType":
-              if (!(value as Color)) {
-                throw Error()
-              }
-              break
-            case "StringType":
-              if (typeof value !== "string") {
-                throw Error()
-              }
-              break
-            case "VoidType":
-              if (typeof value !== "undefined") {
-                throw Error()
-              }
-              break
-          }
-
-          const newEnv = ExecutionEnvironmentFromConstants(env.constants)
-          newEnv.constants.set(this, ConstantValue(value))
-          return newEnv
+        sync(() => {
+          return (() => {
+            switch (this.type) {
+              case "IntType":
+              case "DoubleType":
+                return typeof value === "number"
+              case "BooleanType":
+                return typeof value === "boolean"
+              case "ColorType":
+                return isColor(value)
+              case "StringType":
+                return typeof value === "string"
+              case "VoidType":
+                return typeof value === "undefined"
+              default:
+                return false
+            }
+          })()
         }),
-        mapError(() => ScriptError(InvalidConstantType().message + ": " + type))
+        flatMap(isValid =>
+          isValid
+          ? succeed(ExecutionEnvironmentFromConstants(env.constants))
+          : fail(InvalidConstantType(type))
+        ),
+        flatMap(newEnv => {
+          {
+            newEnv.constants.set(this, ConstantValue(value))
+            return succeed(newEnv)
+          }
+        }),
+        mapError(error => ScriptError(error.message + ": " + error.cause))
       )
     }
   }
