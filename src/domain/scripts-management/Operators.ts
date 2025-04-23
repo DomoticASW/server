@@ -1,12 +1,16 @@
 import { Color } from "../devices-management/Types.js";
 import { ConditionOperator } from "./Instruction.js";
 
-export function NumberEOperator(): ConditionOperator<number> {
+function EqualOperator<T>() : ConditionOperator<T> {
   return {
     evaluate(left, right) {
       return left.value == right.value
-    },
+    }
   }
+}
+
+export function NumberEOperator(): ConditionOperator<number> {
+  return EqualOperator()
 }
 
 export function NumberGEOperator(): ConditionOperator<number> {
@@ -42,11 +46,7 @@ export function NumberGOperator(): ConditionOperator<number> {
 }
 
 export function StringEOperator(): ConditionOperator<string> {
-  return {
-    evaluate(left, right) {
-      return left.value == right.value
-    },
-  }
+  return EqualOperator()
 }
 
 export function ColorEOperator(): ConditionOperator<Color> {
@@ -60,9 +60,5 @@ export function ColorEOperator(): ConditionOperator<Color> {
 }
 
 export function BooleanEOperator(): ConditionOperator<boolean> {
-  return {
-    evaluate(left, right) {
-      return left.value == right.value
-    },
-  }
+  return EqualOperator()
 }
