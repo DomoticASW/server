@@ -58,3 +58,11 @@ export function ColorEOperator(): ConditionOperator<Color> {
     },
   }
 }
+
+export function BooleanEOperator(): ConditionOperator<boolean> {
+  return {
+    evaluate(left, right) {
+      return left.value == right.value
+    },
+  }
+}
