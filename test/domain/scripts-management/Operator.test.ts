@@ -1,6 +1,6 @@
 import { Color } from "../../../src/domain/devices-management/Types.js"
 import { ConstantValue } from "../../../src/domain/scripts-management/Instruction.js"
-import { NumberEOperator, NumberGEOperator, NumberLEOperator, NumberLOperator, NumberGOperator, StringEOperator, ColorEOperator } from "../../../src/domain/scripts-management/Operators.js"
+import { NumberEOperator, NumberGEOperator, NumberLEOperator, NumberLOperator, NumberGOperator, StringEOperator, ColorEOperator, BooleanEOperator } from "../../../src/domain/scripts-management/Operators.js"
 
 test("A number equals operator makes a check of equality on numbers", () => {
   const condition = NumberEOperator()
@@ -83,4 +83,14 @@ test("A color equal operator makes a check of equality between colors", () => {
   expect(condition.evaluate(left, right2)).toBe(false)
   expect(condition.evaluate(left, right3)).toBe(false)
   expect(condition.evaluate(left, right4)).toBe(false)
+})
+
+test("A boolean equal operator makes a check of equality between booleans", () => {
+  const condition = BooleanEOperator()
+  const left = ConstantValue(true)
+  const right1 = ConstantValue(true)
+  const right2 = ConstantValue(false)
+
+  expect(condition.evaluate(left, right1)).toBe(true)
+  expect(condition.evaluate(left, right2)).toBe(false)
 })
