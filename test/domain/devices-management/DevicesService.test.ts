@@ -107,6 +107,18 @@ test("find returns an error in case device is not found", () => {
     )).toThrow("DeviceNotFoundError")
 })
 
+test("findUnsafe retrieves devices by id", () => {
+    const [id, device] = pipe(
+        Effect.gen(function* () {
+            const id = yield* service.add(makeToken(), new URL("http://localhost"))
+            const device = yield* service.findUnsafe(id)
+            return [id, device] as [DeviceId, Device]
+        }),
+        Effect.runSync
+    )
+    expect(device.id).toEqual(id)
+})
+
 test("remove removes devices by id", () => {
     const devices = pipe(
         Effect.gen(function* () {

@@ -88,11 +88,14 @@ export class DevicesServiceImpl implements DevicesService {
     find(token: Token, deviceId: DeviceId): Effect.Effect<Device, DeviceNotFoundError | InvalidTokenError> {
         return Effect.Do.pipe(
             Effect.bind("_", () => this.usersService.verifyToken(token)),
-            Effect.bind("device", () => this.findWithoutToken(deviceId)),
+            Effect.bind("device", () => this.findUnsafe(deviceId)),
             Effect.map((({ device }) => device))
         )
     }
-    private findWithoutToken(deviceId: DeviceId): Effect.Effect<Device, DeviceNotFoundError> {
+    /**
+     * This function is not expected to be exposed and should only used internally
+     */
+    findUnsafe(deviceId: DeviceId): Effect.Effect<Device, DeviceNotFoundError> {
         return Effect.Do.pipe(
             Effect.bind("device", () => this.repo.find(deviceId)),
             Effect.mapError((e) => {
@@ -119,7 +122,7 @@ export class DevicesServiceImpl implements DevicesService {
     }
     executeAutomationAction(deviceId: DeviceId, actionId: DeviceActionId, input: unknown): Effect.Effect<void, InvalidInputError | DeviceActionError | DeviceActionNotFound | DeviceNotFoundError> {
         return Effect.Do.pipe(
-            Effect.bind("device", () => this.findWithoutToken(deviceId)),
+            Effect.bind("device", () => this.findUnsafe(deviceId)),
             Effect.let("action", ({ device }) => device.actions.find(a => a.id === actionId)),
             Effect.bind("__", ({ action }) => Effect.if(action != undefined, {
                 onTrue: () => Effect.succeed(null),
