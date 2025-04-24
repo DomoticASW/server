@@ -86,13 +86,17 @@ export class DevicesServiceImpl implements DevicesService {
     find(token: Token, deviceId: DeviceId): Effect.Effect<Device, DeviceNotFoundError | InvalidTokenError> {
         return Effect.Do.pipe(
             Effect.bind("_", () => this.usersService.verifyToken(token)),
+            Effect.bind("device", () => this.findWithoutToken(deviceId)),
+            Effect.map((({ device }) => device))
+        )
+    }
+    private findWithoutToken(deviceId: DeviceId): Effect.Effect<Device, DeviceNotFoundError> {
+        return Effect.Do.pipe(
             Effect.bind("device", () => this.repo.find(deviceId)),
             Effect.mapError((e) => {
                 switch (e.__brand) {
                     case "NotFoundError":
                         return DeviceNotFoundError(e.cause)
-                    default:
-                        return e
                 }
             }),
             Effect.map(({ device }) => device)
@@ -108,7 +112,12 @@ export class DevicesServiceImpl implements DevicesService {
         // TODO: check permissions
         return Effect.Do.pipe(
             Effect.bind("_", () => this.usersService.verifyToken(token)),
-            Effect.bind("device", () => this.find(token, deviceId)),
+            Effect.bind("__", () => this.executeAutomationAction(deviceId, actionId, input))
+        )
+    }
+    executeAutomationAction(deviceId: DeviceId, actionId: DeviceActionId, input: unknown): Effect.Effect<void, InvalidInputError | DeviceActionError | DeviceActionNotFound | DeviceNotFoundError> {
+        return Effect.Do.pipe(
+            Effect.bind("device", () => this.findWithoutToken(deviceId)),
             Effect.let("action", ({ device }) => device.actions.find(a => a.id === actionId)),
             Effect.bind("__", ({ action }) => Effect.if(action != undefined, {
                 onTrue: () => Effect.succeed(null),
@@ -116,9 +125,6 @@ export class DevicesServiceImpl implements DevicesService {
             })),
             Effect.bind("___", ({ action }) => action!.execute(input))
         )
-    }
-    executeAutomationAction(deviceId: DeviceId, actionId: DeviceActionId, input: unknown): Effect.Effect<void, InvalidInputError | DeviceActionError | DeviceActionNotFound | DeviceNotFoundError> {
-        throw new Error("Method not implemented.");
     }
 
     /**
