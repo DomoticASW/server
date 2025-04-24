@@ -85,8 +85,37 @@ export class DevicesServiceImpl implements DevicesService {
     executeAutomationAction(deviceId: DeviceId, actionId: DeviceActionId, input: unknown): Effect.Effect<void, InvalidInputError | DeviceActionError | DeviceActionNotFound | DeviceNotFoundError> {
         throw new Error("Method not implemented.");
     }
+
+    /**
+     * This function is expected to be called by a device to inform
+     * the server about the fact that one of its properties has updated
+     * its value.
+     * As a result no type error is expected to be thrown as devices
+     * should correctly know their property types and constraints
+     */
     updateDeviceProperty(deviceId: DeviceId, propertyId: DevicePropertyId, value: unknown): Effect.Effect<void, InvalidInputError | DeviceNotFoundError | DevicePropertyNotFound> {
-        throw new Error("Method not implemented.");
+        // TODO check token
+        return Effect.Do.pipe(
+            Effect.bind("device", () => this.repo.find(deviceId)),
+            Effect.bind("property", ({ device }) => {
+                const property = device.properties.find(p => p.id === propertyId)
+                if (property) return Effect.succeed(property)
+                else return Effect.fail(DevicePropertyNotFound(`Device ${device.name} does not have a property with id: ${propertyId}`))
+            }),
+            Effect.bind("_", ({ device, property }) => {
+                property.value = value
+                return this.repo.update(device)
+            }),
+            Effect.mapError((e) => {
+                switch (e.__brand) {
+                    case "NotFoundError":
+                        return DeviceNotFoundError(e.cause)
+                    default:
+                        return e
+                }
+            }),
+            Effect.asVoid
+        )
     }
     subscribeForDevicePropertyUpdates(subscriber: DevicePropertyUpdatesSubscriber): void {
         throw new Error("Method not implemented.");
