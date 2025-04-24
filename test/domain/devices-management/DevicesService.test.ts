@@ -6,9 +6,9 @@ import { DevicePropertyUpdatesSubscriber, DevicesService } from "../../../src/po
 import { InMemoryRepositoryMock } from "../../InMemoryRepositoryMock.js"
 import { DevicesServiceImpl } from "../../../src/domain/devices-management/DevicesServiceImpl.js"
 import { DeviceFactory } from "../../../src/ports/devices-management/DeviceFactory.js"
-import { DeviceUnreachableError } from "../../../src/ports/devices-management/Errors.js"
+import { DeviceActionError, DeviceUnreachableError, InvalidInputError } from "../../../src/ports/devices-management/Errors.js"
 import { DeviceRepository } from "../../../src/ports/devices-management/DeviceRepository.js"
-import { NoneInt } from "../../../src/domain/devices-management/Types.js"
+import { IntRange, NoneInt } from "../../../src/domain/devices-management/Types.js"
 import { InvalidTokenError } from "../../../src/ports/users-management/Errors.js"
 import { UsersService } from "../../../src/ports/users-management/UserService.js"
 
@@ -251,6 +251,56 @@ test("unsubscribeForDevicePropertyUpdates unregisters subscribers", () => {
         }),
         Effect.runSync
     )
+})
+
+describe("executeAction", () => {
+    const deviceId = DeviceId("1")
+    const actionId = DeviceActionId("1")
+    let receivedInput: unknown
+    beforeEach(() => {
+        deviceFactory = {
+            create(deviceUrl: URL): Effect.Effect<Device, DeviceUnreachableError> {
+                const action: DeviceAction<number> = {
+                    id: actionId,
+                    name: "action",
+                    inputTypeConstraints: IntRange(0, 100),
+                    execute: function (input: number): Effect.Effect<void, InvalidInputError | DeviceActionError> {
+                        receivedInput = input
+                        return Effect.succeed(null)
+                    }
+                }
+                return Effect.succeed(Device(deviceId, "device", deviceUrl, DeviceStatus.Online, [], [action], []))
+            }
+        }
+        const alwaysValidTokenUsersService = {
+            verifyToken() {
+                return Effect.succeed(null)
+            }
+        } as unknown as UsersService
+        service = new DevicesServiceImpl(repo, deviceFactory, alwaysValidTokenUsersService)
+    })
+
+    test("executes the given action on the given device with the given input", () => {
+        const input = 4
+        pipe(
+            Effect.gen(function* () {
+                yield* service.add(makeToken(), new URL("http://localhost"))
+                yield* service.executeAction(makeToken(), deviceId, actionId, input)
+                expect(receivedInput).toEqual(input)
+            }),
+            Effect.runSync
+        )
+    })
+
+    test("throws if the action is not found on the device", () => {
+        expect(() => pipe(
+            Effect.gen(function* () {
+                yield* service.add(makeToken(), new URL("http://localhost"))
+                yield* service.executeAction(makeToken(), deviceId, DeviceActionId("nope"), 5)
+            }),
+            Effect.runSync
+        )).toThrow("DeviceActionNotFound")
+    })
 })
 
 describe("all methods requiring a token fail if the token is invalid", () => {

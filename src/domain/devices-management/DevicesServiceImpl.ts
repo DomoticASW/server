@@ -1,4 +1,4 @@
-import { Effect, pipe } from "effect";
+import { Effect, Option, pipe } from "effect";
 import { DevicePropertyUpdatesSubscriber, DevicesService } from "../../ports/devices-management/DevicesService.js";
 import { DeviceUnreachableError, DeviceNotFoundError, InvalidInputError, DeviceActionError, DeviceActionNotFound, DevicePropertyNotFound, DeviceAlreadyRegisteredError } from "../../ports/devices-management/Errors.js";
 import { PermissionError } from "../../ports/permissions-management/Errors.js";
@@ -105,9 +105,16 @@ export class DevicesServiceImpl implements DevicesService {
         )
     }
     executeAction(token: Token, deviceId: DeviceId, actionId: DeviceActionId, input: unknown): Effect.Effect<void, InvalidInputError | DeviceActionError | DeviceActionNotFound | DeviceNotFoundError | InvalidTokenError | PermissionError> {
-        return pipe(
-            this.usersService.verifyToken(token),
-            Effect.flatMap(() => Effect.die("Method not implemented"))
+        // TODO: check permissions
+        return Effect.Do.pipe(
+            Effect.bind("_", () => this.usersService.verifyToken(token)),
+            Effect.bind("device", () => this.find(token, deviceId)),
+            Effect.let("action", ({ device }) => device.actions.find(a => a.id === actionId)),
+            Effect.bind("__", ({ action }) => Effect.if(action != undefined, {
+                onTrue: () => Effect.succeed(null),
+                onFalse: () => Effect.fail(DeviceActionNotFound())
+            })),
+            Effect.bind("___", ({ action }) => action!.execute(input))
         )
     }
     executeAutomationAction(deviceId: DeviceId, actionId: DeviceActionId, input: unknown): Effect.Effect<void, InvalidInputError | DeviceActionError | DeviceActionNotFound | DeviceNotFoundError> {
