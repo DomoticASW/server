@@ -2,7 +2,7 @@ import { Effect, pipe } from "effect"
 import { DeviceId, Device, DeviceStatus, DevicePropertyId, DeviceProperty, DeviceAction, DeviceEvent } from "../../../src/domain/devices-management/Device.js"
 import { UserRole, Token } from "../../../src/domain/users-management/Token.js"
 import { Email } from "../../../src/domain/users-management/User.js"
-import { DevicesService } from "../../../src/ports/devices-management/DevicesService.js"
+import { DevicePropertyUpdatesSubscriber, DevicesService } from "../../../src/ports/devices-management/DevicesService.js"
 import { InMemoryRepositoryMock } from "../../InMemoryRepositoryMock.js"
 import { DevicesServiceImpl } from "../../../src/domain/devices-management/DevicesServiceImpl.js"
 import { DeviceFactory } from "../../../src/ports/devices-management/DeviceFactory.js"
@@ -168,3 +168,81 @@ test("updateDeviceProperty returns an error in case device property is not found
         Effect.runSync
     )).toThrow("DevicePropertyNotFound")
 })
+
+test("subscribeForDevicePropertyUpdates lets subscriber receive updates", () => {
+    let updatedDeviceId: DeviceId
+    let updatedDevicePropertyId: DevicePropertyId
+    let updatedPropertyValue: unknown
+    const subscriber: DevicePropertyUpdatesSubscriber = {
+        devicePropertyChanged: function (deviceId: DeviceId, propertyId: DevicePropertyId, value: unknown): void {
+            updatedDeviceId = deviceId
+            updatedDevicePropertyId = propertyId
+            updatedPropertyValue = value
+        }
+    }
+    pipe(
+        Effect.gen(function* () {
+            const id = yield* service.add(makeToken(), new URL("http://localhost"))
+            const device = yield* service.find(makeToken(), id)
+            const property = device.properties[0]
+            const newValue = 3
+            service.subscribeForDevicePropertyUpdates(subscriber)
+            yield* service.updateDeviceProperty(id, property.id, newValue)
+            expect(updatedDeviceId).toEqual(id)
+            expect(updatedDevicePropertyId).toEqual(property.id)
+            expect(updatedPropertyValue).toEqual(newValue)
+        }),
+        Effect.runSync
+    )
+})
+
+test("subscribeForDevicePropertyUpdates registers multiple subscribers", () => {
+    let calls = 0
+    const subscriber1: DevicePropertyUpdatesSubscriber = {
+        devicePropertyChanged: function (): void {
+            calls += 1
+        }
+    }
+    const subscriber2: DevicePropertyUpdatesSubscriber = {
+        devicePropertyChanged: function (): void {
+            calls += 1
+        }
+    }
+    pipe(
+        Effect.gen(function* () {
+            const id = yield* service.add(makeToken(), new URL("http://localhost"))
+            const device = yield* service.find(makeToken(), id)
+            const property = device.properties[0]
+            const newValue = 3
+            service.subscribeForDevicePropertyUpdates(subscriber1)
+            service.subscribeForDevicePropertyUpdates(subscriber2)
+            yield* service.updateDeviceProperty(id, property.id, newValue)
+            expect(calls).toEqual(2)
+        }),
+        Effect.runSync
+    )
+})
+
+test("unsubscribeForDevicePropertyUpdates unregisters subscribers", () => {
+    let calls = 0
+    const subscriber: DevicePropertyUpdatesSubscriber = {
+        devicePropertyChanged: function (): void {
+            calls += 1
+        }
+    }
+    pipe(
+        Effect.gen(function* () {
+            const id = yield* service.add(makeToken(), new URL("http://localhost"))
+            const device = yield* service.find(makeToken(), id)
+            const property = device.properties[0]
+            const newValue = 3
+            service.subscribeForDevicePropertyUpdates(subscriber)
+            yield* service.updateDeviceProperty(id, property.id, newValue)
+            service.unsubscribeForDevicePropertyUpdates(subscriber)
+            yield* service.updateDeviceProperty(id, property.id, newValue + 1)
+            expect(calls).toEqual(1)
+        }),
+        Effect.runSync
+    )
+})
+
