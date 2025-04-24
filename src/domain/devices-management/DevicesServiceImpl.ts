@@ -11,6 +11,7 @@ import { DeviceRepository } from "../../ports/devices-management/DeviceRepositor
 export class DevicesServiceImpl implements DevicesService {
     private repo: DeviceRepository
     private deviceFactory: DeviceFactory
+    private propertyUpdatesSubscribers: DevicePropertyUpdatesSubscriber[] = [];
     constructor(repository: DeviceRepository, deviceFactory: DeviceFactory) {
         this.repo = repository
         this.deviceFactory = deviceFactory
@@ -46,6 +47,7 @@ export class DevicesServiceImpl implements DevicesService {
         )
     }
     rename(token: Token, deviceId: DeviceId, name: string): Effect.Effect<void, DeviceNotFoundError | TokenError> {
+        // TODO: check token
         return Effect.Do.pipe(
             Effect.bind("device", () => this.find(token, deviceId)),
             Effect.bind("_", ({ device }) => {
@@ -114,13 +116,14 @@ export class DevicesServiceImpl implements DevicesService {
                         return e
                 }
             }),
+            Effect.tap(({ device, property }) => this.propertyUpdatesSubscribers.forEach(s => s.devicePropertyChanged(device.id, property.id, property.value))),
             Effect.asVoid
         )
     }
     subscribeForDevicePropertyUpdates(subscriber: DevicePropertyUpdatesSubscriber): void {
-        throw new Error("Method not implemented.");
+        this.propertyUpdatesSubscribers.push(subscriber)
     }
     unsubscribeForDevicePropertyUpdates(subscriber: DevicePropertyUpdatesSubscriber): void {
-        throw new Error("Method not implemented.");
+        this.propertyUpdatesSubscribers = this.propertyUpdatesSubscribers.filter(s => s !== subscriber)
     }
 }
