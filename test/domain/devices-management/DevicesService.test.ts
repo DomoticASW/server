@@ -1,5 +1,5 @@
 import { Effect, pipe } from "effect"
-import { DeviceId, Device, DeviceStatus, DevicePropertyId, DeviceProperty, DeviceAction, DeviceEvent } from "../../../src/domain/devices-management/Device.js"
+import { DeviceId, Device, DeviceStatus, DevicePropertyId, DeviceProperty, DeviceAction, DeviceEvent, DeviceActionId } from "../../../src/domain/devices-management/Device.js"
 import { UserRole, Token } from "../../../src/domain/users-management/Token.js"
 import { Email } from "../../../src/domain/users-management/User.js"
 import { DevicePropertyUpdatesSubscriber, DevicesService } from "../../../src/ports/devices-management/DevicesService.js"
@@ -9,6 +9,8 @@ import { DeviceFactory } from "../../../src/ports/devices-management/DeviceFacto
 import { DeviceUnreachableError } from "../../../src/ports/devices-management/Errors.js"
 import { DeviceRepository } from "../../../src/ports/devices-management/DeviceRepository.js"
 import { NoneInt } from "../../../src/domain/devices-management/Types.js"
+import { InvalidTokenError } from "../../../src/ports/users-management/Errors.js"
+import { UsersService } from "../../../src/ports/users-management/UserService.js"
 
 let service: DevicesService
 let deviceFactory: DeviceFactory
@@ -31,7 +33,12 @@ beforeEach(() => {
             return Effect.succeed(Device(DeviceId(deviceUrl.toString()), "device", deviceUrl, DeviceStatus.Online, properties, actions, events))
         }
     }
-    service = new DevicesServiceImpl(repo, deviceFactory)
+    const alwaysValidTokenUsersService = {
+        verifyToken() {
+            return Effect.succeed(null)
+        }
+    } as unknown as UsersService
+    service = new DevicesServiceImpl(repo, deviceFactory, alwaysValidTokenUsersService)
 })
 
 test("has 0 devices initially", () => {
@@ -246,3 +253,52 @@ test("unsubscribeForDevicePropertyUpdates unregisters subscribers", () => {
     )
 })
 
+describe("all methods requiring a token fail if the token is invalid", () => {
+    const deviceId = DeviceId("1")
+    const token = makeToken()
+    const allMethods: Array<(s: DevicesService) => Effect.Effect<unknown, unknown>> = [
+        (s) => s.add(token, new URL("http://localhost")),
+        (s) => s.remove(token, deviceId),
+        (s) => s.rename(token, deviceId, "Oven"),
+        (s) => s.find(token, deviceId),
+        (s) => s.getAllDevices(token),
+        (s) => s.executeAction(token, deviceId, DeviceActionId("action"), null)
+    ]
+
+    beforeEach(() => {
+        const alwaysInvalidTokenUsersService = {
+            verifyToken(): Effect.Effect<void, InvalidTokenError> {
+                return Effect.fail({ __brand: "InvalidTokenError", message: "" })
+            }
+        } as unknown as UsersService
+        service = new DevicesServiceImpl(repo, deviceFactory, alwaysInvalidTokenUsersService)
+    })
+
+    allMethods.forEach(m => {
+        test(m.toString(), async () => {
+            await expect(() => pipe(
+                m(service),
+                Effect.runPromise
+            )).rejects.toThrow("InvalidTokenError")
+        })
+    })
+})
+
+describe("'privileged' methods fail if the user is not an admin (UnauthorizedError)", () => {
+    const deviceId = DeviceId("1")
+    const token = makeToken(UserRole.User)
+    const allMethods: Array<(s: DevicesService) => Effect.Effect<unknown, unknown>> = [
+        (s) => s.add(token, new URL("http://localhost")),
+        (s) => s.remove(token, deviceId),
+        (s) => s.rename(token, deviceId, "Oven"),
+    ]
+
+    allMethods.forEach(m => {
+        test(m.toString(), async () => {
+            await expect(() => pipe(
+                m(service),
+                Effect.runPromise
+            )).rejects.toThrow("UnauthorizedError")
+        })
+    })
+})
