@@ -11,10 +11,22 @@ import { DeviceRepository } from "../../../src/ports/devices-management/DeviceRe
 import { IntRange, NoneInt } from "../../../src/domain/devices-management/Types.js"
 import { InvalidTokenError } from "../../../src/ports/users-management/Errors.js"
 import { UsersService } from "../../../src/ports/users-management/UserService.js"
+import { PermissionsService } from "../../../src/ports/permissions-management/PermissionsService.js"
+import { PermissionError } from "../../../src/ports/permissions-management/Errors.js"
 
 let service: DevicesService
 let deviceFactory: DeviceFactory
 let repo: DeviceRepository
+const alwaysValidTokenUsersService = {
+    verifyToken() {
+        return Effect.succeed(null)
+    }
+} as unknown as UsersService
+const freePermissionsService = {
+    canExecuteActionOnDevice() {
+        return Effect.succeed(null)
+    }
+} as unknown as PermissionsService
 
 function makeToken(role: UserRole = UserRole.Admin): Token {
     return {
@@ -33,12 +45,7 @@ beforeEach(() => {
             return Effect.succeed(Device(DeviceId(deviceUrl.toString()), "device", deviceUrl, DeviceStatus.Online, properties, actions, events))
         }
     }
-    const alwaysValidTokenUsersService = {
-        verifyToken() {
-            return Effect.succeed(null)
-        }
-    } as unknown as UsersService
-    service = new DevicesServiceImpl(repo, deviceFactory, alwaysValidTokenUsersService)
+    service = new DevicesServiceImpl(repo, deviceFactory, alwaysValidTokenUsersService, freePermissionsService)
 })
 
 test("has 0 devices initially", () => {
@@ -256,6 +263,7 @@ test("unsubscribeForDevicePropertyUpdates unregisters subscribers", () => {
 describe("executeAction", () => {
     const deviceId = DeviceId("1")
     const actionId = DeviceActionId("1")
+    const userWithoutPermissionEmail = Email("sventurato@email.com")
     let receivedInput: unknown
     beforeEach(() => {
         deviceFactory = {
@@ -272,12 +280,13 @@ describe("executeAction", () => {
                 return Effect.succeed(Device(deviceId, "device", deviceUrl, DeviceStatus.Online, [], [action], []))
             }
         }
-        const alwaysValidTokenUsersService = {
-            verifyToken() {
-                return Effect.succeed(null)
+        const permissionsService: PermissionsService = {
+            canExecuteActionOnDevice(token: Token) {
+                if (token.userEmail !== userWithoutPermissionEmail) return Effect.succeed(null)
+                else return Effect.fail(PermissionError())
             }
-        } as unknown as UsersService
-        service = new DevicesServiceImpl(repo, deviceFactory, alwaysValidTokenUsersService)
+        } as unknown as PermissionsService
+        service = new DevicesServiceImpl(repo, deviceFactory, alwaysValidTokenUsersService, permissionsService)
     })
 
     test("executes the given action on the given device with the given input", () => {
@@ -301,6 +310,20 @@ describe("executeAction", () => {
             Effect.runSync
         )).toThrow("DeviceActionNotFound")
     })
+
+    test("throws if the user executing the action has no permission to do so", () => {
+        const token: Token = {
+            userEmail: userWithoutPermissionEmail,
+            role: UserRole.Admin
+        }
+        expect(() => pipe(
+            Effect.gen(function* () {
+                yield* service.add(token, new URL("http://localhost"))
+                yield* service.executeAction(token, deviceId, actionId, 5)
+            }),
+            Effect.runSync
+        )).toThrow("PermissionError")
+    })
 })
 
 describe("executeAutomationAction", () => {
@@ -322,12 +345,7 @@ describe("executeAutomationAction", () => {
                 return Effect.succeed(Device(deviceId, "device", deviceUrl, DeviceStatus.Online, [], [action], []))
             }
         }
-        const alwaysValidTokenUsersService = {
-            verifyToken() {
-                return Effect.succeed(null)
-            }
-        } as unknown as UsersService
-        service = new DevicesServiceImpl(repo, deviceFactory, alwaysValidTokenUsersService)
+        service = new DevicesServiceImpl(repo, deviceFactory, alwaysValidTokenUsersService, freePermissionsService)
     })
 
     test("executes the given action on the given device with the given input", () => {
@@ -371,7 +389,7 @@ describe("all methods requiring a token fail if the token is invalid", () => {
                 return Effect.fail({ __brand: "InvalidTokenError", message: "" })
             }
         } as unknown as UsersService
-        service = new DevicesServiceImpl(repo, deviceFactory, alwaysInvalidTokenUsersService)
+        service = new DevicesServiceImpl(repo, deviceFactory, alwaysInvalidTokenUsersService, freePermissionsService)
     })
 
     allMethods.forEach(m => {

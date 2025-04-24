@@ -1,4 +1,4 @@
-import { Effect, Option, pipe } from "effect";
+import { Effect, pipe } from "effect";
 import { DevicePropertyUpdatesSubscriber, DevicesService } from "../../ports/devices-management/DevicesService.js";
 import { DeviceUnreachableError, DeviceNotFoundError, InvalidInputError, DeviceActionError, DeviceActionNotFound, DevicePropertyNotFound, DeviceAlreadyRegisteredError } from "../../ports/devices-management/Errors.js";
 import { PermissionError } from "../../ports/permissions-management/Errors.js";
@@ -8,16 +8,19 @@ import { DeviceId, Device, DeviceActionId, DevicePropertyId } from "./Device.js"
 import { DeviceFactory } from "../../ports/devices-management/DeviceFactory.js";
 import { DeviceRepository } from "../../ports/devices-management/DeviceRepository.js";
 import { UsersService } from "../../ports/users-management/UserService.js";
+import { PermissionsService } from "../../ports/permissions-management/PermissionsService.js";
 
 export class DevicesServiceImpl implements DevicesService {
     private repo: DeviceRepository
     private deviceFactory: DeviceFactory
     private usersService: UsersService
+    private permissionsService: PermissionsService
     private propertyUpdatesSubscribers: DevicePropertyUpdatesSubscriber[] = [];
-    constructor(repository: DeviceRepository, deviceFactory: DeviceFactory, usersService: UsersService) {
+    constructor(repository: DeviceRepository, deviceFactory: DeviceFactory, usersService: UsersService, permissionsService: PermissionsService) {
         this.repo = repository
         this.deviceFactory = deviceFactory
         this.usersService = usersService
+        this.permissionsService = permissionsService
     }
 
     // TODO: add new error to doc diagrams
@@ -109,10 +112,10 @@ export class DevicesServiceImpl implements DevicesService {
         )
     }
     executeAction(token: Token, deviceId: DeviceId, actionId: DeviceActionId, input: unknown): Effect.Effect<void, InvalidInputError | DeviceActionError | DeviceActionNotFound | DeviceNotFoundError | InvalidTokenError | PermissionError> {
-        // TODO: check permissions
         return Effect.Do.pipe(
             Effect.bind("_", () => this.usersService.verifyToken(token)),
-            Effect.bind("__", () => this.executeAutomationAction(deviceId, actionId, input))
+            Effect.bind("__", () => this.permissionsService.canExecuteActionOnDevice(token, deviceId)),
+            Effect.bind("___", () => this.executeAutomationAction(deviceId, actionId, input))
         )
     }
     executeAutomationAction(deviceId: DeviceId, actionId: DeviceActionId, input: unknown): Effect.Effect<void, InvalidInputError | DeviceActionError | DeviceActionNotFound | DeviceNotFoundError> {
