@@ -10,6 +10,7 @@ export interface DevicesService {
     remove(token: Token, deviceId: DeviceId): Effect<void, DeviceNotFoundError | TokenError>;
     rename(token: Token, deviceId: DeviceId, name: string): Effect<void, DeviceNotFoundError | TokenError>;
     find(token: Token, deviceId: DeviceId): Effect<Device, DeviceNotFoundError | InvalidTokenError>;
+    findUnsafe(deviceId: DeviceId): Effect<Device, DeviceNotFoundError>;
     getAllDevices(token: Token): Effect<Iterable<Device>, InvalidTokenError>;
     executeAction(token: Token, deviceId: DeviceId, actionId: DeviceActionId, input: unknown): Effect<void, InvalidInputError | DeviceActionError | DeviceActionNotFound | DeviceNotFoundError | InvalidTokenError | PermissionError>;
     executeAutomationAction(deviceId: DeviceId, actionId: DeviceActionId, input: unknown): Effect<void, InvalidInputError | DeviceActionError | DeviceActionNotFound | DeviceNotFoundError>;

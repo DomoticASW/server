@@ -27,21 +27,13 @@ beforeEach(() => {
     repo = new InMemoryRepositoryMockCheckingUniqueness((d) => d.id, (dg1, dg2) => dg1.name != dg2.name)
     devicesService = {
         add: () => Effect.succeed(DeviceId("1")),
-        remove: () => Effect.succeed(null),
-        executeAction: () => Effect.succeed(null),
-        getAllDevices: () => Effect.succeed([]),
-        find(token, id) {
+        find(token: Token, id: DeviceId) {
             if (id == DeviceId("1"))
                 return Effect.succeed(Device(DeviceId("1"), "Lamp", new URL("localhost:8080"), DeviceStatus.Online, [], [], []))
             else
                 return Effect.fail(DeviceNotFoundError())
-        },
-        executeAutomationAction: () => Effect.succeed(null),
-        rename: () => Effect.succeed(null),
-        subscribeForDevicePropertyUpdates: () => Effect.succeed(null),
-        unsubscribeForDevicePropertyUpdates: () => Effect.succeed(null),
-        updateDeviceProperty: () => Effect.succeed(null),
-    }
+        }
+    } as unknown as DevicesService
     const alwaysValidTokenUsersService = {
         verifyToken() {
             return Effect.succeed(null)
