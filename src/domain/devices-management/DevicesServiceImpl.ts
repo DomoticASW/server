@@ -23,7 +23,6 @@ export class DevicesServiceImpl implements DevicesService {
         this.permissionsService = permissionsService
     }
 
-    // TODO: add new error to doc diagrams
     add(token: Token, deviceUrl: URL): Effect.Effect<DeviceId, DeviceAlreadyRegisteredError | DeviceUnreachableError | TokenError> {
         return Effect.Do.pipe(
             Effect.bind("_", () =>
