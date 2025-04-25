@@ -3,7 +3,7 @@ import { DeviceGroupsServiceImpl } from "../../../src/domain/devices-management/
 import { Token, UserRole } from "../../../src/domain/users-management/Token.js"
 import { Email } from "../../../src/domain/users-management/User.js"
 import { Effect, Either, pipe } from "effect"
-import { InMemoryRepositoryMock } from "../../InMemoryRepositoryMock.js"
+import { InMemoryRepositoryMockCheckingUniqueness } from "../../InMemoryRepositoryMock.js"
 import { DeviceGroup, DeviceGroupId } from "../../../src/domain/devices-management/DeviceGroup.js"
 import * as uuid from "uuid";
 import { Device, DeviceId, DeviceStatus } from "../../../src/domain/devices-management/Device.js"
@@ -14,7 +14,7 @@ import { InvalidTokenError, UnauthorizedError } from "../../../src/ports/users-m
 
 let service: DeviceGroupsService
 let devicesService: DevicesService
-let repo: InMemoryRepositoryMock<DeviceGroupId, DeviceGroup>
+let repo: InMemoryRepositoryMockCheckingUniqueness<DeviceGroupId, DeviceGroup>
 
 function makeToken(role: UserRole = UserRole.Admin): Token {
     return {
@@ -24,7 +24,7 @@ function makeToken(role: UserRole = UserRole.Admin): Token {
 }
 
 beforeEach(() => {
-    repo = new InMemoryRepositoryMock((d) => d.id, (dg1, dg2) => dg1.name != dg2.name)
+    repo = new InMemoryRepositoryMockCheckingUniqueness((d) => d.id, (dg1, dg2) => dg1.name != dg2.name)
     devicesService = {
         add: () => Effect.succeed(DeviceId("1")),
         remove: () => Effect.succeed(null),

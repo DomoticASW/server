@@ -84,7 +84,7 @@ test("DoubleRange TypeConstraints creation", () => {
     const min = 0.30
     const max = 100
     const tc = DoubleRange(min, max)
-    expect(tc.type).toBe(Type.IntType)
+    expect(tc.type).toBe(Type.DoubleType)
     expect(tc.min).toEqual(min)
     expect(tc.max).toEqual(max)
 })
