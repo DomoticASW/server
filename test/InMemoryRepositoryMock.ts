@@ -1,7 +1,7 @@
 import { DuplicateIdError, NotFoundError, Repository, UniquenessConstraintViolatedError } from "../src/ports/Repository.js";
-import { Effect } from "effect";
+import { Effect, pipe } from "effect";
 
-export class InMemoryRepositoryMock<Id, Entity> implements Repository<Id, Entity> {
+export class InMemoryRepositoryMockCheckingUniqueness<Id, Entity> implements Repository<Id, Entity> {
     private map: Map<Id, Entity> = new Map()
     private idFromEntity: (e: Entity) => Id
     private checkUniqueness: (e1: Entity, e2: Entity) => boolean;
@@ -61,5 +61,39 @@ export class InMemoryRepositoryMock<Id, Entity> implements Repository<Id, Entity
         } else {
             return Effect.fail(NotFoundError())
         }
+    }
+}
+
+export class InMemoryRepositoryMock<Id, Entity> extends InMemoryRepositoryMockCheckingUniqueness<Id, Entity> {
+    constructor(idFromEntity: (e: Entity) => Id) {
+        super(idFromEntity, () => true)
+    }
+
+    add(entity: Entity): Effect.Effect<void, DuplicateIdError> {
+        return pipe(
+            super.add(entity),
+            Effect.catchAll(e => {
+                switch (e.__brand) {
+                    case "UniquenessConstraintViolatedError":
+                        return Effect.die(e)
+                    default:
+                        return Effect.fail(e)
+                }
+            })
+        )
+    }
+
+    update(entity: Entity): Effect.Effect<void, NotFoundError> {
+        return pipe(
+            super.update(entity),
+            Effect.catchAll(e => {
+                switch (e.__brand) {
+                    case "UniquenessConstraintViolatedError":
+                        return Effect.die(e)
+                    default:
+                        return Effect.fail(e)
+                }
+            })
+        )
     }
 }
