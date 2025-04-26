@@ -140,18 +140,26 @@ export interface DeviceAction<T> {
 
     execute(input: T): Effect.Effect<void, InvalidInputError | DeviceActionError>;
 }
-export function DeviceAction<T>(id: DeviceActionId, name: string, inputTypeConstraints: TypeConstraints<T>, description?: string): DeviceAction<T> {
-    return {
-        id: id,
-        name: name,
-        description: description,
-        inputTypeConstraints: inputTypeConstraints,
-        execute(input) {
-            // Don't ask me why validate wants a never, thanks TypeScript
-            return this.inputTypeConstraints.validate(input as never).pipe(Effect.mapError(err => InvalidInputError(err.cause)))
-            // TODO: actually execute the action on the device
-        },
+class DeviceActionImpl<T> implements DeviceAction<T> {
+    id: DeviceActionId;
+    name: string;
+    description?: string;
+    inputTypeConstraints: TypeConstraints<T>;
+    constructor(id: DeviceActionId, name: string, inputTypeConstraints: TypeConstraints<T>, description?: string) {
+        this.id = id
+        this.name = name
+        this.inputTypeConstraints = inputTypeConstraints
+        this.description = description
     }
+    execute(input: T): Effect.Effect<void, InvalidInputError | DeviceActionError> {
+        // Don't ask me why validate wants a never, thanks TypeScript
+        return this.inputTypeConstraints.validate(input as never).pipe(Effect.mapError(err => InvalidInputError(err.cause)))
+        // TODO: actually execute the action on the device
+    }
+
+}
+export function DeviceAction<T>(id: DeviceActionId, name: string, inputTypeConstraints: TypeConstraints<T>, description?: string): DeviceAction<T> {
+    return new DeviceActionImpl(id, name, inputTypeConstraints, description)
 }
 
 export interface DeviceEvent {
