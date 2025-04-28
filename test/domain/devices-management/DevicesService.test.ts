@@ -88,6 +88,17 @@ test("uses DeviceFactory to construct devices", () => {
     expect(device).toEqual(expected)
 })
 
+test("getAllDevicesUnsafe retrieves all devices", () => {
+    const devices = pipe(
+        Effect.gen(function* () {
+            yield* service.add(makeToken(), new URL("http://localhost"))
+            return yield* service.getAllDevicesUnsafe()
+        }),
+        Effect.runSync
+    )
+    expect(devices).toHaveLength(1)
+})
+
 test("find retrieves devices by id", () => {
     const [id, device] = pipe(
         Effect.gen(function* () {
