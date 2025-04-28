@@ -110,8 +110,14 @@ export class DevicesServiceImpl implements DevicesService {
     getAllDevices(token: Token): Effect.Effect<Iterable<Device>, InvalidTokenError> {
         return pipe(
             this.usersService.verifyToken(token),
-            Effect.flatMap(() => this.repo.getAll())
+            Effect.flatMap(() => this.getAllDevicesUnsafe())
         )
+    }
+    /**
+     * This function is not expected to be exposed and should only used internally
+     */
+    getAllDevicesUnsafe(): Effect.Effect<Iterable<Device>, never> {
+        return this.repo.getAll()
     }
     executeAction(token: Token, deviceId: DeviceId, actionId: DeviceActionId, input: unknown): Effect.Effect<void, InvalidInputError | DeviceActionError | DeviceActionNotFound | DeviceNotFoundError | InvalidTokenError | PermissionError> {
         return Effect.Do.pipe(
