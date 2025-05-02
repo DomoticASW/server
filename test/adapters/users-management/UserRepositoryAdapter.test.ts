@@ -1,5 +1,5 @@
 import mongoose from "mongoose"
-import { Effect, pipe } from "effect"
+import { Effect } from "effect"
 import { UserRepository } from "../../../src/ports/users-management/UserRepository.js"
 import { Email, Nickname, PasswordHash, Role, User } from "../../../src/domain/users-management/User.js"
 import { UserRepositoryAdapter } from "../../../src/adapters/users-management/UserRepositoryAdapter.js"

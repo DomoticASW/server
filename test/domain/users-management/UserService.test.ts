@@ -5,7 +5,7 @@ import { RegistrationRequestRepositoryAdapter } from "../../../src/adapters/user
 import { Nickname, Email, PasswordHash, Role, User } from "../../../src/domain/users-management/User.js";
 import { Token } from "../../../src/domain/users-management/Token.js";
 import mongoose from "mongoose";
-import jwt, { verify } from "jsonwebtoken";
+import jwt from "jsonwebtoken";
 
 const dbName: string = "userServiceTests"
 let dbConnection: mongoose.Connection;
@@ -27,7 +27,6 @@ beforeEach(async () => {
 });
 
 describe("UsersServiceImpl", () => {
-    const id = "1";
     const testEmail = Email("test@example.com");
     const testNickname = Nickname("TestUser");
     const testPassword = PasswordHash("hashedPassword");
