@@ -4,7 +4,8 @@ import { DeviceGroupNameAlreadyInUseError, DeviceGroupNotFoundError, DeviceNotFo
 import { Repository } from "../../ports/Repository.js";
 import { TokenError, InvalidTokenError, UnauthorizedError } from "../../ports/users-management/Errors.js";
 import { UsersService } from "../../ports/users-management/UserService.js";
-import { Token, UserRole } from "../users-management/Token.js";
+import { Token } from "../users-management/Token.js";
+import { Role } from "../users-management/User.js";
 import { DeviceId } from "./Device.js";
 import { DeviceGroupId, DeviceGroup } from "./DeviceGroup.js";
 import { Effect, pipe } from "effect";
@@ -22,7 +23,7 @@ export class DeviceGroupsServiceImpl implements DeviceGroupsService {
     addGroup(token: Token, name: string): Effect.Effect<DeviceGroupId, DeviceGroupNameAlreadyInUseError | TokenError> {
         const id = DeviceGroupId(uuid.v4())
         return pipe(
-            Effect.if(token.role == UserRole.Admin, {
+            Effect.if(token.role == Role.Admin, {
                 onTrue: () => this.usersService.verifyToken(token),
                 onFalse: () => Effect.fail(UnauthorizedError())
             }),
@@ -41,7 +42,7 @@ export class DeviceGroupsServiceImpl implements DeviceGroupsService {
     }
     removeGroup(token: Token, groupId: DeviceGroupId): Effect.Effect<void, DeviceGroupNotFoundError | TokenError> {
         return pipe(
-            Effect.if(token.role == UserRole.Admin, {
+            Effect.if(token.role == Role.Admin, {
                 onTrue: () => this.usersService.verifyToken(token),
                 onFalse: () => Effect.fail(UnauthorizedError())
             }),
@@ -58,7 +59,7 @@ export class DeviceGroupsServiceImpl implements DeviceGroupsService {
     }
     renameGroup(token: Token, groupId: DeviceGroupId, name: string): Effect.Effect<void, DeviceGroupNotFoundError | DeviceGroupNameAlreadyInUseError | TokenError> {
         return Effect.Do.pipe(
-            Effect.bind("", () => Effect.if(token.role == UserRole.Admin, {
+            Effect.bind("", () => Effect.if(token.role == Role.Admin, {
                 onTrue: () => this.usersService.verifyToken(token),
                 onFalse: () => Effect.fail(UnauthorizedError())
             })),
@@ -102,7 +103,7 @@ export class DeviceGroupsServiceImpl implements DeviceGroupsService {
     }
     addDeviceToGroup(token: Token, deviceId: DeviceId, groupId: DeviceGroupId): Effect.Effect<void, DeviceNotFoundError | DeviceGroupNotFoundError | TokenError> {
         return Effect.Do.pipe(
-            Effect.bind("", () => Effect.if(token.role == UserRole.Admin, {
+            Effect.bind("", () => Effect.if(token.role == Role.Admin, {
                 onTrue: () => this.usersService.verifyToken(token),
                 onFalse: () => Effect.fail(UnauthorizedError())
             })),
@@ -130,7 +131,7 @@ export class DeviceGroupsServiceImpl implements DeviceGroupsService {
     }
     removeDeviceFromGroup(token: Token, deviceId: DeviceId, groupId: DeviceGroupId): Effect.Effect<void, DeviceNotFoundError | DeviceGroupNotFoundError | TokenError> {
         return Effect.Do.pipe(
-            Effect.bind("", () => Effect.if(token.role == UserRole.Admin, {
+            Effect.bind("", () => Effect.if(token.role == Role.Admin, {
                 onTrue: () => this.usersService.verifyToken(token),
                 onFalse: () => Effect.fail(UnauthorizedError())
             })),
