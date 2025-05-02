@@ -65,6 +65,8 @@ export class UsersServiceImpl implements UsersService {
                 switch (e.__brand) {
                     case "NotFoundError":
                         return UserNotFoundError(e.cause)
+                    case "UnauthorizedError":
+                        return UnauthorizedError()
                     default:
                         return e
                 }
@@ -99,10 +101,7 @@ export class UsersServiceImpl implements UsersService {
         password?: PasswordHash
     ): Effect<void, UserNotFoundError | TokenError> {
         return pipe(
-            Eff.if(token.role == Role.Admin, {
-                onTrue: () => this.verifyToken(token),
-                onFalse: () => Eff.fail(UnauthorizedError())
-            }),
+            this.verifyToken(token),
             Eff.flatMap(() => this.userRepository.find(token.userEmail)),
             Eff.flatMap((user) => {
                 const updatedUser = User(nickname ?? user.nickname, token.userEmail, password ?? user.passwordHash, user.role);
@@ -150,12 +149,21 @@ export class UsersServiceImpl implements UsersService {
     }
     
     verifyToken(token: Token): Effect<void, InvalidTokenError> {
-        if (jwt.verify(token.source, this.secret)) {
-            return Eff.succeed(null);
-        }
-        return Eff.fail(InvalidTokenError())
+        return pipe(
+            Eff.try({
+                try: () => jwt.verify(token.source, this.secret),
+                catch: () => InvalidTokenError(),
+            }),
+            Eff.flatMap((decoded) => {
+                if (decoded) {
+                    return Eff.succeed(null);
+                } else {
+                    return Eff.fail(InvalidTokenError())
+                }
+            }
+        ));
     }
-    
+
     makeToken(value: string): Effect<Token, InvalidTokenFormatError> {
         return pipe(
             Eff.try({
