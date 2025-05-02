@@ -5,8 +5,7 @@ import { RegistrationRequestRepositoryAdapter } from "../../../src/adapters/user
 import { Nickname, Email, PasswordHash, Role, User } from "../../../src/domain/users-management/User.js";
 import { Token } from "../../../src/domain/users-management/Token.js";
 import mongoose from "mongoose";
-import jwt from "jsonwebtoken";
-import { EmailAlreadyInUseError } from "../../../src/ports/users-management/Errors.js";
+import jwt, { verify } from "jsonwebtoken";
 
 const dbName: string = "userServiceTests"
 let dbConnection: mongoose.Connection;
@@ -28,6 +27,7 @@ beforeEach(async () => {
 });
 
 describe("UsersServiceImpl", () => {
+    const id = "1";
     const testEmail = Email("test@example.com");
     const testNickname = Nickname("TestUser");
     const testPassword = PasswordHash("hashedPassword");
@@ -70,6 +70,15 @@ describe("UsersServiceImpl", () => {
         ).rejects.toThrow("UnauthorizedError");
     });
 
+    test("approveRegistrationRequest - should fail if user does not exist", async () => {
+        await Effect.runPromise(usersService.publishRegistrationRequest(testNickname, testEmail, testPassword));
+        await Effect.runPromise(usersService.rejectRegistrationRequest(adminToken, testEmail));
+        
+        await expect(
+            Effect.runPromise(usersService.approveRegistrationRequest(adminToken, testEmail))
+        ).rejects.toThrow("UserNotFoundError");
+    });
+
     test("rejectRegistrationRequest - should remove registration request", async () => {
         await Effect.runPromise(usersService.publishRegistrationRequest(testNickname, testEmail, testPassword));
         await Effect.runPromise(usersService.rejectRegistrationRequest(adminToken, testEmail));
@@ -78,9 +87,26 @@ describe("UsersServiceImpl", () => {
         expect(regReqs).toHaveLength(0);
     });
 
+    test("rejectRegistrationRequest - should fail if user does not exist", async () => {
+        await Effect.runPromise(usersService.publishRegistrationRequest(testNickname, testEmail, testPassword));
+        
+        await expect(
+            Effect.runPromise(usersService.rejectRegistrationRequest(adminToken, Email("")))
+        ).rejects.toThrow("NotFoundError");
+    });
+
+    test("rejectRegistrationRequest - should fail for non-admin token", async () => {
+        await Effect.runPromise(usersService.publishRegistrationRequest(testNickname, testEmail, testPassword));
+        
+        await expect(
+            Effect.runPromise(usersService.rejectRegistrationRequest(userToken, testEmail))
+        ).rejects.toThrow("UnauthorizedError");
+    });
+
     test("removeUser - should remove existing user", async () => {
-        await Effect.runPromise(usersRepo.add(User(testNickname, testEmail, testPassword, Role.User)));
-        await Effect.runPromise(usersService.removeUser(adminToken, testEmail));
+        const email = Email("testEmail@example.com");
+        await Effect.runPromise(usersRepo.add(User(testNickname, email, testPassword, Role.User)));
+        await Effect.runPromise(usersService.removeUser(adminToken, email));
         
         const users = await Effect.runPromise(usersRepo.getAll());
         expect(users).toHaveLength(0);
@@ -93,6 +119,14 @@ describe("UsersServiceImpl", () => {
         ).rejects.toThrow("UnauthorizedError");
     });
 
+    test("removeUser - should fail if user does not exist", async () => {
+        await Effect.runPromise(usersRepo.add(User(testNickname, testEmail, testPassword, Role.User)));
+        
+        await expect(
+            Effect.runPromise(usersService.removeUser(adminToken, Email("")))
+        ).rejects.toThrow("NotFoundError");
+    });
+
     test("updateUserData - should update user information", async () => {
         const newNickname = Nickname("NewNickname");
         await Effect.runPromise(usersRepo.add(User(testNickname, testEmail, testPassword, Role.User)));
@@ -103,6 +137,14 @@ describe("UsersServiceImpl", () => {
         
         const updatedUser = await Effect.runPromise(usersRepo.find(testEmail));
         expect(updatedUser.nickname).toEqual(newNickname);
+    });
+
+    test("updateUserData - should fail if user does not exist", async () => {
+        await Effect.runPromise(usersRepo.add(User(testNickname, Email("prova@mail.com"), testPassword, Role.User)));
+        
+        await expect(
+            Effect.runPromise(usersService.updateUserData(userToken, Nickname("NewNickname"), PasswordHash("newPassword")))
+        ).rejects.toThrow("UserNotFoundError");
     });
 
     test("getAllUsers - should return all users", async () => {
@@ -126,10 +168,26 @@ describe("UsersServiceImpl", () => {
         expect(token).toBeDefined();
     });
 
+    test("login - should fail for invalid credentials", async () => {
+        await Effect.runPromise(usersRepo.add(User(testNickname, testEmail, testPassword, Role.User)));
+        
+        await expect(
+            Effect.runPromise(usersService.login(testEmail, PasswordHash("wrongPassword")))
+        ).rejects.toThrow("InvalidCredentialsError");
+    });
+
     test("verifyToken - should verify valid token", async () => {
         await expect(
             Effect.runPromise(usersService.verifyToken(adminToken))
         ).resolves.not.toThrow();
+    });
+
+    test("verifyToken - should fail for invalid token", async () => {
+        const invalidToken = Token(testEmail, Role.User, "invalid_token");
+        
+        await expect(
+            Effect.runPromise(usersService.verifyToken(invalidToken))
+        ).rejects.toThrow("InvalidTokenError");
     });
 
     test("makeToken - should create token from string", async () => {
