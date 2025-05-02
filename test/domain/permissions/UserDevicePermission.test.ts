@@ -1,5 +1,5 @@
 import { DeviceId } from "../../../src/domain/devices-management/Device.js"
-import { UserDevicePermission } from "../../../src/domain/permissions/UserDevicePermission.js"
+import { UserDevicePermission } from "../../../src/domain/permissions-management/UserDevicePermission.js"
 import { Email } from "../../../src/domain/users-management/User.js"
  
  function makeUserDevicePermission(email: string = "marcoraggio@gmail.com", deviceId: string = "1") {

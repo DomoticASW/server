@@ -41,10 +41,12 @@
     "@commitlint/config-conventional": "^19.7.1",
     "@types/mongoose": "^5.11.96",
     "dotenv": "^16.4.7",
+    "@types/uuid": "^10.0.0",
     "effect": "^3.14.1",
     "express": "^4.17.21",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.12.2",
-    "option-t": "^52.0.2"
+    "option-t": "^52.0.2",
+    "uuid": "^11.1.0"
   }
 }

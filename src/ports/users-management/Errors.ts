@@ -12,7 +12,6 @@ export type TokenError = InvalidTokenError | UnauthorizedError
 export type InvalidTokenError = Brand<Error, "InvalidTokenError">
 export type UnauthorizedError = Brand<Error, "UnauthorizedError">
 
-
 export function DuplicateIdError(cause?: string): DuplicateIdError {
     return { message: "Id already in use", cause: cause, __brand: "DuplicateIdError" }
 }

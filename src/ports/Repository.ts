@@ -2,8 +2,8 @@ import { Effect } from "effect/Effect";
 import { NotFoundError, DuplicateIdError } from "./users-management/Errors.js";
 
 export interface Repository<Id, Entity> {
-    add(entity: Entity): Effect<void, DuplicateIdError>
-    update(entity: Entity): Effect<void, NotFoundError>
+    add(entity: Entity): Effect<void, DuplicateIdError | UniquenessConstraintViolatedError>
+    update(entity: Entity): Effect<void, NotFoundError | UniquenessConstraintViolatedError>
     remove(id: Id): Effect<void, NotFoundError>
     getAll(): Effect<Iterable<Entity>, never>;
     find(id: Id): Effect<Entity, NotFoundError>
@@ -19,4 +19,10 @@ export type NotFoundError = Brand<Error, "NotFoundError">
 
 export function NotFoundError(cause?: string): NotFoundError {
     return { message: "Not found", cause: cause, __brand: "NotFoundError" }
+}
+
+export type UniquenessConstraintViolatedError = Brand<Error, "UniquenessConstraintViolatedError">
+
+export function UniquenessConstraintViolatedError(cause?: string): UniquenessConstraintViolatedError {
+    return { message: "A uniqueness constraint was violated", cause: cause, __brand: "UniquenessConstraintViolatedError" }
 }
