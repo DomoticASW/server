@@ -46,6 +46,12 @@ test("Try to find a User", async () => {
     expect(result).toEqual(user)
 });
 
+test("Try to find a User that doesn't exist", async () => {
+    await Effect.runPromise(repo.add(user))
+    await expect(Effect.runPromise(repo.find(Email(""))))
+        .rejects.toThrow("NotFoundError");
+});
+
 test("Try to update a User", async () => {
     const user2 = User(Nickname("Fra"), Email("ciao@gmail.com"), PasswordHash("password"), "User" as Role);
 
@@ -56,6 +62,14 @@ test("Try to update a User", async () => {
     expect(res).toStrictEqual(user2)
 });
 
+test("Try to update a User that doesn't exist", async () => {
+    const user2 = User(Nickname("Fra"), Email(""), PasswordHash("password"), "User" as Role);
+    
+    await Effect.runPromise(repo.add(user));
+    await expect(Effect.runPromise(repo.update(user2)))
+        .rejects.toThrow("NotFoundError");
+});
+
 test("Try to remove a user", async () => {
     await Effect.runPromise(repo.add(user));
     const res1 = await Effect.runPromise(repo.getAll())
@@ -63,6 +77,16 @@ test("Try to remove a user", async () => {
     await Effect.runPromise(repo.remove(user.email));
     const res2 = await Effect.runPromise(repo.getAll())
     expect(res2).toHaveLength(0)
+});
+
+test("Try to remove a user that doesn't exist", async () => {
+    await Effect.runPromise(repo.add(user));
+    const res1 = await Effect.runPromise(repo.getAll())
+    expect(res1).toHaveLength(1)
+    await expect(Effect.runPromise(repo.remove(Email(""))))
+        .rejects.toThrow("NotFoundError");
+    const res2 = await Effect.runPromise(repo.getAll())
+    expect(res2).toHaveLength(1)
 });
 
 afterAll(async () => {
