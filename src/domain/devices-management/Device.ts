@@ -30,6 +30,76 @@ export interface Device {
     executeAction(actionId: DeviceActionId, input: unknown): Effect.Effect<void, InvalidInputError | DeviceActionError | DeviceActionNotFound>;
 }
 
+class DeviceImpl implements Device {
+    id: DeviceId;
+    name: string;
+    address: URL;
+    status: DeviceStatus;
+    properties: DeviceProperty<unknown>[];
+    actions: DeviceAction<unknown>[];
+    events: DeviceEvent[];
+
+    constructor(
+        id: DeviceId,
+        name: string,
+        address: URL,
+        status: DeviceStatus,
+        properties: DeviceProperty<unknown>[],
+        actions: DeviceAction<unknown>[],
+        events: DeviceEvent[]) {
+        this.id = id
+        this.name = name
+        this.address = address
+        this.status = status
+        this.properties = properties
+        this.actions = actions
+        this.events = events
+    }
+
+    executeAction(actionId: DeviceActionId, input: unknown): Effect.Effect<void, InvalidInputError | DeviceActionError | DeviceActionNotFound> {
+        const action = this.actions.find(a => a.id === actionId)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        function isColor(obj: any): obj is Color {
+            return "r" in obj && "g" in obj && "b" in obj
+        }
+        if (action) {
+            let err
+            switch (action.inputTypeConstraints.type) {
+                case Type.BooleanType:
+                    if (typeof input !== "boolean") err = Effect.fail(InvalidInputError("This action only accepts boolean inputs"));
+                    break;
+
+                case Type.IntType:
+                    if (!Number.isInteger(input)) err = Effect.fail(InvalidInputError("This action only accepts integer inputs"));
+                    break;
+
+                case Type.DoubleType:
+                    if (typeof input !== "number") err = Effect.fail(InvalidInputError("This action only accepts double inputs"));
+                    break;
+
+                case Type.StringType:
+                    if (typeof input !== "string") err = Effect.fail(InvalidInputError("This action only accepts string inputs"));
+                    break;
+
+                case Type.ColorType:
+                    if (typeof input === "object" && !isColor(input)) err = Effect.fail(InvalidInputError("This action only accepts RGB color inputs"));
+                    break;
+
+                case Type.VoidType:
+                    if (input !== undefined && input !== null) err = Effect.fail(InvalidInputError("This action does not accept any input"));
+                    break;
+            }
+            if (err) {
+                return err
+            } else {
+                return action.execute(input)
+            }
+        } else {
+            return Effect.fail(DeviceActionNotFound(`Action with id ${actionId} does not exist on device "${this.name}"`))
+        }
+    }
+}
+
 export function Device(
     id: DeviceId,
     name: string,
@@ -38,57 +108,7 @@ export function Device(
     properties: DeviceProperty<unknown>[],
     actions: DeviceAction<unknown>[],
     events: DeviceEvent[]): Device {
-    return {
-        id: id,
-        name: name,
-        address: address,
-        status: status,
-        properties: properties,
-        actions: actions,
-        events: events,
-        executeAction: function (actionId: DeviceActionId, input: unknown): Effect.Effect<void, InvalidInputError | DeviceActionError | DeviceActionNotFound> {
-            const action = actions.find(a => a.id === actionId)
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            function isColor(obj: any): obj is Color {
-                return "r" in obj && "g" in obj && "b" in obj
-            }
-            if (action) {
-                let err
-                switch (action.inputTypeConstraints.type) {
-                    case Type.BooleanType:
-                        if (typeof input !== "boolean") err = Effect.fail(InvalidInputError("This action only accepts boolean inputs"));
-                        break;
-
-                    case Type.IntType:
-                        if (!Number.isInteger(input)) err = Effect.fail(InvalidInputError("This action only accepts integer inputs"));
-                        break;
-
-                    case Type.DoubleType:
-                        if (typeof input !== "number") err = Effect.fail(InvalidInputError("This action only accepts double inputs"));
-                        break;
-
-                    case Type.StringType:
-                        if (typeof input !== "string") err = Effect.fail(InvalidInputError("This action only accepts string inputs"));
-                        break;
-
-                    case Type.ColorType:
-                        if (typeof input === "object" && !isColor(input)) err = Effect.fail(InvalidInputError("This action only accepts RGB color inputs"));
-                        break;
-
-                    case Type.VoidType:
-                        if (input !== undefined && input !== null) err = Effect.fail(InvalidInputError("This action does not accept any input"));
-                        break;
-                }
-                if (err) {
-                    return err
-                } else {
-                    return action.execute(input)
-                }
-            } else {
-                return Effect.fail(DeviceActionNotFound(`Action with id ${actionId} does not exist on device "${this.name}"`))
-            }
-        }
-    }
+    return new DeviceImpl(id, name, address, status, properties, actions, events)
 }
 
 export interface DeviceProperty<T> {
@@ -120,18 +140,26 @@ export interface DeviceAction<T> {
 
     execute(input: T): Effect.Effect<void, InvalidInputError | DeviceActionError>;
 }
-export function DeviceAction<T>(id: DeviceActionId, name: string, inputTypeConstraints: TypeConstraints<T>, description?: string): DeviceAction<T> {
-    return {
-        id: id,
-        name: name,
-        description: description,
-        inputTypeConstraints: inputTypeConstraints,
-        execute(input) {
-            // Don't ask me why validate wants a never, thanks TypeScript
-            return this.inputTypeConstraints.validate(input as never).pipe(Effect.mapError(err => InvalidInputError(err.cause)))
-            // TODO: actually execute the action on the device
-        },
+class DeviceActionImpl<T> implements DeviceAction<T> {
+    id: DeviceActionId;
+    name: string;
+    description?: string;
+    inputTypeConstraints: TypeConstraints<T>;
+    constructor(id: DeviceActionId, name: string, inputTypeConstraints: TypeConstraints<T>, description?: string) {
+        this.id = id
+        this.name = name
+        this.inputTypeConstraints = inputTypeConstraints
+        this.description = description
     }
+    execute(input: T): Effect.Effect<void, InvalidInputError | DeviceActionError> {
+        // Don't ask me why validate wants a never, thanks TypeScript
+        return this.inputTypeConstraints.validate(input as never).pipe(Effect.mapError(err => InvalidInputError(err.cause)))
+        // TODO: actually execute the action on the device
+    }
+
+}
+export function DeviceAction<T>(id: DeviceActionId, name: string, inputTypeConstraints: TypeConstraints<T>, description?: string): DeviceAction<T> {
+    return new DeviceActionImpl(id, name, inputTypeConstraints, description)
 }
 
 export interface DeviceEvent {

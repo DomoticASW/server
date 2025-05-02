@@ -33,6 +33,10 @@ export type DeviceNotFoundError = Brand<Error, "DeviceNotFoundError">
 export function DeviceNotFoundError(cause?: string): DeviceNotFoundError {
     return { message: "This device was not found", cause: cause, __brand: "DeviceNotFoundError" }
 }
+export type DeviceAlreadyRegisteredError = Brand<Error, "DeviceAlreadyRegisteredError">
+export function DeviceAlreadyRegisteredError(cause?: string): DeviceAlreadyRegisteredError {
+    return { message: "This device is already registered to the system", cause: cause, __brand: "DeviceAlreadyRegisteredError" }
+}
 export type DeviceUnreachableError = Brand<Error, "DeviceUnreachableError">
 export function DeviceUnreachableError(cause?: string): DeviceUnreachableError {
     return { message: "This device was not reachable", cause: cause, __brand: "DeviceUnreachableError" }

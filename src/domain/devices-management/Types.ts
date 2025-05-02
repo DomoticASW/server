@@ -28,75 +28,115 @@ interface TypeConstraint<T> {
 export interface Enum extends Brand<TypeConstraint<string>, "Enum"> {
     readonly values: Set<string>;
 }
-export function Enum(values: Set<string>): Enum {
-    return {
-        __brand: "Enum", type: Type.StringType, values: values, validate(value) {
-            return Effect.if(values.has(value), {
-                onTrue: () => Effect.succeed(null),
-                onFalse: () => Effect.fail(InvalidValueError(`Value ${value} is not valid, valid values are:\n${Array.from(values).join(", ")}`))
-            })
-        }
+class EnumImpl implements Enum {
+    values: Set<string>;
+    type: Type = Type.StringType;
+    __brand: "Enum";
+
+    constructor(values: Set<string>) {
+        this.values = values
+        this.__brand = "Enum"
     }
+    validate(value: string): Effect.Effect<void, InvalidValueError> {
+        return Effect.if(this.values.has(value), {
+            onTrue: () => Effect.succeed(null),
+            onFalse: () => Effect.fail(InvalidValueError(`Value ${value} is not valid, valid values are:\n${Array.from(this.values).join(", ")}`))
+        })
+    }
+
+}
+export function Enum(values: Set<string>): Enum {
+    return new EnumImpl(values)
 }
 
 export interface IntRange extends Brand<TypeConstraint<number>, "IntRange"> {
     readonly min: number;
     readonly max: number;
 }
-export function IntRange(min: number, max: number): IntRange {
-    return {
-        __brand: "IntRange", type: Type.IntType, min: min, max: max, validate(value) {
-            return Effect.flatMap(
-                Effect.if(Number.isInteger(value), {
-                    onTrue: () => Effect.succeed(null),
-                    onFalse: () => Effect.fail(InvalidValueError(`Value ${value} is not valid as it's not an integer`))
-                }),
-                () =>
-                    Effect.if(value >= min && value <= max, {
-                        onTrue: () => Effect.succeed(null),
-                        onFalse: () => Effect.fail(InvalidValueError(`Value ${value} is not valid since it's not between ${min} and ${max}`))
-                    })
-            )
-        }
+class IntRangeImpl implements IntRange {
+    min: number;
+    max: number;
+    type: Type = Type.IntType;
+    __brand: "IntRange";
+
+    constructor(min: number, max: number) {
+        this.min = min
+        this.max = max
+        this.__brand = "IntRange"
     }
+
+    validate(value: number): Effect.Effect<void, InvalidValueError> {
+        return Effect.flatMap(
+            Effect.if(Number.isInteger(value), {
+                onTrue: () => Effect.succeed(null),
+                onFalse: () => Effect.fail(InvalidValueError(`Value ${value} is not valid as it's not an integer`))
+            }),
+            () =>
+                Effect.if(value >= this.min && value <= this.max, {
+                    onTrue: () => Effect.succeed(null),
+                    onFalse: () => Effect.fail(InvalidValueError(`Value ${value} is not valid since it's not between ${this.min} and ${this.max}`))
+                })
+        )
+    }
+}
+export function IntRange(min: number, max: number): IntRange {
+    return new IntRangeImpl(min, max)
 }
 
 export interface DoubleRange extends Brand<TypeConstraint<number>, "DoubleRange"> {
     readonly min: number;
     readonly max: number;
 }
-export function DoubleRange(min: number, max: number): DoubleRange {
-    return {
-        __brand: "DoubleRange", type: Type.IntType, min: min, max: max, validate(value) {
-            return Effect.if(value >= min && value <= max, {
-                onTrue: () => Effect.succeed(null),
-                onFalse: () => Effect.fail(InvalidValueError(`Value ${value} is not valid since it's not between ${min} and ${max}`))
-            })
-        }
+class DoubleRangeImpl implements DoubleRange {
+    min: number;
+    max: number;
+    type: Type = Type.DoubleType;
+    __brand: "DoubleRange";
+
+    constructor(min: number, max: number) {
+        this.min = min
+        this.max = max
+        this.__brand = "DoubleRange"
     }
+
+    validate(value: number): Effect.Effect<void, InvalidValueError> {
+        return Effect.if(value >= this.min && value <= this.max, {
+            onTrue: () => Effect.succeed(null),
+            onFalse: () => Effect.fail(InvalidValueError(`Value ${value} is not valid since it's not between ${this.min} and ${this.max}`))
+        })
+    }
+}
+export function DoubleRange(min: number, max: number): DoubleRange {
+    return new DoubleRangeImpl(min, max)
 }
 
 export type None<T> = Brand<TypeConstraint<T>, "None">
-function None<T>(type: Type): None<T> {
-    return {
-        __brand: "None", type: type, validate: () => Effect.succeed(null),
+class NoneImpl<T> implements None<T> {
+    __brand: "None";
+    type: Type;
+    constructor(type: Type) {
+        this.type = type
+        this.__brand = "None"
+    }
+    validate(): Effect.Effect<void, InvalidValueError> {
+        return Effect.succeed(null)
     }
 }
 export function NoneBoolean(): None<boolean> {
-    return None(Type.BooleanType)
+    return new NoneImpl(Type.BooleanType)
 }
 export function NoneInt(): None<number> {
-    return None(Type.IntType)
+    return new NoneImpl(Type.IntType)
 }
 export function NoneDouble(): None<number> {
-    return None(Type.DoubleType)
+    return new NoneImpl(Type.DoubleType)
 }
 export function NoneString(): None<string> {
-    return None(Type.StringType)
+    return new NoneImpl(Type.StringType)
 }
 export function NoneColor(): None<Color> {
-    return None(Type.ColorType)
+    return new NoneImpl(Type.ColorType)
 }
 export function NoneVoid(): None<void> {
-    return None(Type.VoidType)
+    return new NoneImpl(Type.VoidType)
 }

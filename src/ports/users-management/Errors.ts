@@ -33,10 +33,6 @@ export function InvalidTokenError(cause?: string): InvalidTokenError {
     return { message: "Invalid token", cause: cause, __brand: "InvalidTokenError" }
 }
 
-export function UnauthorizedError(cause?: string): UnauthorizedError {
-    return { message: "Unauthorized", cause: cause, __brand: "UnauthorizedError" }
-}
-
 export function InvalidCredentialsError(cause?: string): InvalidCredentialsError {
     return { message: "Invalid credentials", cause: cause, __brand: "InvalidCredentialsError" }
 }
@@ -49,3 +45,6 @@ export function invalidTokenFormatError(cause?: string): invalidTokenFormatError
     return { message: "Invalid token format", cause: cause, __brand: "invalidTokenFormatError" }
 }
 
+export function UnauthorizedError(cause?: string): UnauthorizedError {
+    return { message: "You are not authorized to perform this operation", cause: cause, __brand: "UnauthorizedError" }
+}
