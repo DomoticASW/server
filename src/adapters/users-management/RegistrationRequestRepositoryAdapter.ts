@@ -1,22 +1,22 @@
 import mongoose from "mongoose";
 import { Effect, pipe } from "effect";
-import { flatMap, orDie, succeed, tryPromise } from "effect/Effect";
+import { flatMap, orDie, succeed, tryPromise, fail } from "effect/Effect";
 import { RegistrationRequestRepository } from "../../../src/ports/users-management/RegistrationRequestRepository.js";
 import { Email, Nickname, PasswordHash } from "../../domain/users-management/User.js";
 import { RegistrationRequest } from "../../domain/users-management/RegistrationRequest.js";
 import { DuplicateIdError, NotFoundError } from "../../ports/users-management/Errors.js";
 
 export interface RegistrationRequestSchema {
+    _id: string,
     nickname: string,
-    email: string,
     passwordHash: string
 }
 
 export class RegistrationRequestRepositoryAdapter implements RegistrationRequestRepository {
     
     private registrationRequestSchema = new mongoose.Schema<RegistrationRequestSchema>({
+        _id: { type: String, required: true },
         nickname: { type: String, required: true },
-        email: { type: String, required: true, unique: true },
         passwordHash: { type: String, required: true }
     });
     
@@ -34,11 +34,7 @@ export class RegistrationRequestRepositoryAdapter implements RegistrationRequest
     add(entity: RegistrationRequest): Effect.Effect<void, DuplicateIdError> {
         return tryPromise({
             try: async () => {
-                const existing = await this.registrationRequest.findOne({ email: entity.email });
-                if (existing) {
-                    throw DuplicateIdError();
-                }
-                const RR = new this.registrationRequest({ nickname: entity.nickname, email: entity.email, passwordHash: entity.passwordHash });
+                const RR = new this.registrationRequest({ _id: entity.email, nickname: entity.nickname, passwordHash: entity.passwordHash });
                 await RR.save();
             },
             catch: () => DuplicateIdError(),
@@ -48,8 +44,8 @@ export class RegistrationRequestRepositoryAdapter implements RegistrationRequest
     update(entity: RegistrationRequest): Effect.Effect<void, NotFoundError> {
         return tryPromise({
             try: async () => {
-                const RR = await this.registrationRequest.findOneAndUpdate(
-                    { email: entity.email },
+                const RR = await this.registrationRequest.findByIdAndUpdate(
+                    entity.email,
                     { nickname: entity.nickname, email: entity.email, passwordHash: entity.passwordHash },
                     { new: true }
                 );
@@ -64,7 +60,7 @@ export class RegistrationRequestRepositoryAdapter implements RegistrationRequest
     remove(id: Email): Effect.Effect<void, NotFoundError> {
         return tryPromise({
             try: async () => {
-                const RR = await this.registrationRequest.findOneAndDelete({ email: id });
+                const RR = await this.registrationRequest.findByIdAndDelete(id);
                 if (!RR) {
                     throw NotFoundError();
                 }
@@ -81,7 +77,7 @@ export class RegistrationRequestRepositoryAdapter implements RegistrationRequest
     }
     
     find(id: Email): Effect.Effect<RegistrationRequest, NotFoundError> {
-        const promise = async () => await this.registrationRequest.findOne({ email: id })
+        const promise = async () => await this.registrationRequest.findById(id);
         return pipe(
             tryPromise(promise),
             orDie,
@@ -97,6 +93,6 @@ export class RegistrationRequestRepositoryAdapter implements RegistrationRequest
     }
     
     toEntity(registrationRequest: RegistrationRequestSchema): RegistrationRequest {
-        return RegistrationRequest(Nickname(registrationRequest.nickname), Email(registrationRequest.email), PasswordHash(registrationRequest.passwordHash));
+        return RegistrationRequest(Nickname(registrationRequest.nickname), Email(registrationRequest._id), PasswordHash(registrationRequest.passwordHash));
     }
 }
