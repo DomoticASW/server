@@ -43,8 +43,14 @@ test("Try to add a User with the same email", async () => {
 
 test("Try to find a RegistrationRequest", async () => {
     await Effect.runPromise(repo.add(registrationRequest));
-    const result = await Effect.runPromise(repo.find(registrationRequest.email));
+    const result = await Effect.runPromise(repo.find(Email("ciao@gmail.com")));
     expect(result).toEqual(registrationRequest);
+});
+
+test("Try to find a RegistrationRequest that doesn't exist", async () => {
+    await Effect.runPromise(repo.add(registrationRequest));
+    await expect(Effect.runPromise(repo.find(Email(""))))
+        .rejects.toThrow("NotFoundError");
 });
 
 test("Try to update a RegistrationRequest", async () => {
@@ -57,6 +63,14 @@ test("Try to update a RegistrationRequest", async () => {
     expect(res).toStrictEqual(RR)
 })
 
+test("Try to update a RegistrationRequest that doesn't exist", async () => {
+    const RR = RegistrationRequest(Nickname("Fra"), Email(""), PasswordHash("password"));
+
+    await Effect.runPromise(repo.add(registrationRequest));
+    await expect(Effect.runPromise(repo.update(RR)))
+        .rejects.toThrow("NotFoundError");
+})
+
 test("Try to remove a RegistrationRequest", async () => {
     await Effect.runPromise(repo.add(registrationRequest));
     const res1 = await Effect.runPromise(repo.getAll())
@@ -64,6 +78,16 @@ test("Try to remove a RegistrationRequest", async () => {
     await Effect.runPromise(repo.remove(registrationRequest.email));
     const res2 = await Effect.runPromise(repo.getAll())
     expect(res2).toHaveLength(0)
+})
+
+test("Try to remove a RegistrationRequest that doesn't exist", async () => {
+    await Effect.runPromise(repo.add(registrationRequest));
+    const res1 = await Effect.runPromise(repo.getAll())
+    expect(res1).toHaveLength(1)
+    await expect(Effect.runPromise(repo.remove(Email(""))))
+        .rejects.toThrow("NotFoundError");
+    const res2 = await Effect.runPromise(repo.getAll())
+    expect(res2).toHaveLength(1)
 })
 
 afterAll(async () => {
