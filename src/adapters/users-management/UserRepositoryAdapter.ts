@@ -1,13 +1,13 @@
 import mongoose from "mongoose";
 import { Effect, pipe } from "effect";
-import { flatMap, orDie, succeed, tryPromise } from "effect/Effect";
+import { flatMap, orDie, succeed, tryPromise, fail } from "effect/Effect";
 import { UserRepository } from "../../ports/users-management/UserRepository.js";
 import { Email, Nickname, PasswordHash, User } from "../../domain/users-management/User.js";
 import { NotFoundError, DuplicateIdError } from "../../ports/users-management/Errors.js";
 
 export interface UserRequestSchema {
+    _id: string;
     nickname: string;
-    email: string;
     passwordHash: string;
     role: string;
 }
@@ -15,8 +15,8 @@ export interface UserRequestSchema {
 export class UserRepositoryAdapter implements UserRepository {
 
     private userRequestSchema = new mongoose.Schema<UserRequestSchema>({
+        _id: { type: String, required: true },
         nickname: { type: String, required: true },
-        email: { type: String, required: true, unique: true },
         passwordHash: { type: String, required: true },
         role: { type: String, required: true },
     });
@@ -35,13 +35,9 @@ export class UserRepositoryAdapter implements UserRepository {
     add(entity: User): Effect.Effect<void, DuplicateIdError> {
         return tryPromise({
             try: async () => {
-                const existing = await this.userRequest.findOne({ email: entity.email });
-                if (existing) {
-                    throw DuplicateIdError();
-                }
                 const user = new this.userRequest({
+                    _id: entity.email,
                     nickname: entity.nickname,
-                    email: entity.email,
                     passwordHash: entity.passwordHash,
                     role: entity.role,
                 });
@@ -54,8 +50,8 @@ export class UserRepositoryAdapter implements UserRepository {
     update(entity: User): Effect.Effect<void, NotFoundError> {
         return tryPromise({
             try: async () => {
-                const user = await this.userRequest.findOneAndUpdate(
-                    { email: entity.email },
+                const user = await this.userRequest.findByIdAndUpdate(
+                    entity.email,
                     {
                         nickname: entity.nickname,
                         email: entity.email,
@@ -75,7 +71,7 @@ export class UserRepositoryAdapter implements UserRepository {
     remove(id: Email): Effect.Effect<void, NotFoundError> {
         return tryPromise({
             try: async () => {
-                const user = await this.userRequest.findOneAndDelete({ email: id });
+                const user = await this.userRequest.findByIdAndDelete(id);
                 if (!user) {
                     throw NotFoundError();
                 }
@@ -92,7 +88,7 @@ export class UserRepositoryAdapter implements UserRepository {
     }
 
     find(id: Email): Effect.Effect<User, NotFoundError> {
-        const promise = async () => await this.userRequest.findOne({ email: id })
+        const promise = async () => await this.userRequest.findById(id);
         return pipe(
             tryPromise(promise),
             orDie,
@@ -107,6 +103,6 @@ export class UserRepositoryAdapter implements UserRepository {
     }
 
     toEntity(user: UserRequestSchema): User {
-        return User(Nickname(user.nickname), Email(user.email), PasswordHash(user.passwordHash), user.role as User["role"]);
+        return User(Nickname(user.nickname), Email(user._id), PasswordHash(user.passwordHash), user.role as User["role"]);
     }
 }
