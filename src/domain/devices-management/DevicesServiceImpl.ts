@@ -23,11 +23,6 @@ export class DevicesServiceImpl implements DevicesService {
         this.permissionsService = permissionsService
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    findUnsafe(deviceId: DeviceId): Effect.Effect<Device, DeviceNotFoundError> {
-        throw new Error("Method not implemented.");
-    }
-
     add(token: Token, deviceUrl: URL): Effect.Effect<DeviceId, DeviceAlreadyRegisteredError | DeviceUnreachableError | TokenError> {
         return Effect.Do.pipe(
             Effect.bind("_", () =>
