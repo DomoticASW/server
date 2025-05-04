@@ -238,6 +238,9 @@ export function DevicesServiceSpy(device: Device = DeviceMock(), testingAction: 
         getAllDevices: function (token: Token): Effect<Iterable<Device>, InvalidTokenError> {
           throw new Error("Function not implemented.");
         },
+        getAllDevicesUnsafe: function (): Effect<Iterable<Device>, never> {
+          throw new Error("Function not implemented.");
+        },
         executeAction: function (token: Token, deviceId: DeviceId, actionId: DeviceActionId, input: unknown): Effect<void, InvalidInputError | DeviceActionError | DeviceActionNotFound | DeviceNotFoundError | InvalidTokenError | PermissionError> {
           throw new Error("Function not implemented.");
         },
