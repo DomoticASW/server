@@ -15,7 +15,7 @@ interface DeviceOfflineNotificationSubscriptionSchema {
   }
 }
 
-export class DeviceOfflineNotificationSubscriptionRepositoryMongoadapter implements DeviceOfflineNotificationSubscriptionRepository {
+export class DeviceOfflineNotificationSubscriptionRepositoryMongoAdapter implements DeviceOfflineNotificationSubscriptionRepository {
 
   private deviceOfflineNotificationSubscriptionSchema = new mongoose.Schema<DeviceOfflineNotificationSubscriptionSchema>({
       _id: {

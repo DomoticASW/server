@@ -3,6 +3,7 @@ import { ScriptError } from "../../ports/scripts-management/Errors.js"
 import { Brand } from "../../utils/Brand.js"
 import { ExecutionEnvironment, Instruction } from "./Instruction.js"
 import { Trigger } from "./Trigger.js"
+import { Token } from "../users-management/Token.js"
 
 export interface Script<Id extends ScriptId> {
   readonly id: Id
@@ -10,7 +11,7 @@ export interface Script<Id extends ScriptId> {
 
   instructions: Array<Instruction>
 
-  execute(): Effect<ExecutionEnvironment, ScriptError>
+  execute(token?: Token): Effect<ExecutionEnvironment, ScriptError>
 }
 
 export type Task = Script<TaskId>
