@@ -88,6 +88,17 @@ test("uses DeviceFactory to construct devices", () => {
     expect(device).toEqual(expected)
 })
 
+test("getAllDevicesUnsafe retrieves all devices", () => {
+    const devices = pipe(
+        Effect.gen(function* () {
+            yield* service.add(makeToken(), new URL("http://localhost"))
+            return yield* service.getAllDevicesUnsafe()
+        }),
+        Effect.runSync
+    )
+    expect(devices).toHaveLength(1)
+})
+
 test("find retrieves devices by id", () => {
     const [id, device] = pipe(
         Effect.gen(function* () {
@@ -105,6 +116,18 @@ test("find returns an error in case device is not found", () => {
         service.find(makeToken(), DeviceId(new URL("http://localhost").toString())),
         Effect.runSync
     )).toThrow("DeviceNotFoundError")
+})
+
+test("findUnsafe retrieves devices by id", () => {
+    const [id, device] = pipe(
+        Effect.gen(function* () {
+            const id = yield* service.add(makeToken(), new URL("http://localhost"))
+            const device = yield* service.findUnsafe(id)
+            return [id, device] as [DeviceId, Device]
+        }),
+        Effect.runSync
+    )
+    expect(device.id).toEqual(id)
 })
 
 test("remove removes devices by id", () => {
