@@ -27,9 +27,6 @@ beforeEach(() => {
     repo = new InMemoryRepositoryMockCheckingUniqueness((d) => d.id, (dg1, dg2) => dg1.name != dg2.name)
     devicesService = {
         add: () => Effect.succeed(DeviceId("1")),
-        remove: () => Effect.succeed(null),
-        executeAction: () => Effect.succeed(null),
-        getAllDevices: () => Effect.succeed([]),
         find(token: Token, id: DeviceId) {
             if (id == DeviceId("1"))
                 return Effect.succeed(Device(DeviceId("1"), "Lamp", new URL("localhost:8080"), DeviceStatus.Online, [], [], []))
