@@ -1,7 +1,7 @@
 import { DeviceGroupsService } from "../../../src/ports/devices-management/DeviceGroupsService.js"
 import { DeviceGroupsServiceImpl } from "../../../src/domain/devices-management/DeviceGroupsServiceImpl.js"
-import { Token } from "../../../src/domain/users-management/Token.js"
-import { Email, Role } from "../../../src/domain/users-management/User.js"
+import { Token, UserRole } from "../../../src/domain/users-management/Token.js"
+import { Email } from "../../../src/domain/users-management/User.js"
 import { Effect, Either, pipe } from "effect"
 import { InMemoryRepositoryMockCheckingUniqueness } from "../../InMemoryRepositoryMock.js"
 import { DeviceGroup, DeviceGroupId } from "../../../src/domain/devices-management/DeviceGroup.js"
@@ -16,11 +16,10 @@ let service: DeviceGroupsService
 let devicesService: DevicesService
 let repo: InMemoryRepositoryMockCheckingUniqueness<DeviceGroupId, DeviceGroup>
 
-function makeToken(role: Role = Role.Admin): Token {
+function makeToken(role: UserRole = UserRole.Admin): Token {
     return {
         userEmail: Email("ciccio.pasticcio@email.com"),
-        role: role,
-        source: "test",
+        role: role
     }
 }
 
@@ -28,6 +27,9 @@ beforeEach(() => {
     repo = new InMemoryRepositoryMockCheckingUniqueness((d) => d.id, (dg1, dg2) => dg1.name != dg2.name)
     devicesService = {
         add: () => Effect.succeed(DeviceId("1")),
+        remove: () => Effect.succeed(null),
+        executeAction: () => Effect.succeed(null),
+        getAllDevices: () => Effect.succeed([]),
         find(token: Token, id: DeviceId) {
             if (id == DeviceId("1"))
                 return Effect.succeed(Device(DeviceId("1"), "Lamp", new URL("localhost:8080"), DeviceStatus.Online, [], [], []))
@@ -335,11 +337,11 @@ describe("all methods fail if the token is invalid", () => {
 
 describe("'write' methods fail if the user is not an admin (UnauthorizedError)", () => {
     const allMethods: Array<(s: DeviceGroupsService) => Effect.Effect<unknown, unknown>> = [
-        (s) => s.addGroup(makeToken(Role.User), "group"),
-        (s) => s.removeGroup(makeToken(Role.User), DeviceGroupId("1")),
-        (s) => s.renameGroup(makeToken(Role.User), DeviceGroupId("1"), "group"),
-        (s) => s.addDeviceToGroup(makeToken(Role.User), DeviceId("1"), DeviceGroupId("1")),
-        (s) => s.removeDeviceFromGroup(makeToken(Role.User), DeviceId("1"), DeviceGroupId("1")),
+        (s) => s.addGroup(makeToken(UserRole.User), "group"),
+        (s) => s.removeGroup(makeToken(UserRole.User), DeviceGroupId("1")),
+        (s) => s.renameGroup(makeToken(UserRole.User), DeviceGroupId("1"), "group"),
+        (s) => s.addDeviceToGroup(makeToken(UserRole.User), DeviceId("1"), DeviceGroupId("1")),
+        (s) => s.removeDeviceFromGroup(makeToken(UserRole.User), DeviceId("1"), DeviceGroupId("1")),
     ]
 
     allMethods.forEach(m => {
