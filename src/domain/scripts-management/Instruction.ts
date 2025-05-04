@@ -7,6 +7,8 @@ import { ScriptError } from "../../ports/scripts-management/Errors.js"
 import { NotificationsService } from "../../ports/notifications-management/NotificationsService.js"
 import { ScriptsService } from "../../ports/scripts-management/ScriptsService.js"
 import { DevicesService } from "../../ports/devices-management/DevicesService.js"
+import { PermissionsService } from "../../ports/permissions-management/PermissionsService.js"
+import { Token } from "../users-management/Token.js"
 
 export interface Instruction {
   execute(env: ExecutionEnvironment): Effect<ExecutionEnvironment, ScriptError>
@@ -24,7 +26,8 @@ export interface WaitInstruction extends Instruction {
 
 export interface StartTaskInstruction extends Instruction {
   taskId: TaskId,
-  scriptsService: ScriptsService
+  scriptsService: ScriptsService,
+  permissionsService: PermissionsService
 }
 
 export interface DeviceActionInstruction extends Instruction {
@@ -78,6 +81,7 @@ export interface ConstantValue<T> {
 
 export interface ExecutionEnvironment {
   readonly constants: Map<ConstantInstruction<unknown>, ConstantValue<unknown>>
+  readonly taskToken?: Token
 }
 
 export function Condition<T>(left: ConstantInstruction<T>, right: ConstantInstruction<T>, operator: ConditionOperator<T>, negate: boolean = false): Condition<T> {
@@ -101,14 +105,16 @@ export function ConstantValue<T>(value: T): ConstantValue<T> {
   }
 }
 
-export function ExecutionEnvironment(): ExecutionEnvironment {
+export function ExecutionEnvironment(token?: Token): ExecutionEnvironment {
   return {
-    constants: new Map<ConstantInstruction<unknown>, ConstantValue<unknown>>()
+    constants: new Map<ConstantInstruction<unknown>, ConstantValue<unknown>>(),
+    taskToken: token
   }
 }
 
-export function ExecutionEnvironmentFromConstants(constants: Map<ConstantInstruction<unknown>, ConstantValue<unknown>>): ExecutionEnvironment {
+export function ExecutionEnvironmentCopy(env: ExecutionEnvironment): ExecutionEnvironment {
   return {
-    constants: new Map(constants)
+    constants: new Map(env.constants),
+    taskToken: env.taskToken
   }
 }

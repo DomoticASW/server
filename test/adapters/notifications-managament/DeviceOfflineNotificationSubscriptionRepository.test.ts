@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import { DeviceOfflineNotificationSubscriptionRepositoryMongoadapter } from "../../../src/adapters/notifications-management/DeviceOfflineNotificationSubscription.js";
+import { DeviceOfflineNotificationSubscriptionRepositoryMongoAdapter } from "../../../src/adapters/notifications-management/DeviceOfflineNotificationSubscription.js";
 import { Effect, pipe } from "effect";
 import { DeviceOfflineNotificationSubscription } from "../../../src/domain/notifications-management/DeviceOfflineNotificationSubscription.js";
 import { DeviceOfflineNotificationSubscriptionRepository } from "../../../src/ports/notifications-management/DeviceOfflineNotificationSubscriptionRepository.js";
@@ -13,7 +13,7 @@ let notification: DeviceOfflineNotificationSubscription
 
 beforeAll(async () => {
   dbConnection = await mongoose.createConnection(`mongodb://localhost:27018/${dbName}`).asPromise();
-  repo = new DeviceOfflineNotificationSubscriptionRepositoryMongoadapter(dbConnection);
+  repo = new DeviceOfflineNotificationSubscriptionRepositoryMongoAdapter(dbConnection);
   notification = DeviceOfflineNotificationSubscription(Email("email@email.com"), DeviceId("1"))
 });
 
@@ -21,7 +21,7 @@ beforeEach(async () => {
   const collections = await dbConnection.listCollections()
   await Promise.all(collections.map(c => dbConnection.dropCollection(c.name)))
 
-  repo = new DeviceOfflineNotificationSubscriptionRepositoryMongoadapter(dbConnection);
+  repo = new DeviceOfflineNotificationSubscriptionRepositoryMongoAdapter(dbConnection);
 });
 
 test("The repository is initially empty", async () => {

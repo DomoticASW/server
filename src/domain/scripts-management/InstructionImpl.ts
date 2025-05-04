@@ -1,8 +1,8 @@
-import { Duration, pipe } from "effect";
+import { Duration, Effect, pipe } from "effect";
 import { Type } from "../../ports/devices-management/Types.js";
 import { DeviceActionId, DeviceId, DevicePropertyId } from "../devices-management/Device.js";
 import { Email } from "../users-management/User.js";
-import { Condition, ConstantValue, CreateConstantInstruction, CreateDevicePropertyConstantInstruction, DeviceActionInstruction, ElseInstruction, ExecutionEnvironmentFromConstants, IfInstruction, Instruction, SendNotificationInstruction, StartTaskInstruction, WaitInstruction } from "./Instruction.js";
+import { Condition, ConstantValue, CreateConstantInstruction, CreateDevicePropertyConstantInstruction, DeviceActionInstruction, ElseInstruction, ExecutionEnvironmentCopy, IfInstruction, Instruction, SendNotificationInstruction, StartTaskInstruction, WaitInstruction } from "./Instruction.js";
 import { TaskId } from "./Script.js";
 import { andThen, map, mapError, sleep, succeed, orDie, flatMap, sync, reduce, fail, fromNullable } from "effect/Effect";
 import { ScriptsService } from "../../ports/scripts-management/ScriptsService.js";
@@ -11,6 +11,7 @@ import { DevicesService } from "../../ports/devices-management/DevicesService.js
 import { InvalidConstantType, ScriptError } from "../../ports/scripts-management/Errors.js";
 import { Color } from "../devices-management/Types.js";
 import { DevicePropertyNotFound } from "../../ports/devices-management/Errors.js";
+import { PermissionsService } from "../../ports/permissions-management/PermissionsService.js"
 
 export function SendNotificationInstruction(email: Email, message: string, notificationsService: NotificationsService): SendNotificationInstruction {
   return {
@@ -40,24 +41,41 @@ export function WaitInstruction(seconds: number): WaitInstruction {
   }
 }
 
-export function StartTaskInstruction(taskId: TaskId, scriptsService: ScriptsService): StartTaskInstruction {
+export function StartTaskInstruction(taskId: TaskId, scriptsService: ScriptsService, permissionsService: PermissionsService): StartTaskInstruction {
   return {
     taskId: taskId,
     scriptsService: scriptsService,
+    permissionsService: permissionsService,
     execute(env) {
       return pipe(
-        scriptsService.findTaskUnsafe(taskId),
-        flatMap(task =>
+        env.taskToken
+          ? permissionsService.canExecuteTask(env.taskToken, taskId)
+          : Effect.void,
+        flatMap(() => 
           pipe(
-            task.execute(),
-            andThen(() => succeed(env))
+            scriptsService.findTaskUnsafe(taskId),
+            flatMap(task => 
+              pipe(
+                task.execute(),
+                andThen(() => succeed(env))
+              )
+            ),
           )
         ),
         mapError(error => ScriptError(error.message + ", " + error.cause))
-      )
-    },
+      );
+    }
   }
 }
+
+// scriptsService.findTaskUnsafe(taskId),
+// flatMap(task => 
+//   pipe(
+//     task.execute(),
+//     andThen(() => succeed(env))
+//   )
+// ),
+// mapError(error => ScriptError(error.message + ", " + error.cause))
 
 export function DeviceActionInstruction(deviceId: DeviceId, deviceActionId: DeviceActionId, input: unknown, devicesService: DevicesService): DeviceActionInstruction {
   return {
@@ -116,7 +134,7 @@ export function CreateConstantInstruction<T>(name: string, type: Type, value: T)
         }),
         flatMap(isValid =>
           isValid
-          ? succeed(ExecutionEnvironmentFromConstants(env.constants))
+          ? succeed(ExecutionEnvironmentCopy(env))
           : fail(InvalidConstantType(type))
         ),
         flatMap(newEnv => {
@@ -153,7 +171,7 @@ export function CreateDevicePropertyConstantInstruction<T>(name: string, type: T
                 : succeed(prop)
             ),
             map((prop) => {
-              const newEnv = ExecutionEnvironmentFromConstants(env.constants)
+              const newEnv = ExecutionEnvironmentCopy(env)
               newEnv.constants.set(this, ConstantValue(prop.value))
               return newEnv
             })
@@ -170,7 +188,7 @@ export function IfInstruction(instructions: Array<Instruction>, condition: Condi
     then: instructions,
     condition: condition,
     execute(env) {
-      const newEnv = ExecutionEnvironmentFromConstants(env.constants)
+      const newEnv = ExecutionEnvironmentCopy(env)
       return pipe(
         sync(() => condition.evaluate(newEnv)),
         flatMap((shouldRun) =>
@@ -189,7 +207,7 @@ export function ElseInstruction(thenInstructions: Array<Instruction>, elseInstru
     else: elseInstructions,
     condition: condition,
     execute(env) {
-      const newEnv = ExecutionEnvironmentFromConstants(env.constants)
+      const newEnv = ExecutionEnvironmentCopy(env)
       return pipe(
         sync(() => condition.evaluate(newEnv)),
         flatMap((shouldRun) =>
