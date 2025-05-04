@@ -4,7 +4,7 @@ import { Token } from "../../domain/users-management/Token.js";
 import { InvalidTokenError } from "../users-management/Errors.js";
 import { AutomationNameAlreadyInUse, InvalidAutomationError, InvalidTaskError, ScriptNotFoundError, TaskNameAlreadyInUse } from "./Errors.js";
 import { TaskBuilder } from "../../domain/scripts/ScriptBuilder.js";
-import { PermissionError } from "../permissions/Errors.js";
+import { PermissionError } from "../permissions-management/Errors.js";
 
 export interface ScriptService {
   findTask(token: Token, taskId: TaskId): Effect<Task, InvalidTokenError | ScriptNotFoundError>

@@ -1,4 +1,4 @@
-import { InvalidValueError, InvalidInputError, DeviceActionError, DeviceNotFoundError, DeviceActionNotFound, DevicePropertyNotFound, DeviceGroupNameAlreadyInUseError, DeviceGroupNotFoundError, DeviceUnreachableError, NotDeviceEventError } from "../../../src/ports/devices-management/Errors.js"
+import { InvalidValueError, InvalidInputError, DeviceActionError, DeviceNotFoundError, DeviceActionNotFound, DevicePropertyNotFound, DeviceGroupNameAlreadyInUseError, DeviceGroupNotFoundError, DeviceUnreachableError, NotDeviceEventError, DeviceAlreadyRegisteredError } from "../../../src/ports/devices-management/Errors.js"
 
 test("InvalidValueError construction", () => {
     const cause = "cause"
@@ -61,6 +61,14 @@ test("DeviceNotFoundError construction", () => {
     const e = DeviceNotFoundError(cause)
     expect(e.__brand).toBe("DeviceNotFoundError")
     expect(e.message).toBe("This device was not found")
+    expect(e.cause).toBe(cause)
+})
+
+test("DeviceAlreadyRegisteredError construction", () => {
+    const cause = "cause"
+    const e = DeviceAlreadyRegisteredError(cause)
+    expect(e.__brand).toBe("DeviceAlreadyRegisteredError")
+    expect(e.message).toBe("This device is already registered to the system")
     expect(e.cause).toBe(cause)
 })
 

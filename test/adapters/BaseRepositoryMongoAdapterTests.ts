@@ -1,6 +1,7 @@
 import mongoose from "mongoose"
 import { Effect } from "effect"
 import { BaseRepositoryMongoAdapter } from "../../src/adapters/BaseRepositoryMongoAdapter.js"
+import { Repository } from "../../src/ports/Repository.js"
 
 /**
  * Tests the given repo
@@ -17,7 +18,8 @@ export function testRepositoryMongoAdapter<Id, Entity, SchemaId, Schema extends 
     makeId: (id: string) => Id,
     makeEntity: (id?: Id, something?: string) => Entity,
     makeRepository: (connection: mongoose.Connection) => BaseRepositoryMongoAdapter<Id, Entity, SchemaId, Schema>,
-    idToSchemaId: (id: Id) => SchemaId) {
+    idToSchemaId: (id: Id) => SchemaId,
+    otherTests?: (conn: () => mongoose.Connection, repo: () => Repository<Id, Entity>) => void) {
 
     let repo: BaseRepositoryMongoAdapter<Id, Entity, SchemaId, Schema>
     let mongoDBConnection: mongoose.Connection
@@ -49,12 +51,12 @@ export function testRepositoryMongoAdapter<Id, Entity, SchemaId, Schema extends 
 
     test("adding entity with already existing id produces DuplicateIdError", async () => {
         const id = makeId("1")
-        const dg1 = makeEntity(id)
-        const dg2 = makeEntity(id)
+        const entity1 = makeEntity(id)
+        const entity2 = makeEntity(id)
 
         await Effect.gen(function* () {
-            yield* repo.add(dg1)
-            yield* repo.add(dg2)
+            yield* repo.add(entity1)
+            yield* repo.add(entity2)
         }).pipe(
             Effect.match({
                 onSuccess() { throw new Error("This operation should have failed") },
@@ -64,17 +66,17 @@ export function testRepositoryMongoAdapter<Id, Entity, SchemaId, Schema extends 
         )
 
         const all = Array.from(await repo.getAll().pipe(Effect.runPromise))
-        expect(all.at(0)).toEqual(dg1)
+        expect(all.at(0)).toEqual(entity1)
         expect(all.length).toBe(1)
     })
 
     test("find returns entity if present", async () => {
         await Effect.gen(function* () {
             const id = makeId("1")
-            const dg = makeEntity(id)
-            yield* repo.add(dg)
-            const persistedDg = yield* repo.find(id)
-            expect(persistedDg).toStrictEqual(dg)
+            const entity = makeEntity(id)
+            yield* repo.add(entity)
+            const persistedEntity = yield* repo.find(id)
+            expect(persistedEntity).toStrictEqual(entity)
         }).pipe(Effect.runPromise)
     })
 
@@ -98,18 +100,18 @@ export function testRepositoryMongoAdapter<Id, Entity, SchemaId, Schema extends 
     test("Add actually persist entity in mongodb", async () => {
         const idValue = "1"
         const id = makeId(idValue)
-        const dg = makeEntity(id)
-        await repo.add(dg).pipe(Effect.runPromise)
+        const entity = makeEntity(id)
+        await repo.add(entity).pipe(Effect.runPromise)
         const persisted = await mongoDBConnection.collection(collectionName).findOne({ _id: idToSchemaId(id) as undefined }) // Don't ask me why
         expect(persisted).toBeDefined()
     })
 
     test("Remove removes entity if present", async () => {
         const id = makeId("1")
-        const dg = makeEntity(id)
+        const entity = makeEntity(id)
 
         const all = await Effect.gen(function* () {
-            yield* repo.add(dg)
+            yield* repo.add(entity)
             yield* repo.remove(id)
             return yield* repo.getAll()
         }).pipe(Effect.runPromise)
@@ -130,26 +132,26 @@ export function testRepositoryMongoAdapter<Id, Entity, SchemaId, Schema extends 
 
     test("Updates correclty updates an entity", async () => {
         const id = makeId("1")
-        const dg = makeEntity(id, "Hello")
-        const dgUpdated = makeEntity(id, "world")
+        const entity = makeEntity(id, "Hello")
+        const entityUpdated = makeEntity(id, "world")
 
         // In order for this test to work correctly the entity must be changed in any way
         // If your test failed here you might have wrongly implemented makeEntity by
         // not taking into account the second parameter
-        expect(dg).not.toEqual(dgUpdated)
+        expect(entity).not.toEqual(entityUpdated)
 
         const updated = await Effect.gen(function* () {
-            yield* repo.add(dg)
-            yield* repo.update(dgUpdated)
+            yield* repo.add(entity)
+            yield* repo.update(entityUpdated)
             return yield* repo.find(id)
         }).pipe(Effect.runPromise)
 
-        expect(updated).toEqual(dgUpdated)
+        expect(updated).toEqual(entityUpdated)
     })
 
     test("Update returns NotFoundError if entity was not present", async () => {
-        const dg = makeEntity()
-        await repo.update(dg)
+        const entity = makeEntity()
+        await repo.update(entity)
             .pipe(
                 Effect.match({
                     onSuccess() { throw new Error("This operation should have failed") },
@@ -158,6 +160,12 @@ export function testRepositoryMongoAdapter<Id, Entity, SchemaId, Schema extends 
                 Effect.runPromise
             )
     })
+
+    if (otherTests) {
+        describe("", () => {
+            otherTests(() => mongoDBConnection, () => repo)
+        })
+    }
 
     afterAll(async () => {
         await mongoDBConnection.close()
