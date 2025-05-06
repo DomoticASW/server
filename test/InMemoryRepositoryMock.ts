@@ -54,8 +54,6 @@ export class InMemoryRepositoryMockCheckingUniqueness<Id, Entity> implements Rep
 
     callsToFind = 0
     find(id: Id): Effect.Effect<Entity, NotFoundError, never> {
-        console.log("id: " + id + ", map" + this.map)
-        console.log("Current map: ", Array.from(this.map.entries()));
         this.callsToFind += 1
         const e = this.map.get(id)
         if (e) {

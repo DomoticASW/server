@@ -11,7 +11,7 @@ export class HTTPServerAdapter {
 
         app.get('/create', async (req, res) => {
             await pipe(
-                deviceGroupRepository.add(DeviceGroup(DeviceGroupId("1"), "camera")),
+                deviceGroupRepository.add(DeviceGroup(DeviceGroupId("1"), "camera", [])),
                 Effect.match({
                     onSuccess() { res.sendStatus(200) },
                     onFailure(err) { res.send(err) }
