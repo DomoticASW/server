@@ -54,7 +54,7 @@ export function StartTaskInstruction(taskId: TaskId, scriptsService: ScriptsServ
         flatMap(() => 
           pipe(
             scriptsService.findTaskUnsafe(taskId),
-            flatMap(task => 
+            flatMap(task =>
               pipe(
                 task.execute(),
                 andThen(() => succeed(env))
@@ -67,15 +67,6 @@ export function StartTaskInstruction(taskId: TaskId, scriptsService: ScriptsServ
     }
   }
 }
-
-// scriptsService.findTaskUnsafe(taskId),
-// flatMap(task => 
-//   pipe(
-//     task.execute(),
-//     andThen(() => succeed(env))
-//   )
-// ),
-// mapError(error => ScriptError(error.message + ", " + error.cause))
 
 export function DeviceActionInstruction(deviceId: DeviceId, deviceActionId: DeviceActionId, input: unknown, devicesService: DevicesService): DeviceActionInstruction {
   return {
