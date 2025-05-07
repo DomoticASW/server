@@ -1,11 +1,12 @@
 import { match, runPromise } from "effect/Effect"
 import { CreateConstantInstruction, StartTaskInstruction } from "../../../src/domain/scripts-management/InstructionImpl.js"
-import { AutomationId, Task, TaskId } from "../../../src/domain/scripts-management/Script.js"
+import { Automation, AutomationId, Task, TaskId } from "../../../src/domain/scripts-management/Script.js"
 import { Type } from "../../../src/ports/devices-management/Types.js"
 import { ScriptError, ScriptNotFoundError } from "../../../src/ports/scripts-management/Errors.js"
 import { PermissionsServiceSpy, ScriptsServiceSpy, SpyTaskMock, TokenMock } from "./mocks.js"
 import { pipe } from "effect"
 import { PermissionError } from "../../../src/ports/permissions-management/Errors.js"
+import { PeriodTrigger } from "../../../src/domain/scripts-management/Trigger.js"
 
 test("A script error can be created", () => {
   const error = ScriptError("this is the cause")
@@ -93,4 +94,16 @@ test("A task can be started by another task if the token has the permissions", a
   await runPromise(task.execute(requiredToken))
 
   expect(spyTask.call()).toBe(1)
+})
+
+test("An automation can be created", () => {
+  const automationId = AutomationId("1")
+  const periodTrigger = PeriodTrigger(new Date(), 10)
+  const name = "automationName"
+  const automation = Automation(automationId, name, periodTrigger, [])
+
+  expect(automation.enabled).toBe(true)
+  expect(automation.id).toBe(automationId)
+  expect(automation.trigger).toBe(periodTrigger)
+  expect(automation.name).toBe(name)
 })
