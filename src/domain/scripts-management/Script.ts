@@ -42,3 +42,16 @@ export function Task(id: TaskId, name: string, instructions: Array<Instruction>)
     },
   }
 }
+
+export function Automation(id: AutomationId, name: string, trigger: Trigger, instructions: Array<Instruction>): Automation {
+  return {
+    enabled: true,
+    trigger: trigger,
+    id: id,
+    name: name,
+    instructions: instructions,
+    execute: function (): Effect<ExecutionEnvironment, ScriptError> {
+      throw new Error("Function not implemented.")
+    }
+  }
+}
