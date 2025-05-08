@@ -19,9 +19,16 @@ export function DeviceEventTrigger(deviceId: DeviceId, eventName: string): Devic
   }
 }
 
-export function PeriodTrigger(start: Date, periodSeconds: number): PeriodTrigger {
-  return {
-    start: start,
-    periodSeconds: periodSeconds
+export class PeriodTriggerImpl implements PeriodTrigger {
+  start: Date
+  periodSeconds: number
+
+  constructor(start: Date, periodSeconds: number) {
+    this.start = start
+    this.periodSeconds = periodSeconds
   }
+}
+
+export function PeriodTrigger(start: Date, periodSeconds: number): PeriodTrigger {
+  return new PeriodTriggerImpl(start, periodSeconds)
 }
