@@ -13,7 +13,7 @@ import { TaskId, Task, AutomationId, Automation, ScriptId } from "../../../src/d
 import { TaskBuilder } from "../../../src/domain/scripts-management/ScriptBuilder.js";
 import { ScriptNotFoundError, TaskNameAlreadyInUse, InvalidTaskError, AutomationNameAlreadyInUse, InvalidAutomationError, ScriptError } from "../../../src/ports/scripts-management/Errors.js";
 import { succeed, fail } from "effect/Exit";
-import { ExecutionEnvironment } from "../../../src/domain/scripts-management/Instruction.js";
+import { ExecutionEnvironment, Instruction } from "../../../src/domain/scripts-management/Instruction.js";
 import { NoneInt } from "../../../src/domain/devices-management/Types.js";
 import { PermissionsService } from "../../../src/ports/permissions-management/PermissionsService.js";
 
@@ -259,6 +259,21 @@ export function DevicesServiceSpy(device: Device = DeviceMock(), testingAction: 
         unsubscribeForDevicePropertyUpdates: function (subscriber: DevicePropertyUpdatesSubscriber): void {
           throw new Error("Function not implemented.");
         }
+      }
+    }
+  }
+}
+
+export function InstructionSpy(): Spy<Instruction> {
+  let call = 0
+  return {
+    call: () => call,
+    get: () => {
+      return {
+        execute(env) {
+          call++
+          return succeed(env)
+        },
       }
     }
   }
