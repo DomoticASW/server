@@ -3,11 +3,12 @@ import { CreateConstantInstruction, StartTaskInstruction } from "../../../src/do
 import { Automation, AutomationId, Task, TaskId } from "../../../src/domain/scripts-management/Script.js"
 import { Type } from "../../../src/ports/devices-management/Types.js"
 import { ScriptError, ScriptNotFoundError } from "../../../src/ports/scripts-management/Errors.js"
-import { InstructionSpy, PermissionsServiceSpy, ScriptsServiceSpy, SpyTaskMock, TokenMock } from "./mocks.js"
+import { DeviceMock, DevicesServiceSpy, InstructionSpy, PermissionsServiceSpy, ScriptsServiceSpy, SpyTaskMock, TokenMock } from "./mocks.js"
 import { pipe } from "effect"
 import { PermissionError } from "../../../src/ports/permissions-management/Errors.js"
-import { PeriodTrigger } from "../../../src/domain/scripts-management/Trigger.js"
+import { DeviceEventTrigger, PeriodTrigger } from "../../../src/domain/scripts-management/Trigger.js"
 import { millis } from "effect/Duration"
+import { DeviceEventsServiceImpl } from "../../../src/domain/devices-management/DeviceEventsServiceImpl.js"
 
 test("A script error can be created", () => {
   const error = ScriptError("this is the cause")
@@ -137,4 +138,54 @@ test("An automation will be executed with a period trigger", async () => {
   
   await runPromise(sleep(millis(periodSeconds * 1000)))
   expect(instructionSpy.call()).toBe(3)
+})
+
+test("An automation with a DeviceEventTrigger should be fired when a device event triggers", async () => {
+  const device = DeviceMock("triggeringEvent")
+  const devicesService = DevicesServiceSpy(device).get()
+  const deviceEventsService = new DeviceEventsServiceImpl(devicesService)
+  const instructionSpy = InstructionSpy()
+  
+  const automation = Automation(AutomationId("1"), "name", DeviceEventTrigger(device.id, "triggeringEvent"), [instructionSpy.get()])
+  deviceEventsService.subscribeForDeviceEvents(automation)
+
+  automation.enable()
+
+  expect(instructionSpy.call()).toBe(0)
+
+  await runPromise(deviceEventsService.publishEvent(device.id, "triggeringEvent"))
+  await runPromise(sleep(millis(50)))
+  
+  expect(instructionSpy.call()).toBe(1)
+  
+  await runPromise(deviceEventsService.publishEvent(device.id, "triggeringEvent"))
+  await runPromise(sleep(millis(50)))
+
+  expect(instructionSpy.call()).toBe(2)
+  
+  automation.disable()
+  
+  await runPromise(deviceEventsService.publishEvent(device.id, "triggeringEvent"))
+  await runPromise(sleep(millis(50)))
+
+  expect(instructionSpy.call()).toBe(2)
+})
+
+test("An automation with a DeviceEventTrigger is not fired if the event is not the right one", async () => {
+  const device = DeviceMock("triggeringEvent")
+  const devicesService = DevicesServiceSpy(device).get()
+  const deviceEventsService = new DeviceEventsServiceImpl(devicesService)
+  const instructionSpy = InstructionSpy()
+  
+  const automation = Automation(AutomationId("1"), "name", DeviceEventTrigger(device.id, "triggeringEvent"), [instructionSpy.get()])
+  deviceEventsService.subscribeForDeviceEvents(automation)
+
+  automation.enable()
+
+  expect(instructionSpy.call()).toBe(0)
+
+  await runPromise(deviceEventsService.publishEvent(device.id, "otherEvent"))
+  await runPromise(sleep(millis(50)))
+  
+  expect(instructionSpy.call()).toBe(0)
 })

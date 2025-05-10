@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { Effect } from "effect/Effect";
-import { Device, DeviceAction, DeviceActionId, DeviceId, DeviceProperty, DevicePropertyId, DeviceStatus } from "../../../src/domain/devices-management/Device.js";
+import { Device, DeviceAction, DeviceActionId, DeviceEvent, DeviceId, DeviceProperty, DevicePropertyId, DeviceStatus } from "../../../src/domain/devices-management/Device.js";
 import { Token, UserRole } from "../../../src/domain/users-management/Token.js";
 import { Email } from "../../../src/domain/users-management/User.js";
 import { DeviceActionError, DeviceActionNotFound, DeviceNotFoundError, DevicePropertyNotFound, DeviceUnreachableError, InvalidInputError } from "../../../src/ports/devices-management/Errors.js";
@@ -172,7 +172,7 @@ export function PermissionsServiceSpy(userToken: Token = TokenMock("email")): Sp
   }
 }
 
-export function DeviceMock(): Device {
+export function DeviceMock(eventName: string = ""): Device {
   return {
     id: DeviceId("id"),
     name: "name",
@@ -184,7 +184,10 @@ export function DeviceMock(): Device {
     actions: [
       DeviceActionMock()
     ],
-    events: [],
+    events: [
+      DeviceEventMock(eventName),
+      DeviceEventMock("otherEvent")
+    ],
     executeAction(actionId, input) {
       return succeed(null)
     }
@@ -208,6 +211,12 @@ function DeviceActionMock(): DeviceAction<unknown> {
     execute: function (input: unknown): Effect<void, InvalidInputError | DeviceActionError> {
       throw new Error("Function not implemented.");
     }
+  }
+}
+
+function DeviceEventMock(name: string): DeviceEvent {
+  return {
+    name: name
   }
 }
 
