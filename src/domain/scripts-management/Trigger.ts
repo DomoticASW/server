@@ -12,13 +12,6 @@ export interface PeriodTrigger {
   periodSeconds: number
 }
 
-export function DeviceEventTrigger(deviceId: DeviceId, eventName: string): DeviceEventTrigger {
-  return {
-    deviceId: deviceId,
-    eventName: eventName
-  }
-}
-
 export class PeriodTriggerImpl implements PeriodTrigger {
   start: Date
   periodSeconds: number
@@ -29,6 +22,20 @@ export class PeriodTriggerImpl implements PeriodTrigger {
   }
 }
 
+export class DeviceEventTriggerImpl implements DeviceEventTrigger {
+  deviceId: DeviceId
+  eventName: string
+
+  constructor(deviceId: DeviceId, eventName: string) {
+    this.deviceId = deviceId
+    this.eventName = eventName
+  }
+}
+
 export function PeriodTrigger(start: Date, periodSeconds: number): PeriodTrigger {
   return new PeriodTriggerImpl(start, periodSeconds)
+}
+
+export function DeviceEventTrigger(deviceId: DeviceId, eventName: string): DeviceEventTrigger {
+  return new DeviceEventTriggerImpl(deviceId, eventName)
 }
