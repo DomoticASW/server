@@ -19,8 +19,10 @@ export interface Script<Id extends ScriptId> {
 export type Task = Script<TaskId>
 
 export interface Automation extends Script<AutomationId> {
-  enabled: boolean
+  readonly enabled: boolean
   trigger: Trigger
+  enable(): void
+  disable(): void
 }
 
 export type ScriptId = TaskId | AutomationId
@@ -45,7 +47,7 @@ export function Task(id: TaskId, name: string, instructions: Array<Instruction>)
 }
 
 class AutomationImpl implements Automation {
-  enabled: boolean
+  enabled: boolean = false
   trigger: Trigger
   id: AutomationId
   name: string
@@ -56,9 +58,17 @@ class AutomationImpl implements Automation {
     this.name = name
     this.trigger = trigger
     this.instructions = instructions
-    this.enabled = true
+  }
 
-    runFork(this.checkTrigger())
+  enable(): void {
+    if (!this.enabled) {
+      this.enabled = true
+      runFork(this.checkTrigger())
+    }
+  }
+
+  disable(): void {
+    this.enabled = false
   }
   
   private checkTrigger(): Effect<undefined, ScriptError> {
@@ -81,7 +91,7 @@ class AutomationImpl implements Automation {
   private loop(periodTrigger: PeriodTrigger): Effect<undefined, ScriptError> {
     return pipe(
       sync(() => this.enabled),
-      flatMap(enabled => 
+      flatMap(enabled =>
         enabled
           ? pipe(
             this.execute(),
