@@ -103,9 +103,7 @@ test("An automation can be created", async () => {
   const name = "automationName"
   const automation = Automation(automationId, name, periodTrigger, [])
   
-  expect(automation.enabled).toBe(true)
-  automation.enabled = false
-
+  expect(automation.enabled).toBe(false)
   expect(automation.id).toBe(automationId)
   expect(automation.trigger).toBe(periodTrigger)
   expect(automation.name).toBe(name)
@@ -119,9 +117,11 @@ test("An automation will be executed with a period trigger", async () => {
 
   const automation = Automation(AutomationId("1"), "name", periodTrigger, [instructionSpy.get()])
 
+  automation.enable()
+
   expect(instructionSpy.call()).toBe(0)
 
-  await runPromise(sleep(millis(periodTrigger.start.getTime() - Date.now())))
+  await runPromise(sleep(millis(periodTrigger.start.getTime() - Date.now() + 50)))
 
   expect(instructionSpy.call()).toBe(1)
 
@@ -133,7 +133,7 @@ test("An automation will be executed with a period trigger", async () => {
 
   expect(instructionSpy.call()).toBe(3)
   
-  automation.enabled = false
+  automation.disable()
   
   await runPromise(sleep(millis(periodSeconds * 1000)))
   expect(instructionSpy.call()).toBe(3)
