@@ -52,7 +52,7 @@ export function registerDeviceGroupsServiceRoutes(app: express.Express, service:
                 onFalse: () => Effect.fail(BadRequest(`Missing ${bodyProperty} property in request body`))
             })),
             Effect.bind("__", ({ token }) => service.renameGroup(token, DeviceGroupId(req.params.id), req.body[bodyProperty])),
-            Effect.map(() => Response(StatusCodes.CREATED)),
+            Effect.map(() => Response(StatusCodes.OK)),
             Effect.catch("__brand", {
                 failure: "DeviceGroupNotFoundError",
                 onFailure: (err) => Effect.succeed(Response(StatusCodes.NOT_FOUND, err))
