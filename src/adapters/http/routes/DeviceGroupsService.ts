@@ -5,6 +5,7 @@ import { DeviceGroupsService } from "../../../ports/devices-management/DeviceGro
 import { UsersService } from "../../../ports/users-management/UserService.js";
 import { StatusCodes } from "http-status-codes";
 import { BadRequest, deserializeToken, handleCommonErrors, sendResponse, Response } from "./HttpUtils.js";
+import { DeviceId } from "../../../domain/devices-management/Device.js";
 
 export function registerDeviceGroupsServiceRoutes(app: express.Express, service: DeviceGroupsService, usersService: UsersService) {
 
@@ -86,6 +87,51 @@ export function registerDeviceGroupsServiceRoutes(app: express.Express, service:
             Effect.bind("token", () => deserializeToken(req, usersService)),
             Effect.bind("deviceGroups", ({ token }) => service.getAllDeviceGroups(token)),
             Effect.map(({ deviceGroups }) => Response(StatusCodes.CREATED, Array.from(deviceGroups))),
+            handleCommonErrors,
+            Effect.runPromise
+        )
+        sendResponse(res, response)
+    });
+
+    // TODO: test
+    app.post('/api/deviceGroups/:id/device', async (req, res) => {
+        const bodyProperty = "deviceId"
+        const response = await Effect.Do.pipe(
+            Effect.bind("token", () => deserializeToken(req, usersService)),
+            Effect.bind("_", () => Effect.if(req.body != undefined && bodyProperty in req.body, {
+                onTrue: () => Effect.succeed(null),
+                onFalse: () => Effect.fail(BadRequest(`Missing ${bodyProperty} property in request body`))
+            })),
+            Effect.bind("__", ({ token }) => service.addDeviceToGroup(token, DeviceId(req.body[bodyProperty]), DeviceGroupId(req.params.id))),
+            Effect.map(() => Response(StatusCodes.OK)),
+            Effect.catch("__brand", {
+                failure: "DeviceGroupNotFoundError",
+                onFailure: (err) => Effect.succeed(Response(StatusCodes.NOT_FOUND, err))
+            }),
+            Effect.catch("__brand", {
+                failure: "DeviceNotFoundError",
+                onFailure: (err) => Effect.succeed(Response(StatusCodes.NOT_FOUND, err))
+            }),
+            handleCommonErrors,
+            Effect.runPromise
+        )
+        sendResponse(res, response)
+    });
+
+    // TODO: test
+    app.delete('/api/deviceGroups/:id/device/:deviceId', async (req, res) => {
+        const response = await Effect.Do.pipe(
+            Effect.bind("token", () => deserializeToken(req, usersService)),
+            Effect.bind("__", ({ token }) => service.removeDeviceFromGroup(token, DeviceId(req.params.deviceId), DeviceGroupId(req.params.id))),
+            Effect.map(() => Response(StatusCodes.OK)),
+            Effect.catch("__brand", {
+                failure: "DeviceGroupNotFoundError",
+                onFailure: (err) => Effect.succeed(Response(StatusCodes.NOT_FOUND, err))
+            }),
+            Effect.catch("__brand", {
+                failure: "DeviceNotFoundError",
+                onFailure: (err) => Effect.succeed(Response(StatusCodes.NOT_FOUND, err))
+            }),
             handleCommonErrors,
             Effect.runPromise
         )
