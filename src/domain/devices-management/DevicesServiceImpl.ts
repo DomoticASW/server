@@ -1,5 +1,6 @@
 import { Effect, pipe } from "effect";
 import { DevicePropertyUpdatesSubscriber, DevicesService } from "../../ports/devices-management/DevicesService.js";
+import { Input } from "./Types.js";
 import { DeviceUnreachableError, DeviceNotFoundError, InvalidInputError, DeviceActionError, DeviceActionNotFound, DevicePropertyNotFound, DeviceAlreadyRegisteredError } from "../../ports/devices-management/Errors.js";
 import { PermissionError } from "../../ports/permissions-management/Errors.js";
 import { TokenError, InvalidTokenError, UnauthorizedError } from "../../ports/users-management/Errors.js";
@@ -119,14 +120,14 @@ export class DevicesServiceImpl implements DevicesService {
     getAllDevicesUnsafe(): Effect.Effect<Iterable<Device>, never> {
         return this.repo.getAll()
     }
-    executeAction(token: Token, deviceId: DeviceId, actionId: DeviceActionId, input: unknown): Effect.Effect<void, InvalidInputError | DeviceActionError | DeviceActionNotFound | DeviceNotFoundError | InvalidTokenError | PermissionError> {
+    executeAction(token: Token, deviceId: DeviceId, actionId: DeviceActionId, input: Input): Effect.Effect<void, InvalidInputError | DeviceActionError | DeviceActionNotFound | DeviceNotFoundError | InvalidTokenError | PermissionError> {
         return Effect.Do.pipe(
             Effect.bind("_", () => this.usersService.verifyToken(token)),
             Effect.bind("__", () => this.permissionsService.canExecuteActionOnDevice(token, deviceId)),
             Effect.bind("___", () => this.executeAutomationAction(deviceId, actionId, input))
         )
     }
-    executeAutomationAction(deviceId: DeviceId, actionId: DeviceActionId, input: unknown): Effect.Effect<void, InvalidInputError | DeviceActionError | DeviceActionNotFound | DeviceNotFoundError> {
+    executeAutomationAction(deviceId: DeviceId, actionId: DeviceActionId, input: Input): Effect.Effect<void, InvalidInputError | DeviceActionError | DeviceActionNotFound | DeviceNotFoundError> {
         return Effect.Do.pipe(
             Effect.bind("device", () => this.findUnsafe(deviceId)),
             Effect.let("action", ({ device }) => device.actions.find(a => a.id === actionId)),
@@ -145,7 +146,7 @@ export class DevicesServiceImpl implements DevicesService {
      * As a result no type error is expected to be thrown as devices
      * should correctly know their property types and constraints
      */
-    updateDeviceProperty(deviceId: DeviceId, propertyId: DevicePropertyId, value: unknown): Effect.Effect<void, InvalidInputError | DeviceNotFoundError | DevicePropertyNotFound> {
+    updateDeviceProperty(deviceId: DeviceId, propertyId: DevicePropertyId, value: Input): Effect.Effect<void, DeviceNotFoundError | DevicePropertyNotFound> {
         return Effect.Do.pipe(
             Effect.bind("device", () => this.repo.find(deviceId)),
             Effect.bind("property", ({ device }) => {
@@ -165,7 +166,7 @@ export class DevicesServiceImpl implements DevicesService {
                         return e
                 }
             }),
-            Effect.tap(({ device, property }) => this.propertyUpdatesSubscribers.forEach(s => s.devicePropertyChanged(device.id, property.id, property.value))),
+            Effect.tap(({ device, property }) => this.propertyUpdatesSubscribers.forEach(s => s.devicePropertyChanged(device.id, property.id, value))),
             Effect.asVoid
         )
     }
