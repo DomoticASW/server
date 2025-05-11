@@ -43,14 +43,14 @@ export function registerDeviceGroupsServiceRoutes(app: express.Express, service:
     });
 
     app.post('/api/deviceGroups/:id', async (req, res) => {
-        console.log(req.body)
+        const bodyProperty = "name"
         const response = await Effect.Do.pipe(
             Effect.bind("token", () => deserializeToken(req, usersService)),
-            Effect.bind("_", () => Effect.if(req.body != undefined && "name" in req.body, {
+            Effect.bind("_", () => Effect.if(req.body != undefined && bodyProperty in req.body, {
                 onTrue: () => Effect.succeed(null),
-                onFalse: () => Effect.fail(BadRequest("Missing name property in request body"))
+                onFalse: () => Effect.fail(BadRequest(`Missing ${bodyProperty} property in request body`))
             })),
-            Effect.bind("__", ({ token }) => service.renameGroup(token, DeviceGroupId(req.params.id), req.body.name)),
+            Effect.bind("__", ({ token }) => service.renameGroup(token, DeviceGroupId(req.params.id), req.body[bodyProperty])),
             Effect.map(() => Response(StatusCodes.CREATED)),
             Effect.catch("__brand", {
                 failure: "DeviceGroupNotFoundError",
