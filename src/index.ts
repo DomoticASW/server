@@ -10,6 +10,9 @@ import { DeviceRepositoryMongoAdapter } from "./adapters/devices-management/Devi
 import { DevicesServiceImpl } from "./domain/devices-management/DevicesServiceImpl.js";
 import { DeviceFactory } from "./ports/devices-management/DeviceFactory.js";
 import { PermissionsService } from "./ports/permissions-management/PermissionsService.js";
+import { Device, DeviceId, DeviceStatus } from "./domain/devices-management/Device.js";
+import { DeviceUnreachableError } from "./ports/devices-management/Errors.js";
+import * as uuid from "uuid";
 
 const mongoDBConnection = mongoose.createConnection("mongodb://localhost:27017/DomoticASW")
 // TODO: replace with production impl
@@ -20,10 +23,14 @@ const usersServiceMock: UsersService = {
 // TODO: replace with production impl
 const permissionsService = null as unknown as PermissionsService
 // TODO: replace with production impl
-const deviceFactory = null as unknown as DeviceFactory
+const deviceFactory: DeviceFactory = {
+    create: function (deviceUrl: URL): Effect.Effect<Device, DeviceUnreachableError> {
+        return Effect.succeed(Device(DeviceId(uuid.v4()), deviceUrl.hostname, deviceUrl, DeviceStatus.Online, [], [], []))
+    }
+}
 
 const deviceGroupRepository = new DeviceGroupRepositoryMongoAdapter(mongoDBConnection)
 const deviceRepository = new DeviceRepositoryMongoAdapter(mongoDBConnection)
 const devicesService = new DevicesServiceImpl(deviceRepository, deviceFactory, usersServiceMock, permissionsService)
 const deviceGroupsService = new DeviceGroupsServiceImpl(deviceGroupRepository, devicesService, usersServiceMock)
-new HTTPServerAdapter(3000, deviceGroupsService, usersServiceMock)
+new HTTPServerAdapter(3000, deviceGroupsService, devicesService, usersServiceMock)
