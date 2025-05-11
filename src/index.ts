@@ -10,9 +10,10 @@ import { DeviceRepositoryMongoAdapter } from "./adapters/devices-management/Devi
 import { DevicesServiceImpl } from "./domain/devices-management/DevicesServiceImpl.js";
 import { DeviceFactory } from "./ports/devices-management/DeviceFactory.js";
 import { PermissionsService } from "./ports/permissions-management/PermissionsService.js";
-import { Device, DeviceId, DeviceStatus } from "./domain/devices-management/Device.js";
+import { Device, DeviceId, DeviceProperty, DevicePropertyId, DeviceStatus } from "./domain/devices-management/Device.js";
 import { DeviceUnreachableError } from "./ports/devices-management/Errors.js";
 import * as uuid from "uuid";
+import { NoneInt } from "./domain/devices-management/Types.js";
 
 const mongoDBConnection = mongoose.createConnection("mongodb://localhost:27017/DomoticASW")
 // TODO: replace with production impl
@@ -25,7 +26,8 @@ const permissionsService = null as unknown as PermissionsService
 // TODO: replace with production impl
 const deviceFactory: DeviceFactory = {
     create: function (deviceUrl: URL): Effect.Effect<Device, DeviceUnreachableError> {
-        return Effect.succeed(Device(DeviceId(uuid.v4()), deviceUrl.hostname, deviceUrl, DeviceStatus.Online, [], [], []))
+        const property = DeviceProperty(DevicePropertyId("1"), "Name", 3, NoneInt())
+        return Effect.succeed(Device(DeviceId(uuid.v4()), deviceUrl.hostname, deviceUrl, DeviceStatus.Online, [property], [], []))
     }
 }
 

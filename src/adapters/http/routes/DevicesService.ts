@@ -3,8 +3,9 @@ import { DevicesService } from "../../../ports/devices-management/DevicesService
 import { UsersService } from "../../../ports/users-management/UserService.js";
 import { Effect } from "effect";
 import { StatusCodes } from "http-status-codes";
-import { deserializeToken, BadRequest, handleCommonErrors, sendResponse, Response } from "./HttpUtils.js";
-import { DeviceId } from "../../../domain/devices-management/Device.js";
+import { deserializeToken, BadRequest, handleCommonErrors, sendResponse, Response, isInputValue } from "./HttpUtils.js";
+import { DeviceId, DevicePropertyId } from "../../../domain/devices-management/Device.js";
+import { Type } from "../../../ports/devices-management/Types.js";
 
 export function registerDevicesServiceRoutes(app: express.Express, service: DevicesService, usersService: UsersService) {
 
@@ -98,6 +99,33 @@ export function registerDevicesServiceRoutes(app: express.Express, service: Devi
             Effect.bind("token", () => deserializeToken(req, usersService)),
             Effect.bind("devices", ({ token }) => service.getAllDevices(token)),
             Effect.map(({ devices }) => Response(StatusCodes.CREATED, Array.from(devices))),
+            handleCommonErrors,
+            Effect.runPromise
+        )
+        sendResponse(res, response)
+    });
+
+    // update property
+    app.patch('/api/devices/:id/properties/:propertyId', async (req, res) => {
+        const response = await Effect.Do.pipe(
+            // input validation
+            Effect.bind("inputValue", () => {
+                if (isInputValue(req.body) && req.body.type != Type.VoidType) {
+                    return Effect.succeed(req.body)
+                } else {
+                    return Effect.fail(BadRequest(`Expected body format is: {value: ???, type: ???} where value is of type "type" and type can be one of ${[Type.BooleanType, Type.ColorType, Type.IntType, Type.DoubleType, Type.StringType]}`))
+                }
+            }),
+            Effect.bind("_", ({ inputValue }) => service.updateDeviceProperty(DeviceId(req.params.id), DevicePropertyId(req.params.propertyId), inputValue.value)),
+            Effect.map(() => Response(StatusCodes.OK)),
+            Effect.catch("__brand", {
+                failure: "DeviceNotFoundError",
+                onFailure: (err) => Effect.succeed(Response(StatusCodes.NOT_FOUND, err))
+            }),
+            Effect.catch("__brand", {
+                failure: "DevicePropertyNotFound",
+                onFailure: (err) => Effect.succeed(Response(StatusCodes.NOT_FOUND, err))
+            }),
             handleCommonErrors,
             Effect.runPromise
         )

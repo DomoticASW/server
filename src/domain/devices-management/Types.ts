@@ -147,3 +147,4 @@ export function NoneColor(): None<Color> {
 export function NoneVoid(): None<void> {
     return new NoneImpl(Type.VoidType)
 }
+export type Input = Color | string | number | boolean | void;

@@ -4,6 +4,7 @@ import { PermissionError } from "../permissions-management/Errors.js";
 import { Token } from "../../domain/users-management/Token.js";
 import { Effect } from "effect/Effect";
 import { InvalidTokenError, TokenError } from "../users-management/Errors.js";
+import { Input } from "../../domain/devices-management/Types.js";
 
 export interface DevicesService {
     add(token: Token, deviceUrl: URL): Effect<DeviceId, DeviceAlreadyRegisteredError | DeviceUnreachableError | TokenError>;
@@ -13,12 +14,12 @@ export interface DevicesService {
     findUnsafe(deviceId: DeviceId): Effect<Device, DeviceNotFoundError>;
     getAllDevices(token: Token): Effect<Iterable<Device>, InvalidTokenError>;
     getAllDevicesUnsafe(): Effect<Iterable<Device>, never>;
-    executeAction(token: Token, deviceId: DeviceId, actionId: DeviceActionId, input: unknown): Effect<void, InvalidInputError | DeviceActionError | DeviceActionNotFound | DeviceNotFoundError | InvalidTokenError | PermissionError>;
-    executeAutomationAction(deviceId: DeviceId, actionId: DeviceActionId, input: unknown): Effect<void, InvalidInputError | DeviceActionError | DeviceActionNotFound | DeviceNotFoundError>;
-    updateDeviceProperty(deviceId: DeviceId, propertyId: DevicePropertyId, value: unknown): Effect<void, InvalidInputError | DeviceNotFoundError | DevicePropertyNotFound>;
+    executeAction(token: Token, deviceId: DeviceId, actionId: DeviceActionId, input: Input): Effect<void, InvalidInputError | DeviceActionError | DeviceActionNotFound | DeviceNotFoundError | InvalidTokenError | PermissionError>;
+    executeAutomationAction(deviceId: DeviceId, actionId: DeviceActionId, input: Input): Effect<void, InvalidInputError | DeviceActionError | DeviceActionNotFound | DeviceNotFoundError>;
+    updateDeviceProperty(deviceId: DeviceId, propertyId: DevicePropertyId, value: Input): Effect<void, DeviceNotFoundError | DevicePropertyNotFound>;
     subscribeForDevicePropertyUpdates(subscriber: DevicePropertyUpdatesSubscriber): void;
     unsubscribeForDevicePropertyUpdates(subscriber: DevicePropertyUpdatesSubscriber): void;
 }
 export interface DevicePropertyUpdatesSubscriber {
-    devicePropertyChanged(deviceId: DeviceId, propertyId: DevicePropertyId, value: unknown): void;
+    devicePropertyChanged(deviceId: DeviceId, propertyId: DevicePropertyId, value: Input): void;
 }
