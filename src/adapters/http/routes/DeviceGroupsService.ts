@@ -9,6 +9,7 @@ import { DeviceId } from "../../../domain/devices-management/Device.js";
 
 export function registerDeviceGroupsServiceRoutes(app: express.Express, service: DeviceGroupsService, usersService: UsersService) {
 
+    // create
     app.post('/api/deviceGroups', async (req, res) => {
         const response = await Effect.Do.pipe(
             Effect.bind("token", () => deserializeToken(req, usersService)),
@@ -28,6 +29,7 @@ export function registerDeviceGroupsServiceRoutes(app: express.Express, service:
         sendResponse(res, response)
     });
 
+    // get one
     app.get('/api/deviceGroups/:id', async (req, res) => {
         const response = await Effect.Do.pipe(
             Effect.bind("token", () => deserializeToken(req, usersService)),
@@ -43,6 +45,7 @@ export function registerDeviceGroupsServiceRoutes(app: express.Express, service:
         sendResponse(res, response)
     });
 
+    // rename
     app.post('/api/deviceGroups/:id', async (req, res) => {
         const bodyProperty = "name"
         const response = await Effect.Do.pipe(
@@ -67,6 +70,7 @@ export function registerDeviceGroupsServiceRoutes(app: express.Express, service:
         sendResponse(res, response)
     });
 
+    // delete
     app.delete('/api/deviceGroups/:id', async (req, res) => {
         const response = await Effect.Do.pipe(
             Effect.bind("token", () => deserializeToken(req, usersService)),
@@ -82,6 +86,7 @@ export function registerDeviceGroupsServiceRoutes(app: express.Express, service:
         sendResponse(res, response)
     });
 
+    // get all
     app.get('/api/deviceGroups', async (req, res) => {
         const response = await Effect.Do.pipe(
             Effect.bind("token", () => deserializeToken(req, usersService)),
@@ -93,7 +98,7 @@ export function registerDeviceGroupsServiceRoutes(app: express.Express, service:
         sendResponse(res, response)
     });
 
-    // TODO: test
+    // add device
     app.post('/api/deviceGroups/:id/device', async (req, res) => {
         const bodyProperty = "deviceId"
         const response = await Effect.Do.pipe(
@@ -118,7 +123,7 @@ export function registerDeviceGroupsServiceRoutes(app: express.Express, service:
         sendResponse(res, response)
     });
 
-    // TODO: test
+    // remove device
     app.delete('/api/deviceGroups/:id/device/:deviceId', async (req, res) => {
         const response = await Effect.Do.pipe(
             Effect.bind("token", () => deserializeToken(req, usersService)),
