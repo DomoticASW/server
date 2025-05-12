@@ -3,7 +3,7 @@ import { DevicesService } from "../../../ports/devices-management/DevicesService
 import { UsersService } from "../../../ports/users-management/UserService.js";
 import { Effect } from "effect";
 import { StatusCodes } from "http-status-codes";
-import { deserializeToken, BadRequest, handleCommonErrors, sendResponse, Response, isInputValue } from "./HttpUtils.js";
+import { deserializeToken, BadRequest, handleCommonErrors, sendResponse, Response } from "./HttpUtils.js";
 import { DeviceActionId, DeviceId, DevicePropertyId } from "../../../domain/devices-management/Device.js";
 import { Type } from "../../../ports/devices-management/Types.js";
 
@@ -108,15 +108,15 @@ export function registerDevicesServiceRoutes(app: express.Express, service: Devi
     // update property
     app.patch('/api/devices/:id/properties/:propertyId', async (req, res) => {
         const response = await Effect.Do.pipe(
-            // input validation
-            Effect.bind("inputValue", () => {
-                if (isInputValue(req.body) && req.body.type != Type.VoidType) {
-                    return Effect.succeed(req.body)
+            Effect.bind("value", () => {
+                const key = "value"
+                if (req.body && key in req.body) {
+                    return Effect.succeed(req.body[key])
                 } else {
-                    return Effect.fail(BadRequest(`Expected body format is: {value: ???, type: ???} where value is of type "type" and type can be one of ${[Type.BooleanType, Type.ColorType, Type.IntType, Type.DoubleType, Type.StringType]}`))
+                    return Effect.fail(BadRequest(`Expected body format is: {${key}: ???}`))
                 }
             }),
-            Effect.bind("_", ({ inputValue }) => service.updateDeviceProperty(DeviceId(req.params.id), DevicePropertyId(req.params.propertyId), inputValue.value)),
+            Effect.bind("_", ({ value }) => service.updateDeviceProperty(DeviceId(req.params.id), DevicePropertyId(req.params.propertyId), value)),
             Effect.map(() => Response(StatusCodes.OK)),
             Effect.catch("__brand", {
                 failure: "DeviceNotFoundError",
@@ -136,15 +136,15 @@ export function registerDevicesServiceRoutes(app: express.Express, service: Devi
     app.post('/api/devices/:id/actions/:actionId/execute', async (req, res) => {
         const response = await Effect.Do.pipe(
             Effect.bind("token", () => deserializeToken(req, usersService)),
-            // input validation
-            Effect.bind("inputValue", () => {
-                if (isInputValue(req.body)) {
-                    return Effect.succeed(req.body)
+            Effect.bind("input", () => {
+                const key = "input"
+                if (req.body && key in req.body) {
+                    return Effect.succeed(req.body[key])
                 } else {
-                    return Effect.fail(BadRequest(`Expected body format is: {value: ???, type: ???} where value is of type "type" and type can be one of ${[Type.BooleanType, Type.ColorType, Type.IntType, Type.DoubleType, Type.StringType, Type.VoidType]}`))
+                    return Effect.fail(BadRequest(`Expected body format is: {${key}: ???}`))
                 }
             }),
-            Effect.bind("_", ({ token, inputValue }) => service.executeAction(token, DeviceId(req.params.id), DeviceActionId(req.params.actionId), inputValue.value)),
+            Effect.bind("_", ({ token, input }) => service.executeAction(token, DeviceId(req.params.id), DeviceActionId(req.params.actionId), input)),
             Effect.map(() => Response(StatusCodes.OK)),
             Effect.catch("__brand", {
                 failure: "DeviceNotFoundError",
