@@ -9,6 +9,7 @@ import { Brand } from "../../../utils/Brand.js"
 import { UsersService } from "../../../ports/users-management/UserService.js"
 import { Type } from "../../../ports/devices-management/Types.js"
 import { Color } from "../../../domain/devices-management/Types.js"
+import { PermissionError } from "../../../ports/permissions-management/Errors.js"
 
 export interface Response {
     code: StatusCodes
@@ -37,13 +38,14 @@ export function deserializeToken(req: express.Request, usersService: UsersServic
 }
 
 /** Maps common errors into responses with appropriate status code and body. */
-export function handleCommonErrors(eff: Effect.Effect<Response, BadRequest | UnauthorizedError | InvalidTokenFormatError | InvalidTokenError>): Effect.Effect<Response, void> {
+export function handleCommonErrors(eff: Effect.Effect<Response, BadRequest | UnauthorizedError | InvalidTokenFormatError | InvalidTokenError | PermissionError>): Effect.Effect<Response, void> {
     return pipe(
         eff,
         Effect.catchAll((err) => {
             switch (err.__brand) {
                 case "InvalidTokenError":
                 case "InvalidTokenFormatError":
+                case "PermissionError":
                 case "UnauthorizedError":
                     return Effect.succeed(Response(StatusCodes.UNAUTHORIZED, err))
                 case "BadRequest":

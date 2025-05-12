@@ -10,7 +10,7 @@ import { DeviceRepositoryMongoAdapter } from "./adapters/devices-management/Devi
 import { DevicesServiceImpl } from "./domain/devices-management/DevicesServiceImpl.js";
 import { DeviceFactory } from "./ports/devices-management/DeviceFactory.js";
 import { PermissionsService } from "./ports/permissions-management/PermissionsService.js";
-import { Device, DeviceId, DeviceProperty, DevicePropertyId, DeviceStatus } from "./domain/devices-management/Device.js";
+import { Device, DeviceAction, DeviceActionId, DeviceId, DeviceProperty, DevicePropertyId, DeviceStatus } from "./domain/devices-management/Device.js";
 import { DeviceUnreachableError } from "./ports/devices-management/Errors.js";
 import * as uuid from "uuid";
 import { NoneInt } from "./domain/devices-management/Types.js";
@@ -22,12 +22,15 @@ const usersServiceMock: UsersService = {
     verifyToken() { return Effect.succeed(null) }
 } as unknown as UsersService
 // TODO: replace with production impl
-const permissionsService = null as unknown as PermissionsService
+const permissionsService: PermissionsService = {
+    canExecuteActionOnDevice: () => Effect.succeed(undefined)
+} as unknown as PermissionsService
 // TODO: replace with production impl
 const deviceFactory: DeviceFactory = {
     create: function (deviceUrl: URL): Effect.Effect<Device, DeviceUnreachableError> {
+        const action = DeviceAction(DeviceActionId("1"), "Action", NoneInt())
         const property = DeviceProperty(DevicePropertyId("1"), "Name", 3, NoneInt())
-        return Effect.succeed(Device(DeviceId(uuid.v4()), deviceUrl.hostname, deviceUrl, DeviceStatus.Online, [property], [], []))
+        return Effect.succeed(Device(DeviceId(uuid.v4()), deviceUrl.hostname, deviceUrl, DeviceStatus.Online, [property], [action], []))
     }
 }
 

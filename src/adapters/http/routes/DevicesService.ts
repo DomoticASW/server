@@ -4,7 +4,7 @@ import { UsersService } from "../../../ports/users-management/UserService.js";
 import { Effect } from "effect";
 import { StatusCodes } from "http-status-codes";
 import { deserializeToken, BadRequest, handleCommonErrors, sendResponse, Response, isInputValue } from "./HttpUtils.js";
-import { DeviceId, DevicePropertyId } from "../../../domain/devices-management/Device.js";
+import { DeviceActionId, DeviceId, DevicePropertyId } from "../../../domain/devices-management/Device.js";
 import { Type } from "../../../ports/devices-management/Types.js";
 
 export function registerDevicesServiceRoutes(app: express.Express, service: DevicesService, usersService: UsersService) {
@@ -125,6 +125,42 @@ export function registerDevicesServiceRoutes(app: express.Express, service: Devi
             Effect.catch("__brand", {
                 failure: "DevicePropertyNotFound",
                 onFailure: (err) => Effect.succeed(Response(StatusCodes.NOT_FOUND, err))
+            }),
+            handleCommonErrors,
+            Effect.runPromise
+        )
+        sendResponse(res, response)
+    });
+
+    // execute action
+    app.post('/api/devices/:id/actions/:actionId/execute', async (req, res) => {
+        const response = await Effect.Do.pipe(
+            Effect.bind("token", () => deserializeToken(req, usersService)),
+            // input validation
+            Effect.bind("inputValue", () => {
+                if (isInputValue(req.body)) {
+                    return Effect.succeed(req.body)
+                } else {
+                    return Effect.fail(BadRequest(`Expected body format is: {value: ???, type: ???} where value is of type "type" and type can be one of ${[Type.BooleanType, Type.ColorType, Type.IntType, Type.DoubleType, Type.StringType, Type.VoidType]}`))
+                }
+            }),
+            Effect.bind("_", ({ token, inputValue }) => service.executeAction(token, DeviceId(req.params.id), DeviceActionId(req.params.actionId), inputValue.value)),
+            Effect.map(() => Response(StatusCodes.OK)),
+            Effect.catch("__brand", {
+                failure: "DeviceNotFoundError",
+                onFailure: (err) => Effect.succeed(Response(StatusCodes.NOT_FOUND, err))
+            }),
+            Effect.catch("__brand", {
+                failure: "DeviceActionNotFound",
+                onFailure: (err) => Effect.succeed(Response(StatusCodes.NOT_FOUND, err))
+            }),
+            Effect.catch("__brand", {
+                failure: "InvalidInputError",
+                onFailure: (err) => Effect.succeed(Response(StatusCodes.BAD_REQUEST, err))
+            }),
+            Effect.catch("__brand", {
+                failure: "DeviceActionError",
+                onFailure: (err) => Effect.succeed(Response(StatusCodes.INTERNAL_SERVER_ERROR, err))
             }),
             handleCommonErrors,
             Effect.runPromise
