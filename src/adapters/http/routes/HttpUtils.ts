@@ -7,8 +7,6 @@ import { UnauthorizedError, InvalidTokenFormatError, InvalidTokenError } from ".
 import { Error } from "../../../ports/Error.js"
 import { Brand } from "../../../utils/Brand.js"
 import { UsersService } from "../../../ports/users-management/UserService.js"
-import { Type } from "../../../ports/devices-management/Types.js"
-import { Color } from "../../../domain/devices-management/Types.js"
 import { PermissionError } from "../../../ports/permissions-management/Errors.js"
 
 export interface Response {
@@ -53,32 +51,4 @@ export function handleCommonErrors(eff: Effect.Effect<Response, BadRequest | Una
             }
         })
     )
-}
-
-/** An input value should have a value and it's associated type in order to decode it correctly */
-export interface InputValue { value: boolean | number | string | Color | void; type: Type; }
-
-const acceptedTypes = [Type.BooleanType, Type.ColorType, Type.IntType, Type.DoubleType, Type.StringType, Type.VoidType]
-
-/** checks that the encoded object is a valid InputValue */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function isInputValue(o: any): o is InputValue {
-    if (!("value" in o && "type" in o && acceptedTypes.includes(o.type))) {
-        return false
-    } else {
-        switch (o.type as Type) {
-            case Type.DoubleType:
-                return typeof o.value == "number"
-            case Type.IntType:
-                return Number.isInteger(o.value)
-            case Type.BooleanType:
-                return typeof o.value == "boolean"
-            case Type.StringType:
-                return typeof o.value == "string"
-            case Type.ColorType:
-                return "r" in o && "g" in o && "b" in o
-            case Type.VoidType:
-                return true
-        }
-    }
 }
