@@ -5,23 +5,26 @@ import { Effect } from "effect";
 import { StatusCodes } from "http-status-codes";
 import { deserializeToken, BadRequest, handleCommonErrors, sendResponse, Response } from "./HttpUtils.js";
 import { DeviceActionId, DeviceId, DevicePropertyId } from "../../../domain/devices-management/Device.js";
-import { Type } from "../../../ports/devices-management/Types.js";
 
 export function registerDevicesServiceRoutes(app: express.Express, service: DevicesService, usersService: UsersService) {
 
     // create
     app.post('/api/devices', async (req, res) => {
-        const bodyProperty = "deviceUrl"
+        const key = "deviceUrl"
         const response = await Effect.Do.pipe(
             Effect.bind("token", () => deserializeToken(req, usersService)),
-            Effect.bind("_", () => Effect.if(req.body != undefined && bodyProperty in req.body, {
-                onTrue: () => Effect.succeed(null),
-                onFalse: () => Effect.fail(BadRequest(`Missing ${bodyProperty} property in request body`))
-            })),
-            Effect.bind("url", () =>
+            Effect.bind("deviceUrlVal", () => {
+                if (req.body && key in req.body) { return Effect.succeed(req.body[key]) }
+                else { return Effect.fail(BadRequest(`Expected body format is: {${key}: ???}`)) }
+            }),
+            Effect.bind("deviceUrlString", ({ deviceUrlVal }) => {
+                if (typeof deviceUrlVal == "string") { return Effect.succeed(deviceUrlVal) }
+                else { return Effect.fail(BadRequest(`Expected ${key} of type string but found ${typeof deviceUrlVal}`)) }
+            }),
+            Effect.bind("url", ({ deviceUrlString }) =>
                 Effect.try({
-                    try: () => new URL(req.body[bodyProperty]),
-                    catch: () => BadRequest(`"${req.body[bodyProperty]}" is not a valid URL`)
+                    try: () => new URL(deviceUrlString),
+                    catch: () => BadRequest(`"${deviceUrlString}" is not a valid URL`)
                 })
             ),
             Effect.bind("deviceId", ({ token, url }) => service.add(token, url)),
@@ -58,14 +61,18 @@ export function registerDevicesServiceRoutes(app: express.Express, service: Devi
 
     // rename
     app.post('/api/devices/:id', async (req, res) => {
-        const bodyProperty = "name"
+        const key = "name"
         const response = await Effect.Do.pipe(
             Effect.bind("token", () => deserializeToken(req, usersService)),
-            Effect.bind("_", () => Effect.if(req.body != undefined && bodyProperty in req.body, {
-                onTrue: () => Effect.succeed(null),
-                onFalse: () => Effect.fail(BadRequest(`Missing ${bodyProperty} property in request body`))
-            })),
-            Effect.bind("__", ({ token }) => service.rename(token, DeviceId(req.params.id), req.body[bodyProperty])),
+            Effect.bind("nameVal", () => {
+                if (req.body && key in req.body) { return Effect.succeed(req.body[key]) }
+                else { return Effect.fail(BadRequest(`Expected body format is: {${key}: ???}`)) }
+            }),
+            Effect.bind("name", ({ nameVal }) => {
+                if (typeof nameVal == "string") { return Effect.succeed(nameVal) }
+                else { return Effect.fail(BadRequest(`Expected ${key} of type string but found ${typeof nameVal}`)) }
+            }),
+            Effect.bind("_", ({ name, token }) => service.rename(token, DeviceId(req.params.id), name)),
             Effect.map(() => Response(StatusCodes.OK)),
             Effect.catch("__brand", {
                 failure: "DeviceNotFoundError",
@@ -107,14 +114,11 @@ export function registerDevicesServiceRoutes(app: express.Express, service: Devi
 
     // update property
     app.patch('/api/devices/:id/properties/:propertyId', async (req, res) => {
+        const key = "value"
         const response = await Effect.Do.pipe(
             Effect.bind("value", () => {
-                const key = "value"
-                if (req.body && key in req.body) {
-                    return Effect.succeed(req.body[key])
-                } else {
-                    return Effect.fail(BadRequest(`Expected body format is: {${key}: ???}`))
-                }
+                if (req.body && key in req.body) { return Effect.succeed(req.body[key]) }
+                else { return Effect.fail(BadRequest(`Expected body format is: {${key}: ???}`)) }
             }),
             Effect.bind("_", ({ value }) => service.updateDeviceProperty(DeviceId(req.params.id), DevicePropertyId(req.params.propertyId), value)),
             Effect.map(() => Response(StatusCodes.OK)),
@@ -134,15 +138,12 @@ export function registerDevicesServiceRoutes(app: express.Express, service: Devi
 
     // execute action
     app.post('/api/devices/:id/actions/:actionId/execute', async (req, res) => {
+        const key = "input"
         const response = await Effect.Do.pipe(
             Effect.bind("token", () => deserializeToken(req, usersService)),
             Effect.bind("input", () => {
-                const key = "input"
-                if (req.body && key in req.body) {
-                    return Effect.succeed(req.body[key])
-                } else {
-                    return Effect.fail(BadRequest(`Expected body format is: {${key}: ???}`))
-                }
+                if (req.body && key in req.body) { return Effect.succeed(req.body[key]) }
+                else { return Effect.fail(BadRequest(`Expected body format is: {${key}: ???}`)) }
             }),
             Effect.bind("_", ({ token, input }) => service.executeAction(token, DeviceId(req.params.id), DeviceActionId(req.params.actionId), input)),
             Effect.map(() => Response(StatusCodes.OK)),
