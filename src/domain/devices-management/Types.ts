@@ -19,10 +19,7 @@ export function Color(r: number, g: number, b: number): Color {
 }
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function isColor(obj: any): obj is Color {
-    return typeof obj == "object" &&
-        "r" in obj && typeof obj.r == "number" &&
-        "g" in obj && typeof obj.g == "number" &&
-        "b" in obj && typeof obj.b == "number"
+    return typeof obj == "object" && "r" in obj && "g" in obj && "b" in obj
 }
 
 export type TypeConstraints<T> = Enum | IntRange | DoubleRange | None<T>
@@ -125,8 +122,24 @@ class NoneImpl<T> implements None<T> {
         this.type = type
         this.__brand = "None"
     }
-    validate(): Effect.Effect<void, InvalidValueError> {
-        return Effect.succeed(null)
+    validate(value: T): Effect.Effect<void, InvalidValueError> {
+        function appropriateError(expectedType: string): InvalidValueError {
+            return InvalidValueError(`Received value type: ${typeof value}.\nExpected value type: ${expectedType}`)
+        }
+        switch (this.type) {
+            case Type.IntType:
+                return Number.isInteger(value) ? Effect.succeed(undefined) : Effect.fail(appropriateError("int"))
+            case Type.DoubleType:
+                return typeof value == "number" ? Effect.succeed(undefined) : Effect.fail(appropriateError("double"))
+            case Type.BooleanType:
+                return typeof value == "boolean" ? Effect.succeed(undefined) : Effect.fail(appropriateError("boolean"))
+            case Type.StringType:
+                return typeof value == "string" ? Effect.succeed(undefined) : Effect.fail(appropriateError("string"))
+            case Type.ColorType:
+                return isColor(value) ? Effect.succeed(undefined) : Effect.fail(appropriateError("Color"))
+            case Type.VoidType:
+                return Effect.succeed(undefined)
+        }
     }
 }
 export function NoneBoolean(): None<boolean> {
