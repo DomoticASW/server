@@ -115,6 +115,7 @@ test("NoneBoolean TypeConstraints creation", () => {
     expect(tc.type).toBe(Type.BooleanType)
     expect(() => tc.validate(true).pipe(Effect.runSync)).not.toThrow()
     expect(() => tc.validate(false).pipe(Effect.runSync)).not.toThrow()
+    expect(() => tc.validate(1 as unknown as boolean).pipe(Effect.runSync)).toThrow()
 })
 
 test("NoneInt TypeConstraints creation", () => {
@@ -123,6 +124,7 @@ test("NoneInt TypeConstraints creation", () => {
     expect(() => tc.validate(1).pipe(Effect.runSync)).not.toThrow()
     expect(() => tc.validate(3).pipe(Effect.runSync)).not.toThrow()
     expect(() => tc.validate(-10).pipe(Effect.runSync)).not.toThrow()
+    expect(() => tc.validate(1.5).pipe(Effect.runSync)).toThrow()
 })
 
 test("NoneDouble TypeConstraints creation", () => {
@@ -131,6 +133,7 @@ test("NoneDouble TypeConstraints creation", () => {
     expect(() => tc.validate(1).pipe(Effect.runSync)).not.toThrow()
     expect(() => tc.validate(3.10).pipe(Effect.runSync)).not.toThrow()
     expect(() => tc.validate(-10).pipe(Effect.runSync)).not.toThrow()
+    expect(() => tc.validate(true as unknown as number).pipe(Effect.runSync)).toThrow()
 })
 
 test("NoneString TypeConstraints creation", () => {
@@ -138,12 +141,14 @@ test("NoneString TypeConstraints creation", () => {
     expect(tc.type).toBe(Type.StringType)
     expect(() => tc.validate("hello").pipe(Effect.runSync)).not.toThrow()
     expect(() => tc.validate("world").pipe(Effect.runSync)).not.toThrow()
+    expect(() => tc.validate(1 as unknown as string).pipe(Effect.runSync)).toThrow()
 })
 
 test("NoneColor TypeConstraints creation", () => {
     const tc = NoneColor()
     expect(tc.type).toBe(Type.ColorType)
     expect(() => tc.validate(Color(1, 2, 3)).pipe(Effect.runSync)).not.toThrow()
+    expect(() => tc.validate(1 as unknown as Color).pipe(Effect.runSync)).toThrow()
 })
 
 test("NoneVoid TypeConstraints creation", () => {
