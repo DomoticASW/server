@@ -10,10 +10,11 @@ import { DeviceRepositoryMongoAdapter } from "./adapters/devices-management/Devi
 import { DevicesServiceImpl } from "./domain/devices-management/DevicesServiceImpl.js";
 import { DeviceFactory } from "./ports/devices-management/DeviceFactory.js";
 import { PermissionsService } from "./ports/permissions-management/PermissionsService.js";
-import { Device, DeviceAction, DeviceActionId, DeviceId, DeviceProperty, DevicePropertyId, DeviceStatus } from "./domain/devices-management/Device.js";
+import { Device, DeviceAction, DeviceActionId, DeviceEvent, DeviceId, DeviceProperty, DevicePropertyId, DeviceStatus } from "./domain/devices-management/Device.js";
 import { DeviceUnreachableError } from "./ports/devices-management/Errors.js";
 import * as uuid from "uuid";
 import { NoneInt } from "./domain/devices-management/Types.js";
+import { DeviceEventsServiceImpl } from "./domain/devices-management/DeviceEventsServiceImpl.js";
 
 const mongoDBConnection = mongoose.createConnection("mongodb://localhost:27017/DomoticASW")
 // TODO: replace with production impl
@@ -30,7 +31,9 @@ const deviceFactory: DeviceFactory = {
     create: function (deviceUrl: URL): Effect.Effect<Device, DeviceUnreachableError> {
         const action = DeviceAction(DeviceActionId("1"), "Action", NoneInt())
         const property = DeviceProperty(DevicePropertyId("1"), "Name", 3, NoneInt())
-        return Effect.succeed(Device(DeviceId(uuid.v4()), deviceUrl.hostname, deviceUrl, DeviceStatus.Online, [property], [action], []))
+        const event1 = DeviceEvent("event1")
+        const event2 = DeviceEvent("event2")
+        return Effect.succeed(Device(DeviceId(uuid.v4()), deviceUrl.hostname, deviceUrl, DeviceStatus.Online, [property], [action], [event1, event2]))
     }
 }
 
@@ -38,4 +41,5 @@ const deviceGroupRepository = new DeviceGroupRepositoryMongoAdapter(mongoDBConne
 const deviceRepository = new DeviceRepositoryMongoAdapter(mongoDBConnection)
 const devicesService = new DevicesServiceImpl(deviceRepository, deviceFactory, usersServiceMock, permissionsService)
 const deviceGroupsService = new DeviceGroupsServiceImpl(deviceGroupRepository, devicesService, usersServiceMock)
-new HTTPServerAdapter(3000, deviceGroupsService, devicesService, usersServiceMock)
+const deviceEventsService = new DeviceEventsServiceImpl(devicesService)
+new HTTPServerAdapter(3000, deviceGroupsService, devicesService, deviceEventsService, usersServiceMock)
