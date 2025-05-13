@@ -43,9 +43,10 @@ export function handleCommonErrors(eff: Effect.Effect<Response, BadRequest | Una
             switch (err.__brand) {
                 case "InvalidTokenError":
                 case "InvalidTokenFormatError":
-                case "PermissionError":
                 case "UnauthorizedError":
                     return Effect.succeed(Response(StatusCodes.UNAUTHORIZED, err))
+                case "PermissionError":
+                    return Effect.succeed(Response(StatusCodes.FORBIDDEN, err))
                 case "BadRequest":
                     return Effect.succeed(Response(StatusCodes.BAD_REQUEST, err))
             }
