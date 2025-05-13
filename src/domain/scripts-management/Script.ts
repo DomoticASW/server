@@ -36,15 +36,24 @@ export function TaskId(id: string): TaskId { return id as TaskId }
 export function AutomationId(id: string): AutomationId { return id as AutomationId }
 
 export function Task(id: TaskId, name: string, instructions: Array<Instruction>): Task {
-  return {
-    id: id,
-    name: name,
-    instructions: instructions,
-    execute(token) {
-      return pipe(
-        reduce(this.instructions, ExecutionEnvironment(token), (env, instr) => instr.execute(env))
-      )
-    },
+  return new TaskImpl(id, name, instructions)
+}
+
+class TaskImpl implements Task {
+  id: TaskId
+  name: string
+  instructions: Array<Instruction>
+
+  constructor(id: TaskId, name: string, instructions: Array<Instruction>) {
+    this.id = id
+    this.name = name
+    this.instructions = instructions
+  }
+
+  execute(token?: Token): Effect<ExecutionEnvironment, ScriptError> {
+    return pipe(
+      reduce(this.instructions, ExecutionEnvironment(token), (env, instr) => instr.execute(env))
+    )
   }
 }
 
@@ -61,7 +70,7 @@ class AutomationImpl implements Automation {
     this.trigger = trigger
     this.instructions = instructions
   }
-  
+
   deviceEventPublished(deviceId: DeviceId, event: DeviceEvent): void {
     if (this.trigger instanceof DeviceEventTriggerImpl && this.enabled) {
       const deviceEventTrigger = this.trigger as DeviceEventTrigger
@@ -84,7 +93,7 @@ class AutomationImpl implements Automation {
   disable(): void {
     this.enabled = false
   }
-  
+
   private checkTrigger(): Effect<undefined, ScriptError> {
     const periodTrigger = this.trigger as PeriodTrigger
     return pipe(
