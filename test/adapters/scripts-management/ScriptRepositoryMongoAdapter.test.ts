@@ -2,7 +2,8 @@ import mongoose from "mongoose";
 import { testRepositoryMongoAdapter } from "../BaseRepositoryMongoAdapterTests.js";
 import { ScriptRepositoryMongoAdapter } from "../../../src/adapters/scripts-management/ScriptRepositoryMongoAdapter.js";
 import { ScriptId, AutomationId, TaskId, Task, Automation } from "../../../src/domain/scripts-management/Script.js";
-import { PeriodTrigger } from "../../../src/domain/scripts-management/Trigger.js";
+import { DeviceEventTrigger, PeriodTrigger, Trigger } from "../../../src/domain/scripts-management/Trigger.js";
+import { DeviceId } from "../../../src/domain/devices-management/Device.js";
 
 const dbName = "ScriptRepositoryMongoAdapterTests"
 
@@ -18,8 +19,14 @@ function makeAutomationId(id: string): AutomationId {
 function makeTaskEntity(id: string = "1", something: string = "Turn lights off"): Task {
     return Task(TaskId(id), something, [])
 }
-function makeAutomationEntity(id: string = "1", something: string = "Good moorning"): Automation {
-    return Automation(AutomationId(id), something, PeriodTrigger(new Date(), 5), [])
+function makeAutomationEntity(id: string = "1", something: string = "a"): Automation {
+    let trigger: Trigger
+    if (something == "a") {
+        trigger = PeriodTrigger(new Date(), 5)
+    } else {
+        trigger = DeviceEventTrigger(DeviceId("1"), "event")
+    }
+    return Automation(AutomationId(id), something, trigger, [])
 }
 
 function makeRepository(connection: mongoose.Connection): ScriptRepositoryMongoAdapter {
