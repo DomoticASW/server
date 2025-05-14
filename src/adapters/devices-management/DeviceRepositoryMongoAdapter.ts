@@ -3,6 +3,9 @@ import { Device, DeviceAction, DeviceActionId, DeviceEvent, DeviceId, DeviceProp
 import { BaseRepositoryMongoAdapter } from "../BaseRepositoryMongoAdapter.js";
 import { DoubleRange, Enum, IntRange, NoneBoolean, NoneColor, NoneDouble, NoneInt, NoneString, NoneVoid, TypeConstraints } from "../../domain/devices-management/Types.js";
 import { Type } from "../../ports/devices-management/Types.js";
+import { DeviceRepository } from "../../ports/devices-management/DeviceRepository.js";
+import { DuplicateIdError, NotFoundError } from "../../ports/Repository.js";
+import { Effect } from "effect";
 
 export interface DeviceSchema {
     _id: string
@@ -39,7 +42,7 @@ interface TypeConstraintSchema {
     max?: number
 }
 
-export class DeviceRepositoryMongoAdapter extends BaseRepositoryMongoAdapter<DeviceId, Device, string, DeviceSchema> {
+export class DeviceRepositoryMongoAdapter extends BaseRepositoryMongoAdapter<DeviceId, Device, string, DeviceSchema> implements DeviceRepository {
     private typeConstraintSchema = new mongoose.Schema<TypeConstraintSchema>({
         __brand: { type: String, required: true },
         type: { type: String, enum: Type, required: true },
@@ -74,6 +77,17 @@ export class DeviceRepositoryMongoAdapter extends BaseRepositoryMongoAdapter<Dev
     constructor(connection: mongoose.Connection) {
         super(connection)
         this.Device = connection.model("Device", this.deviceSchema, undefined, { overwriteModels: true })
+    }
+
+
+    // Overriding this method to hide the UniquenessConstraintViolatedError which cannot happen
+    add(entity: Device): Effect.Effect<void, DuplicateIdError> {
+        return super.add(entity) as Effect.Effect<void, DuplicateIdError>
+    }
+
+    // Overriding this method to hide the UniquenessConstraintViolatedError which cannot happen
+    update(entity: Device): Effect.Effect<void, NotFoundError> {
+        return super.update(entity) as Effect.Effect<void, NotFoundError>
     }
 
     private devicePropertyToSchema(p: DeviceProperty<unknown>): DevicePropertySchema {
