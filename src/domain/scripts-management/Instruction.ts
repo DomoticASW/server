@@ -118,3 +118,81 @@ export function ExecutionEnvironmentCopy(env: ExecutionEnvironment): ExecutionEn
     taskToken: env.taskToken
   }
 }
+
+// Utils to check structure of instructions
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function isSendNotificationInstruction(o: any): o is SendNotificationInstruction {
+  return o &&
+    typeof o === 'object' &&
+    'email' in o && typeof o.email === 'string' &&
+    'message' in o && typeof o.message === 'string' &&
+    'notificationsService' in o && typeof o.notificationsService === 'object' &&
+    typeof o.execute === 'function';
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function isWaitInstruction(o: any): o is WaitInstruction {
+  return o &&
+    typeof o === 'object' &&
+    'seconds' in o && typeof o.seconds === 'number' &&
+    typeof o.execute === 'function';
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function isStartTaskInstruction(o: any): o is StartTaskInstruction {
+  return o &&
+    typeof o === 'object' &&
+    'taskId' in o && typeof o.taskId === 'string' &&
+    'scriptsService' in o && typeof o.scriptsService === 'object' &&
+    'permissionsService' in o && typeof o.permissionsService === 'object' &&
+    typeof o.execute === 'function';
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function isDeviceActionInstruction(o: any): o is DeviceActionInstruction {
+  return o &&
+    typeof o === 'object' &&
+    'deviceId' in o && typeof o.deviceId === 'string' &&
+    'deviceActionId' in o && typeof o.deviceActionId === 'string' &&
+    'input' in o &&
+    'devicesService' in o && typeof o.devicesService === 'object' &&
+    typeof o.execute === 'function';
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function isCreateConstantInstruction<T>(o: any): o is CreateConstantInstruction<T> {
+  return o &&
+    typeof o === 'object' &&
+    'name' in o && typeof o.name === 'string' &&
+    'type' in o && typeof o.type === 'string' &&
+    'value' in o &&
+    typeof o.execute === 'function';
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function isCreateDevicePropertyConstantInstruction<T>(o: any): o is CreateDevicePropertyConstantInstruction<T> {
+  return o &&
+    typeof o === 'object' &&
+    'name' in o && typeof o.name === 'string' &&
+    'type' in o && typeof o.type === 'string' &&
+    'deviceId' in o && typeof o.deviceId === 'string' &&
+    'devicePropertyId' in o && typeof o.devicePropertyId === 'string' &&
+    'devicesService' in o && typeof o.devicesService === 'object' &&
+    typeof o.execute === 'function';
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function isIfInstruction(o: any): o is IfInstruction {
+  return o &&
+    typeof o === 'object' &&
+    'then' in o && Array.isArray(o.then) &&
+    'condition' in o && typeof o.condition === 'object' &&
+    typeof o.execute === 'function';
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function isIfElseInstruction(o: any): o is ElseInstruction {
+  return isIfInstruction(o) &&
+    'else' in o && Array.isArray(o.else);
+}
