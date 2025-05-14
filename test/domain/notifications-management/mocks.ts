@@ -6,10 +6,12 @@ import { Token } from "../../../src/domain/users-management/Token.js";
 import { DevicesService, DevicePropertyUpdatesSubscriber } from "../../../src/ports/devices-management/DevicesService.js";
 import { DeviceUnreachableError, DeviceNotFoundError, InvalidInputError, DeviceActionError, DeviceActionNotFound, DevicePropertyNotFound } from "../../../src/ports/devices-management/Errors.js";
 import { PermissionError } from "../../../src/ports/permissions-management/Errors.js";
-import { TokenError, InvalidTokenError } from "../../../src/ports/users-management/Errors.js";
+import { TokenError, InvalidTokenError, EmailAlreadyInUseError, InvalidCredentialsError, InvalidTokenFormatError, UserNotFoundError } from "../../../src/ports/users-management/Errors.js";
 import { Spy } from "../../utils/spy.js";
 import { DeviceMock, TokenMock } from "../scripts-management/mocks.js";
 import { DeviceStatusChangesSubscriber, DeviceStatusesService } from "../../../src/ports/devices-management/DeviceStatusesService.js";
+import { UsersService } from "../../../src/ports/users-management/UserService.js";
+import { Nickname, Email, PasswordHash, User } from "../../../src/domain/users-management/User.js";
 
 export function InvalidTokenErrorMock(cause?: string): InvalidTokenError {
   return {
@@ -77,6 +79,48 @@ export function DeviceStatusesServicespy(): Spy<DeviceStatusesService> {
           call++
         },
         unsubscribeForDeviceStatusChanges: function (subscriber: DeviceStatusChangesSubscriber): void {
+          throw new Error("Function not implemented.");
+        }
+      }
+    }
+  }
+}
+
+export function UsersServiceSpy(userToken: Token = TokenMock("Email")): Spy<UsersService> {
+  let call = 0
+  return {
+    call: () => call,
+    get: function (): UsersService {
+      return {
+        publishRegistrationRequest: function (nickname: Nickname, email: Email, password: PasswordHash): Effect<void, EmailAlreadyInUseError> {
+          throw new Error("Function not implemented.");
+        },
+        approveRegistrationRequest: function (token: Token, email: Email): Effect<void, UserNotFoundError | TokenError> {
+          throw new Error("Function not implemented.");
+        },
+        rejectRegistrationRequest: function (token: Token, email: Email): Effect<void, UserNotFoundError | TokenError> {
+          throw new Error("Function not implemented.");
+        },
+        removeUser: function (token: Token, email: Email): Effect<void, UserNotFoundError | TokenError> {
+          throw new Error("Function not implemented.");
+        },
+        updateUserData: function (token: Token, nickname?: Nickname, email?: Email, password?: PasswordHash): Effect<void, UserNotFoundError | EmailAlreadyInUseError | TokenError> {
+          throw new Error("Function not implemented.");
+        },
+        getAllUsers: function (token: Token): Effect<Iterable<User>, InvalidTokenError> {
+          throw new Error("Function not implemented.");
+        },
+        getUserData: function (token: Token): Effect<User, InvalidTokenError> {
+          throw new Error("Function not implemented.");
+        },
+        login: function (email: Email, password: PasswordHash): Effect<Token, InvalidCredentialsError> {
+          throw new Error("Function not implemented.");
+        },
+        verifyToken: function (token: Token): Effect<void, InvalidTokenError> {
+          call++
+          return token == userToken ? succeed(null) : fail(InvalidTokenErrorMock())
+        },
+        makeToken: function (value: string): Effect<Token, InvalidTokenFormatError> {
           throw new Error("Function not implemented.");
         }
       }

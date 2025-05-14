@@ -9,9 +9,10 @@ import { Email } from "../users-management/User.js";
 import { DeviceStatusesService } from "../../ports/devices-management/DeviceStatusesService.js";
 import { DevicesService } from "../../ports/devices-management/DevicesService.js";
 import { Server, Socket } from "socket.io"
+import { UsersService } from "../../ports/users-management/UserService.js";
 
 class NotificationsServiceImpl implements NotificationsService {
-  constructor(private deviceStatusesService: DeviceStatusesService, private io: Server, private devicesService: DevicesService) {
+  constructor(private deviceStatusesService: DeviceStatusesService, private io: Server, private devicesService: DevicesService, private usersService: UsersService) {
     deviceStatusesService.subscribeForDeviceStatusChanges(this)
   }
 
@@ -29,6 +30,6 @@ class NotificationsServiceImpl implements NotificationsService {
   }
 }
 
-export function NotificationsService(deviceStatusesService: DeviceStatusesService, io: Server, devicesService: DevicesService) : NotificationsService {
-  return new NotificationsServiceImpl(deviceStatusesService, io, devicesService)
+export function NotificationsService(deviceStatusesService: DeviceStatusesService, io: Server, devicesService: DevicesService, usersService: UsersService) : NotificationsService {
+  return new NotificationsServiceImpl(deviceStatusesService, io, devicesService, usersService)
 }
