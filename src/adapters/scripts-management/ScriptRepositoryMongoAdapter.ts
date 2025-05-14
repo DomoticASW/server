@@ -2,8 +2,12 @@ import mongoose, { Document, Model, Schema } from "mongoose";
 import { Automation, AutomationId, Script, ScriptId, Task, TaskId } from "../../domain/scripts-management/Script.js";
 import { BaseRepositoryMongoAdapter } from "../BaseRepositoryMongoAdapter.js";
 import { DeviceEventTrigger, PeriodTrigger } from "../../domain/scripts-management/Trigger.js";
-import { DeviceId } from "../../domain/devices-management/Device.js";
-import { Instruction } from "../../domain/scripts-management/Instruction.js";
+import { DeviceActionId, DeviceId, DevicePropertyId } from "../../domain/devices-management/Device.js";
+import { Type } from "../../ports/devices-management/Types.js";
+import { Condition, ConditionOperator, ConstantInstruction, Instruction, isCreateConstantInstruction, isCreateDevicePropertyConstantInstruction, isDeviceActionInstruction, isIfElseInstruction, isIfInstruction, isSendNotificationInstruction, isStartTaskInstruction, isWaitInstruction } from "../../domain/scripts-management/Instruction.js";
+import { CreateConstantInstruction, CreateDevicePropertyConstantInstruction, DeviceActionInstruction, ElseInstruction, IfInstruction, SendNotificationInstruction, StartTaskInstruction, WaitInstruction } from "../../domain/scripts-management/InstructionImpl.js";
+import { BooleanEOperator, ColorEOperator, NumberEOperator, NumberGEOperator, NumberGOperator, NumberLEOperator, NumberLOperator, StringEOperator } from "../../domain/scripts-management/Operators.js";
+import { Email } from "../../domain/users-management/User.js";
 
 enum ScriptType {
     Task = "Task",
@@ -13,6 +17,8 @@ enum ScriptType {
 interface ScriptSchema {
     _id: string
     name: string
+
+    instructions: InstructionSchema[]
 
     scriptType: ScriptType
     automationData?: AutomationDataSchema
@@ -43,6 +49,87 @@ interface DeviceEventTriggerSchema {
     eventName: string
 }
 
+enum InstructionType {
+    SendNotificationInstruction = "SendNotificationInstruction",
+    WaitInstruction = "WaitInstruction",
+    StartTaskInstruction = "StartTaskInstruction",
+    DeviceActionInstruction = "DeviceActionInstruction",
+    CreateConstantInstruction = "CreateConstantInstruction",
+    CreateDevicePropertyConstantInstruction = "CreateDevicePropertyConstantInstruction",
+    IfInstruction = "IfInstruction",
+    IfElseInstruction = "IfElseInstruction"
+}
+
+interface InstructionSchema {
+    type: InstructionType
+    instruction: SendNotificationInstructionSchema | WaitInstructionSchema | StartTaskInstructionSchema | DeviceActionInstructionSchema | CreateConstantInstructionSchema | CreateDevicePropertyConstantInstructionSchema | IfInstructionSchema | IfElseInstructionSchema
+}
+
+interface SendNotificationInstructionSchema {
+    email: string
+    message: string,
+    // notificationsService: NotificationsService TODO: what to do here? services inside ExecutionEnvironment??
+}
+
+interface WaitInstructionSchema {
+    seconds: number
+}
+
+interface StartTaskInstructionSchema {
+    taskId: string,
+    // scriptsService: ScriptsService, TODO: what to do here? services inside ExecutionEnvironment??
+    // permissionsService: PermissionsService TODO: what to do here? services inside ExecutionEnvironment??
+}
+
+interface DeviceActionInstructionSchema {
+    deviceId: string
+    deviceActionId: string
+    input: unknown,
+    // devicesService: DevicesService TODO: what to do here? services inside ExecutionEnvironment??
+}
+
+interface ConstantInstructionSchema {
+    name: string
+    type: Type
+}
+
+interface CreateConstantInstructionSchema extends ConstantInstructionSchema {
+    value: unknown
+}
+
+interface CreateDevicePropertyConstantInstructionSchema extends ConstantInstructionSchema {
+    deviceId: string
+    devicePropertyId: string,
+    // devicesService: DevicesService TODO: what to do here? services inside ExecutionEnvironment??
+}
+
+interface IfInstructionSchema {
+    then: InstructionSchema[]
+    condition: ConditionSchema
+}
+
+interface IfElseInstructionSchema extends IfInstructionSchema {
+    else: InstructionSchema[]
+}
+
+interface ConditionSchema {
+    leftConstantName: string
+    rightConstantName: string
+    negate: boolean
+    conditionOperatorType: ConditionOperatorType
+}
+
+enum ConditionOperatorType {
+    NumberEOperator = "NumberEOperator",
+    NumberGEOperator = "NumberGEOperator",
+    NumberLEOperator = "NumberLEOperator",
+    NumberLOperator = "NumberLOperator",
+    NumberGOperator = "NumberGOperator",
+    StringEOperator = "StringEOperator",
+    ColorEOperator = "ColorEOperator",
+    BooleanEOperator = "BooleanEOperator"
+}
+
 export class ScriptRepositoryMongoAdapter extends BaseRepositoryMongoAdapter<ScriptId, Script<ScriptId>, string, ScriptSchema> {
     private triggerSchema = new mongoose.Schema<TriggerSchema>({
         triggerType: { type: String, enum: TriggerType, required: true },
@@ -52,10 +139,15 @@ export class ScriptRepositoryMongoAdapter extends BaseRepositoryMongoAdapter<Scr
         enabled: { type: Boolean, required: true },
         trigger: { type: this.triggerSchema, required: true }
     });
+    private instructionSchema = new mongoose.Schema<InstructionSchema>({
+        type: { type: String, enum: InstructionType, required: true },
+        instruction: { type: Schema.Types.Mixed, required: true }
+    });
     private scriptSchema = new mongoose.Schema<ScriptSchema>({
         _id: { type: String, required: true },
         name: { type: String, required: true },
         scriptType: { type: String, enum: ScriptType, required: true },
+        instructions: { type: [this.instructionSchema], required: true },
         automationData: { type: this.automationDataSchema, required: false }
     });
 
@@ -107,5 +199,136 @@ export class ScriptRepositoryMongoAdapter extends BaseRepositoryMongoAdapter<Scr
 
     protected model(): Model<ScriptSchema> {
         return this.Script
+    }
+
+    private serializeInstructions(instructions: Instruction[]): InstructionSchema[] {
+        return instructions.map(i => {
+            let instruction: SendNotificationInstructionSchema | WaitInstructionSchema | StartTaskInstructionSchema | DeviceActionInstructionSchema | CreateConstantInstructionSchema | CreateDevicePropertyConstantInstructionSchema | IfInstructionSchema | IfElseInstructionSchema
+            let type: InstructionType
+            if (isSendNotificationInstruction(i)) {
+                instruction = { email: i.email, message: i.message }
+                type = InstructionType.SendNotificationInstruction
+            } else if (isStartTaskInstruction(i)) {
+                instruction = { taskId: i.taskId }
+                type = InstructionType.StartTaskInstruction
+            } else if (isWaitInstruction(i)) {
+                instruction = { seconds: i.seconds }
+                type = InstructionType.WaitInstruction
+            } else if (isDeviceActionInstruction(i)) {
+                instruction = { deviceId: i.deviceId, deviceActionId: i.deviceActionId, input: i.input }
+                type = InstructionType.DeviceActionInstruction
+            } else if (isIfInstruction(i)) {
+                instruction = { then: this.serializeInstructions(i.then), condition: this.serializeCondition(i.condition) }
+                type = InstructionType.IfInstruction
+            } else if (isIfElseInstruction(i)) {
+                instruction = { then: this.serializeInstructions(i.then), else: this.serializeInstructions(i.else), condition: this.serializeCondition(i.condition) }
+                type = InstructionType.IfElseInstruction
+            } else if (isCreateDevicePropertyConstantInstruction(i)) {
+                instruction = { name: i.name, type: i.type, deviceId: i.deviceId, devicePropertyId: i.devicePropertyId }
+                type = InstructionType.CreateDevicePropertyConstantInstruction
+            } else if (isCreateConstantInstruction(i)) {
+                instruction = { name: i.name, type: i.type, value: i.value }
+                type = InstructionType.CreateConstantInstruction
+            } else {
+                throw new Error("It was not possible to serialize the following instruction into a known type of instruction:\n" + JSON.stringify(i))
+            }
+            return { instruction: instruction, type: type }
+        })
+    }
+    private deserializeInstructions(instructions: InstructionSchema[]): Instruction[] {
+        return instructions.map(instruction => {
+            switch (instruction.type) {
+                case InstructionType.SendNotificationInstruction: {
+                    const i = instruction.instruction as unknown as SendNotificationInstructionSchema
+                    return SendNotificationInstruction(Email(i.email), i.message, null)  // TODO: fix
+                }
+                case InstructionType.StartTaskInstruction: {
+                    const i = instruction.instruction as unknown as StartTaskInstructionSchema
+                    return StartTaskInstruction(TaskId(i.taskId), null, null)  // TODO: fix
+                }
+                case InstructionType.WaitInstruction: {
+                    const i = instruction.instruction as unknown as WaitInstructionSchema
+                    return WaitInstruction(i.seconds)
+                }
+                case InstructionType.DeviceActionInstruction: {
+                    const i = instruction.instruction as unknown as DeviceActionInstructionSchema
+                    return DeviceActionInstruction(DeviceId(i.deviceId), DeviceActionId(i.deviceActionId), i.input, null) // TODO: fix
+                }
+                case InstructionType.IfInstruction:
+                case InstructionType.IfElseInstruction: {
+                    const i = instruction.instruction as unknown as IfInstructionSchema
+                    // Fiding the constant instructions
+                    // These are safely unwrapped, the conditions must be present as the script compiled when it was created
+                    const leftConstantInstructionSchema = this.findConstantInstructionSchemaByName(instructions, i.condition.leftConstantName)!
+                    const rightConstantInstructionSchema = this.findConstantInstructionSchemaByName(instructions, i.condition.rightConstantName)!
+
+                    // Deserializing constant instructions
+                    const restricredInstructionType = instruction.type as (InstructionType.CreateConstantInstruction | InstructionType.CreateDevicePropertyConstantInstruction)
+                    const leftConstantInstruction = this.deserializeConstantInstruction(leftConstantInstructionSchema, restricredInstructionType)
+                    const rightConstantInstruction = this.deserializeConstantInstruction(rightConstantInstructionSchema, restricredInstructionType)
+                    const conditionOperator = this.deserializeConditionOperator(i.condition.conditionOperatorType)
+
+                    if (instruction.type == InstructionType.IfInstruction) {
+                        return IfInstruction(this.deserializeInstructions(i.then), Condition(leftConstantInstruction, rightConstantInstruction, conditionOperator, i.condition.negate))
+                    } else {
+                        return ElseInstruction(this.deserializeInstructions(i.then), this.deserializeInstructions((i as IfElseInstructionSchema).else), Condition(leftConstantInstruction, rightConstantInstruction, conditionOperator))
+                    }
+                }
+                case InstructionType.CreateDevicePropertyConstantInstruction:
+                case InstructionType.CreateConstantInstruction: {
+                    const i = instruction.instruction as unknown as ConstantInstructionSchema
+                    return this.deserializeConstantInstruction(i, instruction.type)
+                }
+            }
+        })
+    }
+
+    private serializeCondition(condition: Condition<unknown>): ConditionSchema {
+        return { leftConstantName: condition.leftConstant.name, rightConstantName: condition.rightConstant.name, conditionOperatorType: this.serializeConditionOperator(condition.operator), negate: condition.negate }
+    }
+
+    private serializeConditionOperator(operator: ConditionOperator<unknown>): ConditionOperatorType {
+        throw Error("Unimplemented")
+    }
+    private deserializeConditionOperator(type: ConditionOperatorType) {
+        switch (type) {
+            case ConditionOperatorType.NumberEOperator:
+                return NumberEOperator()
+            case ConditionOperatorType.NumberGEOperator:
+                return NumberGEOperator()
+            case ConditionOperatorType.NumberGOperator:
+                return NumberGOperator()
+            case ConditionOperatorType.NumberLEOperator:
+                return NumberLEOperator()
+            case ConditionOperatorType.NumberLOperator:
+                return NumberLOperator()
+            case ConditionOperatorType.BooleanEOperator:
+                return BooleanEOperator()
+            case ConditionOperatorType.StringEOperator:
+                return StringEOperator()
+            case ConditionOperatorType.ColorEOperator:
+                return ColorEOperator()
+        }
+    }
+
+    /** Searches constant instructions by name. */
+    private findConstantInstructionSchemaByName(instructions: InstructionSchema[], name: string): ConstantInstructionSchema | undefined {
+        return instructions.find(i =>
+            (i.type == InstructionType.CreateConstantInstruction || i.type == InstructionType.CreateDevicePropertyConstantInstruction) &&
+            (i.instruction as ConstantInstructionSchema).name == name
+        ) as ConstantInstructionSchema | undefined
+    }
+
+    private deserializeConstantInstruction(instruction: ConstantInstructionSchema, type: InstructionType.CreateConstantInstruction | InstructionType.CreateDevicePropertyConstantInstruction): ConstantInstruction<unknown> {
+        switch (type) {
+            case InstructionType.CreateConstantInstruction: {
+                const i = instruction as CreateConstantInstructionSchema
+                return CreateConstantInstruction(i.name, i.type, i.value)
+            }
+            case InstructionType.CreateDevicePropertyConstantInstruction: {
+                const i = instruction as CreateDevicePropertyConstantInstructionSchema
+                return CreateDevicePropertyConstantInstruction(i.name, i.type, DeviceId(i.deviceId), DevicePropertyId(i.devicePropertyId), null) // TODO: fix
+            }
+        }
     }
 }
