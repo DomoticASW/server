@@ -58,6 +58,7 @@ beforeEach(async () => {
     // Setting data for tests
     Effect.runSync(userRepo.add(User(Nickname("Test"), Email("test@test.com"), PasswordHash("1234"), Role.Admin)))
     Effect.runSync(taskListsRepo.add(TaskLists(TaskId("1"), [], [])))
+    Effect.runSync(taskListsRepo.add(TaskLists(TaskId("3"), [Email("test@test.com")], [])))
     Effect.runSync(editListRepo.add(EditList(ScriptId("1", "Task"), [Email("test@test.com")])))
     devicesService.add(makeToken(), new URL("localhost:8080"))
 
@@ -68,6 +69,23 @@ test("addUserDevicePermission ", async () => {
         service.addUserDevicePermission(makeToken(), Email("test@test.com"), DeviceId("1")),
         Effect.runPromise
     )
+})
+
+test("addUserDevicePermission, expect to throw UserNotFoundError", async () => {
+    await expect(
+        Effect.runPromise(
+          service.addUserDevicePermission(makeToken(), Email("test@failed"), DeviceId("1"))
+        )
+      ).rejects.toThrow("UserNotFoundError");
+})
+
+
+test("addUserDevicePermission, expect to throw DeviceNotFoundError", async () => {
+    await expect(
+        Effect.runPromise(
+          service.addUserDevicePermission(makeToken(), Email("test@test.com"), DeviceId("10"))
+        )
+      ).rejects.toThrow("DeviceNotFoundError");
 })
 
 test("remove existing userDevicePermission ", async () => {
@@ -93,12 +111,28 @@ test("canExecuteAction on an existing device and user has permissions ", async (
     expect(result).toBe(true);
 })
 
-test("canExecuteTask wiht an existing task and user has permissions ", async () => {
+test("canExecuteTask with an existing task and user has permissions ", async () => {
     const result = await pipe(
         service.canExecuteTask(makeToken(), TaskId("1")),
         Effect.runPromise
     );
     expect(result).toBe(true);
+})
+
+test("canExecuteTask, expect a TaskNotFoundError ", async () => {
+    await expect(
+        Effect.runPromise(
+          service.canExecuteTask(makeToken(), TaskId("2"))
+        )
+    ).rejects.toThrow("TaskNotFoundError");
+})
+
+test("canExecuteTask, expect a PermissionError ", async () => {
+    await expect(
+        Effect.runPromise(
+          service.canExecuteTask(makeToken(), TaskId("3"))
+        )
+    ).rejects.toThrow("PermissionError");
 })
 
 test("canEdit wiht an existing script and user has permissions ", async () => {

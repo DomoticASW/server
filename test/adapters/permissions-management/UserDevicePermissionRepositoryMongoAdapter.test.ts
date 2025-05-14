@@ -52,6 +52,20 @@ test("The entity cannot has changes", async () => {
   expect(res).toStrictEqual(permission)
 })
 
+test("Try to find an UserDevicePermission that does not exist", async () => {
+  await Effect.runPromise(repo.add(permission));
+  await expect(
+    Effect.runPromise(repo.find([Email(""), DeviceId("2")]))
+  ).rejects.toThrow("NotFoundError")
+});
+
+test("Try to find an UserDevicePermission that has wrong deviceId", async () => {
+  await Effect.runPromise(repo.add(permission));
+  await expect(
+    Effect.runPromise(repo.find([Email("marcoraggio@email.com"), DeviceId("2")]))
+  ).rejects.toThrow("NotFoundError");
+});
+
 test("Try to remove an UserDevicePermission", async () => {
   await Effect.runPromise(repo.add(permission));
   const res1 = await Effect.runPromise(repo.getAll())

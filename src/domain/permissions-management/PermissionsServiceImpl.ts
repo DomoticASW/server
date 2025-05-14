@@ -61,6 +61,8 @@ export class PermissionsServiceImpl implements PermissionsService {
           switch (e.__brand) {
               case "UniquenessConstraintViolatedError":
                   return UserNotFoundError(e.cause)
+              case "DeviceNotFoundError":
+                  return DeviceNotFoundError(e.cause)
               case "UserNotFoundError":
                   return UserNotFoundError(e.cause)
               case "UnauthorizedError":
