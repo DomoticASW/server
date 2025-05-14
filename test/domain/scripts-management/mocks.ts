@@ -16,6 +16,7 @@ import { succeed, fail } from "effect/Exit";
 import { ExecutionEnvironment, Instruction } from "../../../src/domain/scripts-management/Instruction.js";
 import { NoneInt } from "../../../src/domain/devices-management/Types.js";
 import { PermissionsService } from "../../../src/ports/permissions-management/PermissionsService.js";
+import { Spy } from "../../utils/spy.js";
 
 export function UserNotFoundErrorMock(cause?: string): UserNotFoundError {
   return { message: "The user has not been found", cause: cause, __brand: "UserNotFoundError" }
@@ -25,18 +26,6 @@ export function TokenMock(email: string): Token {
   return {
     userEmail: Email(email),
     role: UserRole.User
-  }
-}
-
-export interface Spy<T> {
-  call(): number
-  get(): T
-}
-
-export function Spy<T>(object: T): Spy<T> {
-  return {
-    call: () => 0,
-    get: () => object
   }
 }
 
