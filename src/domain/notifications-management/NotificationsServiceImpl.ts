@@ -10,9 +10,10 @@ import { DeviceStatusesService } from "../../ports/devices-management/DeviceStat
 import { DevicesService } from "../../ports/devices-management/DevicesService.js";
 import { Server, Socket } from "socket.io"
 import { UsersService } from "../../ports/users-management/UserService.js";
+import { DeviceOfflineNotificationSubscriptionRepository } from "../../ports/notifications-management/DeviceOfflineNotificationSubscriptionRepository.js";
 
 class NotificationsServiceImpl implements NotificationsService {
-  constructor(private deviceStatusesService: DeviceStatusesService, private io: Server, private devicesService: DevicesService, private usersService: UsersService) {
+  constructor(private deviceStatusesService: DeviceStatusesService, private io: Server, private devicesService: DevicesService, private usersService: UsersService, private subscriptionsRepository: DeviceOfflineNotificationSubscriptionRepository) {
     deviceStatusesService.subscribeForDeviceStatusChanges(this)
   }
 
@@ -30,6 +31,6 @@ class NotificationsServiceImpl implements NotificationsService {
   }
 }
 
-export function NotificationsService(deviceStatusesService: DeviceStatusesService, io: Server, devicesService: DevicesService, usersService: UsersService) : NotificationsService {
-  return new NotificationsServiceImpl(deviceStatusesService, io, devicesService, usersService)
+export function NotificationsService(deviceStatusesService: DeviceStatusesService, io: Server, devicesService: DevicesService, usersService: UsersService, subscriptionsRepository: DeviceOfflineNotificationSubscriptionRepository) : NotificationsService {
+  return new NotificationsServiceImpl(deviceStatusesService, io, devicesService, usersService, subscriptionsRepository)
 }
