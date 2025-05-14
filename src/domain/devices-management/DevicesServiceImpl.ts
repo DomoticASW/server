@@ -145,7 +145,7 @@ export class DevicesServiceImpl implements DevicesService {
      * As a result no type error is expected to be thrown as devices
      * should correctly know their property types and constraints
      */
-    updateDeviceProperty(deviceId: DeviceId, propertyId: DevicePropertyId, value: unknown): Effect.Effect<void, InvalidInputError | DeviceNotFoundError | DevicePropertyNotFound> {
+    updateDeviceProperty(deviceId: DeviceId, propertyId: DevicePropertyId, value: unknown): Effect.Effect<void, DeviceNotFoundError | DevicePropertyNotFound> {
         return Effect.Do.pipe(
             Effect.bind("device", () => this.repo.find(deviceId)),
             Effect.bind("property", ({ device }) => {
@@ -165,7 +165,7 @@ export class DevicesServiceImpl implements DevicesService {
                         return e
                 }
             }),
-            Effect.tap(({ device, property }) => this.propertyUpdatesSubscribers.forEach(s => s.devicePropertyChanged(device.id, property.id, property.value))),
+            Effect.tap(({ device, property }) => this.propertyUpdatesSubscribers.forEach(s => s.devicePropertyChanged(device.id, property.id, value))),
             Effect.asVoid
         )
     }

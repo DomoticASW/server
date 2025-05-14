@@ -5,7 +5,7 @@ import { InvalidTokenError, TokenError, UserNotFoundError } from "../users-manag
 import { ScriptNotFoundError } from "../scripts/Errors.js"
 import { PermissionError, TaskNotFoundError } from "./Errors.js";
 import { Token } from "../../domain/users-management/Token.js";
-import { ScriptId, TaskId } from "../../domain/scripts/Script.js"
+import { ScriptId, TaskId } from "../../domain/scripts-management/Script.js"
 import { DeviceId } from "../../domain/devices-management/Device.js";
 
 export interface PermissionsService {
