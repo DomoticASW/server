@@ -1,9 +1,7 @@
 import { DeviceNotFoundError } from "../../ports/devices-management/Errors.js";
 import { PermissionError, TaskNotFoundError } from "../../ports/permissions-management/Errors.js";
 import { PermissionsService } from "../../ports/permissions-management/PermissionsService.js";
-import { ScriptNotFoundError } from "../../ports/scripts/Errors.js";
 import { DeviceId } from "../devices-management/Device.js";
-import { TaskId, ScriptId } from "../scripts/Script.js";
 import { Token, UserRole } from "../users-management/Token.js";
 import { Email } from "../users-management/User.js";
 import { UserDevicePermissionRepository } from "../../ports/permissions-management/UserDevicePermissionRepository.js";
@@ -16,6 +14,8 @@ import { id } from "effect/Fiber";
 import { EditListRepository } from "../../ports/permissions-management/EditListRepository.js";
 import { UserRepository } from "../../ports/users-management/UserRepository.js";
 import { UserDevicePermission } from "./UserDevicePermission.js";
+import { ScriptId, TaskId } from "../scripts-management/Script.js";
+import { ScriptNotFoundError } from "../../ports/scripts-management/Errors.js";
 
 export class PermissionsServiceImpl implements PermissionsService {
 

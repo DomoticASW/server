@@ -7,13 +7,13 @@ import { DeviceNotFoundError } from "../../../src/ports/devices-management/Error
 import { UsersService } from "../../../src/ports/users-management/UserService.js"
 import { Device, DeviceId, DeviceStatus } from "../../../src/domain/devices-management/Device.js"
 import { TaskLists } from "../../../src/domain/permissions-management/TaskLists.js"
-import { ScriptId, TaskId } from "../../../src/domain/scripts/Script.js"
 import { EditList } from "../../../src/domain/permissions-management/EditList.js"
 import { PermissionsServiceImpl } from "../../../src/domain/permissions-management/PermissionsServiceImpl.js"
 import { PermissionsService } from "../../../src/ports/permissions-management/PermissionsService.js"
 import mongoose from "mongoose"
 import { UserDevicePermissionRepositoryMongoAdapter } from "../../../src/adapters/permissions-management/UserDevicePermissionRepositoryMongoAdapter.js"
 import { UserDevicePermissionRepository } from "../../../src/ports/permissions-management/UserDevicePermissionRepository.js"
+import { ScriptId, TaskId } from "../../../src/domain/scripts-management/Script.js"
 
 
 const dbName: string = "UserDevicePermissionRepositoryTests"
@@ -33,12 +33,16 @@ function makeToken(role: UserRole = UserRole.Admin): Token {
 }
 
 beforeEach(async () => {
-    editListRepo = new InMemoryRepositoryMock((s) => s.id)
-    taskListsRepo = new InMemoryRepositoryMock((t) => t.id)
+    editListRepo = new InMemoryRepositoryMock((s) => s.id, (id) => id.toString())
+    taskListsRepo = new InMemoryRepositoryMock((t) => t.id, (id) => id.toString())
     // userDevicePermissionRepo = new InMemoryRepositoryMock((p) => [p.email, p.deviceId])
     dbConnection = await mongoose.createConnection(`mongodb://localhost:27018/${dbName}`).asPromise();
     userDevicePermissionRepo = new UserDevicePermissionRepositoryMongoAdapter(dbConnection);
-    userRepo = new InMemoryRepositoryMockCheckingUniqueness((u) => u.email, (u1, u2) => u1.email != u2.email)
+    userRepo = new InMemoryRepositoryMockCheckingUniqueness(
+        (u) => u.email,
+        (id) => id.toString(),
+        (u1, u2) => u1.email != u2.email
+    )
     devicesService = {
         add: () => Effect.succeed(DeviceId("1")),
         getAllDevices: () => Effect.succeed([]),
@@ -59,7 +63,7 @@ beforeEach(async () => {
     Effect.runSync(userRepo.add(User(Nickname("Test"), Email("test@test.com"), PasswordHash("1234"), Role.Admin)))
     Effect.runSync(taskListsRepo.add(TaskLists(TaskId("1"), [], [])))
     Effect.runSync(taskListsRepo.add(TaskLists(TaskId("3"), [Email("test@test.com")], [])))
-    Effect.runSync(editListRepo.add(EditList(ScriptId("1", "Task"), [Email("test@test.com")])))
+    Effect.runSync(editListRepo.add(EditList(TaskId("1"), [Email("test@test.com")])))
     devicesService.add(makeToken(), new URL("localhost:8080"))
 
 })
@@ -137,7 +141,7 @@ test("canExecuteTask, expect a PermissionError ", async () => {
 
 test("canEdit wiht an existing script and user has permissions ", async () => {
     const result = await pipe(
-        service.canEdit(makeToken(), ScriptId("1", "Task")),
+        service.canEdit(makeToken(), TaskId("1")),
         Effect.runPromise
     );
     expect(result).toBe(true);
@@ -146,7 +150,7 @@ test("canEdit wiht an existing script and user has permissions ", async () => {
 test("addToEditList", async () => {
     expect(editListRepo.callsToUpdate).toBe(0)
     await pipe(
-        service.addToEditlist(makeToken(), Email("test@test.com") ,ScriptId("1", "Task")),
+        service.addToEditlist(makeToken(), Email("test@test.com") ,TaskId("1")),
         Effect.runPromise
     );
     expect(editListRepo.callsToUpdate).toBe(1)
@@ -155,11 +159,11 @@ test("addToEditList", async () => {
 test("removeFromEditList wiht an existing script", async () => {
     expect(editListRepo.callsToUpdate).toBe(0)
     await pipe(
-        service.addToEditlist(makeToken(), Email("test@test.com") ,ScriptId("1", "Task")),
+        service.addToEditlist(makeToken(), Email("test@test.com") ,TaskId("1")),
         Effect.runPromise
     );
     await pipe(
-        service.removeFromEditlist(makeToken(), Email("test@test.com") ,ScriptId("1", "Task")),
+        service.removeFromEditlist(makeToken(), Email("test@test.com") ,TaskId("1")),
         Effect.runPromise
     );
     expect(editListRepo.callsToUpdate).toBe(2)
@@ -208,5 +212,3 @@ test("removeFromBlackList wiht an existing task", async () => {
     );
     expect(taskListsRepo.callsToUpdate).toBe(2)
 })
-
-
