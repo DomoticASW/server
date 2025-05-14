@@ -1,17 +1,19 @@
 import { Effect } from "effect/Effect";
-import { Automation, AutomationId, Task, TaskId } from "../../domain/scripts/Script.js";
+import { Automation, AutomationId, Task, TaskId } from "../../domain/scripts-management/Script.js";
 import { Token } from "../../domain/users-management/Token.js";
 import { InvalidTokenError } from "../users-management/Errors.js";
 import { AutomationNameAlreadyInUse, InvalidAutomationError, InvalidTaskError, ScriptNotFoundError, TaskNameAlreadyInUse } from "./Errors.js";
-import { TaskBuilder } from "../../domain/scripts/ScriptBuilder.js";
+import { TaskBuilder } from "../../domain/scripts-management/ScriptBuilder.js";
 import { PermissionError } from "../permissions-management/Errors.js";
 
-export interface ScriptService {
+export interface ScriptsService {
   findTask(token: Token, taskId: TaskId): Effect<Task, InvalidTokenError | ScriptNotFoundError>
+  findTaskUnsafe(taskId: TaskId): Effect<Task, ScriptNotFoundError>
+
   getAllTasks(token: Token): Effect<Iterable<Task>, InvalidTokenError>
   createTask(token: Token, task: TaskBuilder): Effect<TaskId, InvalidTokenError | TaskNameAlreadyInUse | InvalidTaskError>
   editTask(token: Token, taskId: TaskId, task: TaskBuilder): Effect<void, InvalidTokenError | PermissionError | ScriptNotFoundError | TaskNameAlreadyInUse | InvalidTaskError>
-  executeTask(token: Token, taskId: TaskId): Effect<void, InvalidTokenError | ScriptNotFoundError | PermissionError>
+  startTask(token: Token, taskId: TaskId): Effect<void, InvalidTokenError | ScriptNotFoundError | PermissionError>
 
   findAutomation(token: Token, automationId: AutomationId): Effect<Automation, InvalidTokenError | ScriptNotFoundError>
   getAllAutomations(token: Token): Effect<Iterable<Automation>, InvalidTokenError>

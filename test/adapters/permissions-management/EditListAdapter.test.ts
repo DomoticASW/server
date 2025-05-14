@@ -1,6 +1,6 @@
 import mongoose from "mongoose"
 import { Effect } from "effect"
-import { ScriptId } from "../../../src/domain/scripts/Script.js"
+import { TaskId } from "../../../src/domain/scripts-management/Script.js"
 import { EditListRepository } from "../../../src/ports/permissions-management/EditListRepository.js"
 import { EditListMongoAdapter } from "../../../src/adapters/permissions-management/EditListAdapter.js"
 import { EditList } from "../../../src/domain/permissions-management/EditList.js"
@@ -14,7 +14,7 @@ let editList: EditList
 beforeAll(async () => {
   dbConnection = await mongoose.createConnection(`mongodb://localhost:27018/${dbName}`).asPromise();
   repo = new EditListMongoAdapter(dbConnection);
-  editList = EditList(ScriptId("1", "Task"), [])
+  editList = EditList(TaskId("1"), [])
 });
 
 beforeEach(async () => {

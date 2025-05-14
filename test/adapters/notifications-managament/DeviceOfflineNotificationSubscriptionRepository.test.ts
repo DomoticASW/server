@@ -1,8 +1,10 @@
 import mongoose from "mongoose";
-import { DeviceOfflineNotificationSubscriptionRepositoryMongoadapter } from "../../../src/adapters/notifications-management/DeviceOfflineNotificationSubscription.js";
+import { DeviceOfflineNotificationSubscriptionRepositoryMongoAdapter } from "../../../src/adapters/notifications-management/DeviceOfflineNotificationSubscription.js";
 import { Effect, pipe } from "effect";
 import { DeviceOfflineNotificationSubscription } from "../../../src/domain/notifications-management/DeviceOfflineNotificationSubscription.js";
 import { DeviceOfflineNotificationSubscriptionRepository } from "../../../src/ports/notifications-management/DeviceOfflineNotificationSubscriptionRepository.js";
+import { DeviceId } from "../../../src/domain/devices-management/Device.js";
+import { Email } from "../../../src/domain/users-management/User.js";
 
 const dbName: string = "DeviceOfflineNotificationSubscriptionRepositoryTests"
 let dbConnection: mongoose.Connection
@@ -11,15 +13,15 @@ let notification: DeviceOfflineNotificationSubscription
 
 beforeAll(async () => {
   dbConnection = await mongoose.createConnection(`mongodb://localhost:27018/${dbName}`).asPromise();
-  repo = new DeviceOfflineNotificationSubscriptionRepositoryMongoadapter(dbConnection);
-  notification = DeviceOfflineNotificationSubscription("email@email.com", "1")
+  repo = new DeviceOfflineNotificationSubscriptionRepositoryMongoAdapter(dbConnection);
+  notification = DeviceOfflineNotificationSubscription(Email("email@email.com"), DeviceId("1"))
 });
 
 beforeEach(async () => {
   const collections = await dbConnection.listCollections()
   await Promise.all(collections.map(c => dbConnection.dropCollection(c.name)))
 
-  repo = new DeviceOfflineNotificationSubscriptionRepositoryMongoadapter(dbConnection);
+  repo = new DeviceOfflineNotificationSubscriptionRepositoryMongoAdapter(dbConnection);
 });
 
 test("The repository is initially empty", async () => {
@@ -39,7 +41,7 @@ test("Cannot add to the repository two notification with same id", async () => {
   await pipe(
       repo.add(notification),
       Effect.match({
-          onSuccess() { },
+          onSuccess() { throw Error("Should not be here") },
           onFailure(err) { expect(err.__brand).toBe("DuplicateIdError") }
       }),
       Effect.runPromise
@@ -61,7 +63,7 @@ test("If a notification does not exists on the db sends an error when trying to 
   await pipe(
     repo.find(notification),
     Effect.match({
-        onSuccess() { },
+        onSuccess() { throw Error("Should not be here") },
         onFailure(err) { expect(err.__brand).toBe("NotFoundError") }
     }),
     Effect.runPromise
@@ -80,7 +82,7 @@ test("Update returns an error if the entity is not present", async () => {
   await pipe(
     repo.update(notification),
     Effect.match({
-      onSuccess() {},
+      onSuccess() { throw Error("Should not be here") },
       onFailure(error) {
         expect(error.__brand).toBe("NotFoundError");
       },
@@ -101,7 +103,7 @@ test("Trying to remove a notification from the repo if not present returns an er
   await pipe(
     repo.remove(notification),
     Effect.match({
-      onSuccess() {},
+      onSuccess() { throw Error("Should not be here") },
       onFailure(error) {
         expect(error.__brand).toBe("NotFoundError");
       },

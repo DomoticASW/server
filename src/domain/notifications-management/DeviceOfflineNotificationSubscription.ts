@@ -6,9 +6,9 @@ export interface DeviceOfflineNotificationSubscription {
   readonly deviceId: DeviceId;
 }
 
-export function DeviceOfflineNotificationSubscription(email: string, deviceId: string): DeviceOfflineNotificationSubscription {
+export function DeviceOfflineNotificationSubscription(email: Email, deviceId: DeviceId): DeviceOfflineNotificationSubscription {
   return {
-    email: Email(email),
-    deviceId: DeviceId(deviceId)
+    email: email,
+    deviceId: deviceId
   }
 }
