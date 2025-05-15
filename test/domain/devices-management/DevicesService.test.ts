@@ -403,7 +403,7 @@ describe("all methods requiring a token fail if the token is invalid", () => {
         (s) => s.rename(token, deviceId, "Oven"),
         (s) => s.find(token, deviceId),
         (s) => s.getAllDevices(token),
-        (s) => s.executeAction(token, deviceId, DeviceActionId("action"), null)
+        (s) => s.executeAction(token, deviceId, DeviceActionId("action"), undefined)
     ]
 
     beforeEach(() => {
