@@ -1,3 +1,4 @@
+import { Effect } from "effect/Effect";
 import { DeviceId, DeviceStatus } from "../../domain/devices-management/Device.js";
 
 export interface DeviceStatusesService {
@@ -5,5 +6,5 @@ export interface DeviceStatusesService {
     unsubscribeForDeviceStatusChanges(subscriber: DeviceStatusChangesSubscriber): void;
 }
 export interface DeviceStatusChangesSubscriber {
-    deviceStatusChanged(deviceId: DeviceId, deviceName: string, status: DeviceStatus): void;
+    deviceStatusChanged(deviceId: DeviceId, status: DeviceStatus): Effect<void>;
 }

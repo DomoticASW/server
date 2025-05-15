@@ -1,5 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-import { Effect, map, mapError, runPromise, fail, succeed, flatMap, bind, Do } from "effect/Effect";
+import { Effect, map, mapError, runPromise, fail, succeed, flatMap, match, forEach, matchEffect } from "effect/Effect";
 import { DeviceNotFoundError } from "../../ports/devices-management/Errors.js";
 import { NotificationsService } from "../../ports/notifications-management/NotificationsService.js";
 import { InvalidTokenError, UserNotFoundError } from "../../ports/users-management/Errors.js";
@@ -17,7 +16,7 @@ import { InvalidTokenErrorMock } from "../../../test/domain/notifications-manage
 import { UserNotFoundErrorMock } from "../../../test/domain/scripts-management/mocks.js";
 
 class NotificationsServiceImpl implements NotificationsService {
-  private deviceSubscriptions: Map<DeviceId, Map<Email, Socket>> = new Map()
+  private deviceSubscriptions: Map<DeviceId, Map<Token, Socket>> = new Map()
 
   constructor(private deviceStatusesService: DeviceStatusesService, private io: Server, private devicesService: DevicesService, private usersService: UsersService, private subscriptionsRepository: DeviceOfflineNotificationSubscriptionRepository) {
     deviceStatusesService.subscribeForDeviceStatusChanges(this)
@@ -30,7 +29,7 @@ class NotificationsServiceImpl implements NotificationsService {
         await runPromise(pipe(
           this.usersService.verifyToken(token),
           map(() => socket.data.email = token.userEmail),
-          map(() => pipe(
+          flatMap(() => pipe(
             this.subscriptionsRepository.getAll(),
             map(subscriptions => {
               for (const sub of subscriptions) {
@@ -38,29 +37,34 @@ class NotificationsServiceImpl implements NotificationsService {
                   if (!this.deviceSubscriptions.has(sub.deviceId)) {
                     this.deviceSubscriptions.set(sub.deviceId, new Map())
                   }
-                  this.deviceSubscriptions.get(sub.deviceId)!.set(token.userEmail, socket)
+                  this.deviceSubscriptions.get(sub.deviceId)!.set(token, socket)
                 }
               }
               succeed(undefined)
             })
           )),
           mapError(err => socket.emit(err.__brand, err.message + ": " + err.cause))
-        ))
+        ));
+
+        const deviceId = await runPromise(this.devicesService.add(token, new URL("http://www.google.com")))
+        await runPromise(this.subscribeForDeviceOfflineNotifications(token, deviceId))
+        console.log(await runPromise(this.subscriptionsRepository.getAll()))
       })
 
+
       socket.on("disconnect", () => {
-        const email = socket.data?.email
-        if (email) {
-          this.cleanupSocket(email, socket)
+        const token = socket.data?.token
+        if (token) {
+          this.cleanupSocket(token, socket)
         }
       })
     }) 
   }
 
-  private cleanupSocket(email: Email, socket: Socket) {
+  private cleanupSocket(token: Token, socket: Socket) {
     for (const [deviceId, subscribers] of this.deviceSubscriptions.entries()) {
-      if (subscribers.get(email) === socket) {
-        subscribers.delete(email);
+      if (subscribers.get(token) === socket) {
+        subscribers.delete(token);
         if (subscribers.size === 0) {
           this.deviceSubscriptions.delete(deviceId);
         }
@@ -77,16 +81,61 @@ class NotificationsServiceImpl implements NotificationsService {
           if (!this.deviceSubscriptions.has(deviceId)) {
             this.deviceSubscriptions.set(deviceId, new Map());
           }
-          this.deviceSubscriptions.get(deviceId)!.set(token.userEmail, socket);
+          this.deviceSubscriptions.get(deviceId)!.set(token, socket);
           return succeed(undefined)
         }),
-        map(() => this.subscriptionsRepository.add(DeviceOfflineNotificationSubscription(token.userEmail, deviceId))),
+        flatMap(() => {
+          return pipe(
+            this.subscriptionsRepository.find({ email: token.userEmail, deviceId }),
+            matchEffect({
+              onSuccess() { return succeed(undefined) },
+              onFailure: () => this.subscriptionsRepository.add(DeviceOfflineNotificationSubscription(token.userEmail, deviceId)),
+            })
+          )
+        }),
+        matchEffect({
+          onSuccess() { return succeed(undefined) },
+          onFailure: err => {
+            switch (err.__brand) {
+              case "DuplicateIdError":
+                return succeed(undefined)
+              default:
+                return fail(err)
+            }
+          }
+        })
       ))
     )
   }
 
   unsubscribeForDeviceOfflineNotifications(token: Token, deviceId: DeviceId): Effect<void, DeviceNotFoundError | InvalidTokenError> {
-    throw new Error("Method not implemented.");
+    return pipe(
+      this.findSocketByEmail(token.userEmail),
+      flatMap(() => this.devicesService.find(token, deviceId)),
+      map(() => {
+        const subscribers = this.deviceSubscriptions.get(deviceId)
+        if (subscribers) {
+          subscribers.delete(token)
+
+          if (subscribers.size === 0) {
+            this.deviceSubscriptions.delete(deviceId)
+          }
+        }
+      }),
+      flatMap(() => this.subscriptionsRepository.find({ email: token.userEmail, deviceId: deviceId })),
+      flatMap(subscription => this.subscriptionsRepository.remove(subscription)),
+      matchEffect({
+        onSuccess() { return succeed(undefined) },
+        onFailure: err => {
+          switch (err.__brand) {
+            case "NotFoundError":
+              return succeed(undefined)
+            default:
+              return fail(err)
+          }
+        }
+      })
+    )
   }
 
   sendNotification(email: Email, message: string): Effect<void, UserNotFoundError> {
@@ -100,18 +149,37 @@ class NotificationsServiceImpl implements NotificationsService {
     )
   }
 
-  deviceStatusChanged(deviceId: DeviceId, deviceName: string, status: DeviceStatus): void {
+  deviceStatusChanged(deviceId: DeviceId, status: DeviceStatus): Effect<void> {
     if (status === DeviceStatus.Offline) {
-      console.log("Status changed:", status)
       const subscribers = this.deviceSubscriptions.get(deviceId);
       if (subscribers) {
-        for (const [_, socket] of subscribers.entries()) {
-          socket.emit("notification", {
-            message: `Device ${deviceName} went offline.`,
-          });
-        }
+        return pipe(
+          forEach(subscribers.entries(), ([ token, socket ], ) => 
+            pipe(
+              this.usersService.verifyToken(token),
+              flatMap(() =>this.devicesService.find(token, deviceId)),
+              match({
+                onSuccess(device) {
+                  socket.emit("notification", {
+                    message: `Device ${device.name} went offline.`,
+                  });
+                },
+                onFailure: error => {
+                  switch (error.__brand) {
+                    case "InvalidTokenError":
+                      return this.unsubscribeForDeviceOfflineNotifications(token, deviceId)
+                    case "DeviceNotFoundError":
+                      return succeed(null)
+                  }
+                }
+              })
+            )
+          )
+        )
       }
     }
+
+    return succeed(null)
   }
 
   private findSocketByEmail(email: Email): Effect<Socket, InvalidTokenError> {
