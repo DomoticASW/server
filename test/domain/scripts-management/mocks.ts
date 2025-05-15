@@ -25,7 +25,7 @@ export function UserNotFoundErrorMock(cause?: string): UserNotFoundError {
 export function TokenMock(email: string): Token {
   return {
     userEmail: Email(email),
-    role: UserRole.User
+    role: UserRole.Admin
   }
 }
 
@@ -248,7 +248,7 @@ export function DevicesServiceSpy(device: Device = DeviceMock(), testingAction: 
           }
           return deviceId == device.id ? succeed(null) : fail(DeviceNotFoundError())
         },
-        updateDeviceProperty: function (deviceId: DeviceId, propertyId: DevicePropertyId, value: unknown): Effect<void, InvalidInputError | DeviceNotFoundError | DevicePropertyNotFound> {
+        updateDeviceProperty: function (deviceId: DeviceId, propertyId: DevicePropertyId, value: unknown): Effect<void, DeviceNotFoundError | DevicePropertyNotFound> {
           throw new Error("Function not implemented.");
         },
         subscribeForDevicePropertyUpdates: function (subscriber: DevicePropertyUpdatesSubscriber): void {
