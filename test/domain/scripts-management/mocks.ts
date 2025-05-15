@@ -45,7 +45,8 @@ export function NotificationsServiceSpy(existingEmail: Email): Spy<Notifications
           call++
           return email == existingEmail ? succeed(null) : fail(UserNotFoundErrorMock())
         },
-        deviceStatusChanged: function (deviceId: DeviceId, status: DeviceStatus): void {
+        deviceStatusChanged: function (deviceId: DeviceId, status: DeviceStatus): Effect<void> {
+          return succeed(null)
         }
       }
     }
