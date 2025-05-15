@@ -4,7 +4,7 @@ import { succeed } from "effect/Exit";
 import { Device, DeviceId, DeviceActionId, DevicePropertyId } from "../../../src/domain/devices-management/Device.js";
 import { Token } from "../../../src/domain/users-management/Token.js";
 import { DevicesService, DevicePropertyUpdatesSubscriber } from "../../../src/ports/devices-management/DevicesService.js";
-import { DeviceUnreachableError, DeviceNotFoundError, InvalidInputError, DeviceActionError, DeviceActionNotFound, DevicePropertyNotFound } from "../../../src/ports/devices-management/Errors.js";
+import { DeviceUnreachableError, DeviceNotFoundError, InvalidInputError, DeviceActionError, DeviceActionNotFound, DevicePropertyNotFound, DeviceAlreadyRegisteredError } from "../../../src/ports/devices-management/Errors.js";
 import { PermissionError } from "../../../src/ports/permissions-management/Errors.js";
 import { TokenError, InvalidTokenError, EmailAlreadyInUseError, InvalidCredentialsError, InvalidTokenFormatError, UserNotFoundError } from "../../../src/ports/users-management/Errors.js";
 import { Spy } from "../../utils/spy.js";
@@ -25,7 +25,7 @@ export function DevicesServiceSpy(userToken: Token = TokenMock("Email"), device:
   let call = 0
   return {
     call: () => call,
-    get: () => {
+    get: function (): DevicesService {
       return {
         add: function (token: Token, deviceUrl: URL): Effect<DeviceId, DeviceUnreachableError | TokenError> {
           throw new Error("Function not implemented.");
@@ -37,11 +37,11 @@ export function DevicesServiceSpy(userToken: Token = TokenMock("Email"), device:
           throw new Error("Function not implemented.");
         },
         find: function (token: Token, deviceId: DeviceId): Effect<Device, DeviceNotFoundError | InvalidTokenError> {
-          call++
-          return userToken == token ? device.id == deviceId ? succeed(device) : fail(DeviceNotFoundError()): fail(InvalidTokenErrorMock())
+          call++;
+          return userToken == token ? device.id == deviceId ? succeed(device) : fail(DeviceNotFoundError()) : fail(InvalidTokenErrorMock());
         },
         findUnsafe: function (deviceId: DeviceId): Effect<Device, DeviceNotFoundError> {
-          throw new Error("Function not implemented.");          
+          throw new Error("Function not implemented.");
         },
         getAllDevices: function (token: Token): Effect<Iterable<Device>, InvalidTokenError> {
           throw new Error("Function not implemented.");
@@ -55,13 +55,13 @@ export function DevicesServiceSpy(userToken: Token = TokenMock("Email"), device:
         executeAutomationAction: function (deviceId: DeviceId, actionId: DeviceActionId, input: unknown): Effect<void, InvalidInputError | DeviceActionError | DeviceActionNotFound | DeviceNotFoundError> {
           throw new Error("Function not implemented.");
         },
-        updateDeviceProperty: function (deviceId: DeviceId, propertyId: DevicePropertyId, value: unknown): Effect<void, InvalidInputError | DeviceNotFoundError | DevicePropertyNotFound> {
-          throw new Error("Function not implemented.");
-        },
         subscribeForDevicePropertyUpdates: function (subscriber: DevicePropertyUpdatesSubscriber): void {
           throw new Error("Function not implemented.");
         },
         unsubscribeForDevicePropertyUpdates: function (subscriber: DevicePropertyUpdatesSubscriber): void {
+          throw new Error("Function not implemented.");
+        },
+        updateDeviceProperty: function (deviceId: DeviceId, propertyId: DevicePropertyId, value: unknown): Effect<void, DeviceNotFoundError | DevicePropertyNotFound> {
           throw new Error("Function not implemented.");
         }
       }

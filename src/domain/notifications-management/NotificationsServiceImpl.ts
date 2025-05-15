@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { Effect, map, mapError, runPromise, fail, succeed, flatMap } from "effect/Effect";
+import { Effect, map, mapError, runPromise, fail, succeed, flatMap, bind, Do } from "effect/Effect";
 import { DeviceNotFoundError } from "../../ports/devices-management/Errors.js";
 import { NotificationsService } from "../../ports/notifications-management/NotificationsService.js";
 import { InvalidTokenError, UserNotFoundError } from "../../ports/users-management/Errors.js";
@@ -80,7 +80,7 @@ class NotificationsServiceImpl implements NotificationsService {
           this.deviceSubscriptions.get(deviceId)!.set(token.userEmail, socket);
           return succeed(undefined)
         }),
-        map(() => this.subscriptionsRepository.add(DeviceOfflineNotificationSubscription(token.userEmail, deviceId)))
+        map(() => this.subscriptionsRepository.add(DeviceOfflineNotificationSubscription(token.userEmail, deviceId))),
       ))
     )
   }
@@ -100,8 +100,18 @@ class NotificationsServiceImpl implements NotificationsService {
     )
   }
 
-  deviceStatusChanged(deviceId: DeviceId, status: DeviceStatus): void {
-    throw new Error("Method not implemented.");
+  deviceStatusChanged(deviceId: DeviceId, deviceName: string, status: DeviceStatus): void {
+    if (status === DeviceStatus.Offline) {
+      console.log("Status changed:", status)
+      const subscribers = this.deviceSubscriptions.get(deviceId);
+      if (subscribers) {
+        for (const [_, socket] of subscribers.entries()) {
+          socket.emit("notification", {
+            message: `Device ${deviceName} went offline.`,
+          });
+        }
+      }
+    }
   }
 
   private findSocketByEmail(email: Email): Effect<Socket, InvalidTokenError> {

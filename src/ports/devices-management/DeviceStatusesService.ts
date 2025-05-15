@@ -5,5 +5,5 @@ export interface DeviceStatusesService {
     unsubscribeForDeviceStatusChanges(subscriber: DeviceStatusChangesSubscriber): void;
 }
 export interface DeviceStatusChangesSubscriber {
-    deviceStatusChanged(deviceId: DeviceId, status: DeviceStatus): void;
+    deviceStatusChanged(deviceId: DeviceId, deviceName: string, status: DeviceStatus): void;
 }

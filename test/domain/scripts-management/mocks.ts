@@ -25,7 +25,7 @@ export function UserNotFoundErrorMock(cause?: string): UserNotFoundError {
 export function TokenMock(email: string): Token {
   return {
     userEmail: Email(email),
-    role: UserRole.User
+    role: UserRole.Admin
   }
 }
 
