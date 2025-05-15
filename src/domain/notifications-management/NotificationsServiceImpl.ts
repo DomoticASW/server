@@ -14,6 +14,7 @@ import { DeviceOfflineNotificationSubscriptionRepository } from "../../ports/not
 import { pipe } from "effect";
 import { DeviceOfflineNotificationSubscription } from "./DeviceOfflineNotificationSubscription.js";
 import { InvalidTokenErrorMock } from "../../../test/domain/notifications-management/mocks.js";
+import { UserNotFoundErrorMock } from "../../../test/domain/scripts-management/mocks.js";
 
 class NotificationsServiceImpl implements NotificationsService {
   private deviceSubscriptions: Map<DeviceId, Map<Email, Socket>> = new Map()
@@ -89,7 +90,14 @@ class NotificationsServiceImpl implements NotificationsService {
   }
 
   sendNotification(email: Email, message: string): Effect<void, UserNotFoundError> {
-    throw new Error("Method not implemented.");
+    return pipe(
+      this.findSocketByEmail(email),
+      flatMap(socket => {
+        socket.emit("notification", { message })
+        return succeed(undefined)
+      }),
+      mapError(err => UserNotFoundErrorMock(err.cause)) // Add real user Not found error 
+    )
   }
 
   deviceStatusChanged(deviceId: DeviceId, status: DeviceStatus): void {
