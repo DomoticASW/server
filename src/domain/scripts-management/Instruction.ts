@@ -4,11 +4,11 @@ import { TaskId } from "./Script.js"
 import { Type } from "../../ports/devices-management/Types.js"
 import { Effect } from "effect/Effect"
 import { ScriptError } from "../../ports/scripts-management/Errors.js"
-import { NotificationsService } from "../../ports/notifications-management/NotificationsService.js"
 import { ScriptsService } from "../../ports/scripts-management/ScriptsService.js"
 import { DevicesService } from "../../ports/devices-management/DevicesService.js"
 import { PermissionsService } from "../../ports/permissions-management/PermissionsService.js"
 import { Token } from "../users-management/Token.js"
+import { NotificationsService } from "../../ports/notifications-management/NotificationsService.js"
 
 export interface Instruction {
   execute(env: ExecutionEnvironment): Effect<ExecutionEnvironment, ScriptError>
@@ -16,8 +16,7 @@ export interface Instruction {
 
 export interface SendNotificationInstruction extends Instruction {
   email: Email
-  message: string,
-  notificationsService: NotificationsService
+  message: string
 }
 
 export interface WaitInstruction extends Instruction {
@@ -26,15 +25,12 @@ export interface WaitInstruction extends Instruction {
 
 export interface StartTaskInstruction extends Instruction {
   taskId: TaskId,
-  scriptsService: ScriptsService,
-  permissionsService: PermissionsService
 }
 
 export interface DeviceActionInstruction extends Instruction {
   deviceId: DeviceId
   deviceActionId: DeviceActionId
   input: unknown,
-  devicesService: DevicesService
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -50,7 +46,6 @@ export interface CreateConstantInstruction<T> extends ConstantInstruction<T> {
 export interface CreateDevicePropertyConstantInstruction<T> extends ConstantInstruction<T> {
   deviceId: DeviceId
   devicePropertyId: DevicePropertyId,
-  devicesService: DevicesService
 }
 
 export interface IfInstruction extends Instruction {
@@ -80,6 +75,10 @@ export interface ConstantValue<T> {
 }
 
 export interface ExecutionEnvironment {
+  readonly notificationsService: NotificationsService
+  readonly scriptsService: ScriptsService
+  readonly permissionsService: PermissionsService
+  readonly devicesService: DevicesService
   readonly constants: Map<ConstantInstruction<unknown>, ConstantValue<unknown>>
   readonly taskToken?: Token
 }
@@ -105,8 +104,12 @@ export function ConstantValue<T>(value: T): ConstantValue<T> {
   }
 }
 
-export function ExecutionEnvironment(token?: Token): ExecutionEnvironment {
+export function ExecutionEnvironment(notificationsService: NotificationsService, scriptsService: ScriptsService, permissionsService: PermissionsService, devicesService: DevicesService, token?: Token,): ExecutionEnvironment {
   return {
+    notificationsService: notificationsService,
+    scriptsService: scriptsService,
+    permissionsService: permissionsService,
+    devicesService: devicesService,
     constants: new Map<ConstantInstruction<unknown>, ConstantValue<unknown>>(),
     taskToken: token
   }
@@ -114,6 +117,10 @@ export function ExecutionEnvironment(token?: Token): ExecutionEnvironment {
 
 export function ExecutionEnvironmentCopy(env: ExecutionEnvironment): ExecutionEnvironment {
   return {
+    notificationsService: env.notificationsService,
+    scriptsService: env.scriptsService,
+    permissionsService: env.permissionsService,
+    devicesService: env.devicesService,
     constants: new Map(env.constants),
     taskToken: env.taskToken
   }
