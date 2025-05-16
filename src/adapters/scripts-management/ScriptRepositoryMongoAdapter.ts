@@ -8,6 +8,7 @@ import { Condition, ConditionOperator, ConstantInstruction, Instruction, isCreat
 import { CreateConstantInstruction, CreateDevicePropertyConstantInstruction, DeviceActionInstruction, ElseInstruction, IfInstruction, SendNotificationInstruction, StartTaskInstruction, WaitInstruction } from "../../domain/scripts-management/InstructionImpl.js";
 import { BooleanEOperator, ColorEOperator, NumberEOperator, NumberGEOperator, NumberGOperator, NumberLEOperator, NumberLOperator, StringEOperator } from "../../domain/scripts-management/Operators.js";
 import { Email } from "../../domain/users-management/User.js";
+import { ScriptRepository } from "../../ports/scripts-management/ScriptRepository.js";
 
 enum ScriptType {
     Task = "Task",
@@ -67,8 +68,7 @@ interface InstructionSchema {
 
 interface SendNotificationInstructionSchema {
     email: string
-    message: string,
-    // notificationsService: NotificationsService TODO: what to do here? services inside ExecutionEnvironment??
+    message: string
 }
 
 interface WaitInstructionSchema {
@@ -76,16 +76,13 @@ interface WaitInstructionSchema {
 }
 
 interface StartTaskInstructionSchema {
-    taskId: string,
-    // scriptsService: ScriptsService, TODO: what to do here? services inside ExecutionEnvironment??
-    // permissionsService: PermissionsService TODO: what to do here? services inside ExecutionEnvironment??
+    taskId: string
 }
 
 interface DeviceActionInstructionSchema {
     deviceId: string
     deviceActionId: string
-    input: unknown,
-    // devicesService: DevicesService TODO: what to do here? services inside ExecutionEnvironment??
+    input: unknown
 }
 
 interface ConstantInstructionSchema {
@@ -99,8 +96,7 @@ interface CreateConstantInstructionSchema extends ConstantInstructionSchema {
 
 interface CreateDevicePropertyConstantInstructionSchema extends ConstantInstructionSchema {
     deviceId: string
-    devicePropertyId: string,
-    // devicesService: DevicesService TODO: what to do here? services inside ExecutionEnvironment??
+    devicePropertyId: string
 }
 
 interface IfInstructionSchema {
@@ -130,7 +126,7 @@ enum ConditionOperatorType {
     BooleanEOperator = "BooleanEOperator"
 }
 
-export class ScriptRepositoryMongoAdapter extends BaseRepositoryMongoAdapter<ScriptId, Script<ScriptId>, string, ScriptSchema> {
+export class ScriptRepositoryMongoAdapter extends BaseRepositoryMongoAdapter<ScriptId, Script<ScriptId>, string, ScriptSchema> implements ScriptRepository {
     private triggerSchema = new mongoose.Schema<TriggerSchema>({
         triggerType: { type: String, enum: TriggerType, required: true },
         trigger: { type: Schema.Types.Mixed, required: true }
@@ -240,11 +236,11 @@ export class ScriptRepositoryMongoAdapter extends BaseRepositoryMongoAdapter<Scr
             switch (instruction.type) {
                 case InstructionType.SendNotificationInstruction: {
                     const i = instruction.instruction as unknown as SendNotificationInstructionSchema
-                    return SendNotificationInstruction(Email(i.email), i.message, null)  // TODO: fix
+                    return SendNotificationInstruction(Email(i.email), i.message)
                 }
                 case InstructionType.StartTaskInstruction: {
                     const i = instruction.instruction as unknown as StartTaskInstructionSchema
-                    return StartTaskInstruction(TaskId(i.taskId), null, null)  // TODO: fix
+                    return StartTaskInstruction(TaskId(i.taskId))
                 }
                 case InstructionType.WaitInstruction: {
                     const i = instruction.instruction as unknown as WaitInstructionSchema
@@ -252,7 +248,7 @@ export class ScriptRepositoryMongoAdapter extends BaseRepositoryMongoAdapter<Scr
                 }
                 case InstructionType.DeviceActionInstruction: {
                     const i = instruction.instruction as unknown as DeviceActionInstructionSchema
-                    return DeviceActionInstruction(DeviceId(i.deviceId), DeviceActionId(i.deviceActionId), i.input, null) // TODO: fix
+                    return DeviceActionInstruction(DeviceId(i.deviceId), DeviceActionId(i.deviceActionId), i.input)
                 }
                 case InstructionType.IfInstruction:
                 case InstructionType.IfElseInstruction: {
@@ -327,7 +323,7 @@ export class ScriptRepositoryMongoAdapter extends BaseRepositoryMongoAdapter<Scr
             }
             case InstructionType.CreateDevicePropertyConstantInstruction: {
                 const i = instruction as CreateDevicePropertyConstantInstructionSchema
-                return CreateDevicePropertyConstantInstruction(i.name, i.type, DeviceId(i.deviceId), DevicePropertyId(i.devicePropertyId), null) // TODO: fix
+                return CreateDevicePropertyConstantInstruction(i.name, i.type, DeviceId(i.deviceId), DevicePropertyId(i.devicePropertyId))
             }
         }
     }
