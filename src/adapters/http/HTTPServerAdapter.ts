@@ -27,7 +27,7 @@ export class HTTPServerAdapter {
 
         registerNotificationsServiceProtocol(server, notificationsService)
 
-        server.listen(port, () => {
+        server.listen(port, async () => {
             return console.log(`Express is listening at http://localhost:${port}`);
         });
     }

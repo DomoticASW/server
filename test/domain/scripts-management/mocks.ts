@@ -17,6 +17,7 @@ import { ExecutionEnvironment, Instruction } from "../../../src/domain/scripts-m
 import { NoneInt } from "../../../src/domain/devices-management/Types.js";
 import { PermissionsService } from "../../../src/ports/permissions-management/PermissionsService.js";
 import { Spy } from "../../utils/spy.js";
+import { NotificationProtocol } from "../../../src/ports/notifications-management/NotificationProtocol.js";
 
 export function UserNotFoundErrorMock(cause?: string): UserNotFoundError {
   return { message: "The user has not been found", cause: cause, __brand: "UserNotFoundError" }
@@ -47,6 +48,9 @@ export function NotificationsServiceSpy(existingEmail: Email): Spy<Notifications
         },
         deviceStatusChanged: function (deviceId: DeviceId, status: DeviceStatus): Effect<void> {
           return succeed(null)
+        },
+        setupNotificationProtocol(notificationProtocol: NotificationProtocol): void {
+          
         }
       }
     }
