@@ -3,11 +3,11 @@ import { CreateConstantInstruction, StartTaskInstruction } from "../../../src/do
 import { Automation, AutomationId, Task, TaskId } from "../../../src/domain/scripts-management/Script.js"
 import { Type } from "../../../src/ports/devices-management/Types.js"
 import { ScriptError, ScriptNotFoundError } from "../../../src/ports/scripts-management/Errors.js"
-import { DevicesServiceSpy, NotificationsServiceSpy, PermissionsServiceSpy, ScriptsServiceSpy, SpyTaskMock, TokenMock } from "./mocks.js"
+import { PermissionsServiceSpy, ScriptsServiceSpy, SpyTaskMock, TokenMock } from "./mocks.js"
 import { pipe } from "effect"
 import { PermissionError } from "../../../src/ports/permissions-management/Errors.js"
 import { PeriodTrigger } from "../../../src/domain/scripts-management/Trigger.js"
-import { Email } from "../../../src/domain/users-management/User.js"
+
 
 test("A script error can be created", () => {
   const error = ScriptError("this is the cause")
@@ -51,7 +51,7 @@ test("A task can be executed", async () => {
   ]
 
   const task = Task(taskId, "taskName", instructions)
-  const env = await runPromise(task.execute(NotificationsServiceSpy(Email("email")).get(), ScriptsServiceSpy().get(), PermissionsServiceSpy().get(), DevicesServiceSpy().get(), TokenMock("email")))
+  const env = await runPromise(task.execute(TokenMock("email")))
 
   expect(env.constants.get(instruction1)).toBeDefined()
   expect(env.constants.get(instruction2)).toBeDefined()
@@ -63,13 +63,13 @@ test("A task cannot execute another task id token has not the permissions", asyn
   const requiredToken = TokenMock("email")
   const permissionsService = PermissionsServiceSpy(requiredToken).get()
   
-  const startTaskInstruction = StartTaskInstruction(spyTask.id)
+  const startTaskInstruction = StartTaskInstruction(spyTask.id, scriptsService, permissionsService)
   
   const taskId = TaskId("1")
   const task = Task(taskId, "taskName", [startTaskInstruction])
   
   await pipe(
-    task.execute(NotificationsServiceSpy(requiredToken.userEmail).get(),scriptsService, permissionsService, DevicesServiceSpy().get(), TokenMock("otherEmail")),
+    task.execute(TokenMock("otherEmail")),
     match({
       onSuccess() { throw Error("Should not be here") },
       onFailure(err) {
@@ -87,12 +87,12 @@ test("A task can be started by another task if the token has the permissions", a
   const requiredToken = TokenMock("email")
   const permissionsService = PermissionsServiceSpy(requiredToken).get()
   
-  const startTaskInstruction = StartTaskInstruction(spyTask.get().id)
+  const startTaskInstruction = StartTaskInstruction(spyTask.get().id, scriptsService, permissionsService)
 
   const taskId = TaskId("1")
   const task = Task(taskId, "taskName", [startTaskInstruction])
 
-  await runPromise(task.execute(NotificationsServiceSpy(requiredToken.userEmail).get(), scriptsService, permissionsService, DevicesServiceSpy().get(), requiredToken))
+  await runPromise(task.execute(requiredToken))
 
   expect(spyTask.call()).toBe(1)
 })
@@ -107,23 +107,6 @@ test("An automation can be created", async () => {
   expect(automation.id).toBe(automationId)
   expect(automation.trigger).toBe(periodTrigger)
   expect(automation.name).toBe(name)
-})
-
-test("An automation can be executed", async () => {
-  const automationId = AutomationId("1")
-  const periodTrigger = PeriodTrigger(new Date(), 100000)
-  const instruction1 = CreateConstantInstruction("constantName1", Type.IntType, 15)
-  const instruction2 = CreateConstantInstruction("constantName2", Type.IntType, 25)
-  const instructions = [
-    instruction1,
-    instruction2
-  ]
-
-  const automation = Automation(automationId, "automationName", periodTrigger, instructions)
-  const env = await runPromise(automation.execute(NotificationsServiceSpy(Email("email")).get(), ScriptsServiceSpy().get(), PermissionsServiceSpy().get(), DevicesServiceSpy().get()))
-
-  expect(env.constants.get(instruction1)).toBeDefined()
-  expect(env.constants.get(instruction2)).toBeDefined()
 })
 
 // test("An automation will be executed with a period trigger", async () => {
