@@ -6,8 +6,17 @@ import { Email } from '../../../domain/users-management/User.js';
 export class NotificationProtocolImpl implements NotificationProtocol {
   private io: IO
 
-  constructor (server: Server) {
+  constructor (server: Server, ) {
     this.io = new IO(server)
+    this.setupSocketHandling()
+  }
+
+  private setupSocketHandling() {
+    this.io.on("connection", (socket: Socket) => {
+      socket.on("login", async ({ email }: {email: Email}) => {
+        socket.data.email = email
+      })
+    })
   }
 
   sendNotification(email: Email, message: string): void {
@@ -23,9 +32,5 @@ export class NotificationProtocolImpl implements NotificationProtocol {
         return socket
       }
     }
-  }
-
-  setup(): void {
-    throw new Error('Method not implemented.');
   }
 }
