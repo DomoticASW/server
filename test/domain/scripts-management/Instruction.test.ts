@@ -12,16 +12,25 @@ import { DeviceNotFoundError, DevicePropertyNotFound } from "../../../src/ports/
 import { Color } from "../../../src/domain/devices-management/Types.js"
 import { PermissionError } from "../../../src/ports/permissions-management/Errors.js"
 
+const notificationServiceMock = NotificationsServiceSpy(Email("email")).get()
+const scriptsServiceMock = ScriptsServiceSpy().get()
+const permissionsServiceMock = PermissionsServiceSpy().get()
+const devicesServiceMock = DevicesServiceSpy().get()
+
 test("An execution environment can be created", () => {
-  const env = ExecutionEnvironment(TokenMock("email"))
+  const env = ExecutionEnvironment(notificationServiceMock, scriptsServiceMock, permissionsServiceMock, devicesServiceMock, TokenMock("email"))
   expect(env.constants.size).toBe(0)
 })
 
-test("An execution environment can be created with values", () => {
-  const env = ExecutionEnvironment(TokenMock("email"))
+test("An execution environment can be cpied", () => {
+  const env = ExecutionEnvironment(notificationServiceMock, scriptsServiceMock, permissionsServiceMock, devicesServiceMock, TokenMock("email"))
   const env2 = ExecutionEnvironmentCopy(env)
   expect(env2.constants.size).toBe(env.constants.size)
   expect(env2.constants).not.toBe(env.constants)
+  expect(env2.devicesService).toBe(env.devicesService)
+  expect(env2.notificationsService).toBe(env.notificationsService)
+  expect(env2.scriptsService).toBe(env.scriptsService)
+  expect(env2.permissionsService).toBe(env.permissionsService)
 })
 
 test("A constant value can be created", () => {
@@ -30,7 +39,7 @@ test("A constant value can be created", () => {
 })
 
 test("A send notification instruction can be created", () => {
-  const instruction = SendNotificationInstruction(Email("email"), "this is a message", NotificationsServiceSpy(Email("email")).get())
+  const instruction = SendNotificationInstruction(Email("email"), "this is a message")
   expect(instruction.email).toBe("email")
   expect(instruction.message).toBe("this is a message")
 })
@@ -41,12 +50,12 @@ test("A wait instruction can be created", () => {
 })
 
 test("A start task instruction can be created", () => {
-  const instruction = StartTaskInstruction(TaskId("1"), ScriptsServiceSpy(SpyTaskMock().get()).get(), PermissionsServiceSpy().get())
+  const instruction = StartTaskInstruction(TaskId("1"))
   expect(instruction.taskId).toBe("1")
 })
 
 test("A device action instruction can be created", () => {
-  const instruction = DeviceActionInstruction(DeviceId("deviceId"), DeviceActionId("deviceActionId"), 10, DevicesServiceSpy().get())
+  const instruction = DeviceActionInstruction(DeviceId("deviceId"), DeviceActionId("deviceActionId"), 10)
   expect(instruction.deviceId).toBe("deviceId")
   expect(instruction.deviceActionId).toBe("deviceActionId")
   expect(instruction.input).toBe(10)
@@ -61,7 +70,7 @@ test("A create constant instruction can be created", () => {
 
 test("A create constant instruction add a value to the env when executed", async () => {
   const instruction = CreateConstantInstruction("constantName", Type.IntType, 10)
-  const env = ExecutionEnvironment(TokenMock("email"))
+  const env = ExecutionEnvironment(notificationServiceMock, scriptsServiceMock, permissionsServiceMock, devicesServiceMock, TokenMock("email"))
   const result = await Effect.runPromise(instruction.execute(env))
   expect(result.constants.size).toBe(1)
   expect(env.constants.size).toBe(0)
@@ -82,7 +91,7 @@ test("A create constant instruction add a value to the env when executed with th
   const instruction4 = CreateConstantInstruction("constantName", Type.ColorType, color)
   const instruction5 = CreateConstantInstruction("constantName", Type.VoidType, voidValue)
 
-  const env = ExecutionEnvironment(TokenMock("email"))
+  const env = ExecutionEnvironment(notificationServiceMock, scriptsServiceMock, permissionsServiceMock, devicesServiceMock, TokenMock("email"))
   const result1 = await Effect.runPromise(instruction.execute(env))
   const result2 = await Effect.runPromise(instruction2.execute(env))
   const result3 = await Effect.runPromise(instruction3.execute(env))
@@ -111,7 +120,7 @@ test("A create constant instruction execution should return a ScriptError if the
   const instruction5 = CreateConstantInstruction("constantName", Type.VoidType, 10.5)
 
   await pipe(
-    instruction.execute(ExecutionEnvironment(TokenMock("email"))),
+    instruction.execute(ExecutionEnvironment(notificationServiceMock, scriptsServiceMock, permissionsServiceMock, devicesServiceMock, TokenMock("email"))),
     Effect.match({
       onSuccess() { throw Error("Should not be here") },
       onFailure(err) {
@@ -123,7 +132,7 @@ test("A create constant instruction execution should return a ScriptError if the
   )
 
   await pipe(
-    instruction2.execute(ExecutionEnvironment(TokenMock("email"))),
+    instruction2.execute(ExecutionEnvironment(notificationServiceMock, scriptsServiceMock, permissionsServiceMock, devicesServiceMock, TokenMock("email"))),
     Effect.match({
       onSuccess() { throw Error("Should not be here") },
       onFailure(err) {
@@ -135,7 +144,7 @@ test("A create constant instruction execution should return a ScriptError if the
   )
 
   await pipe(
-    instruction3.execute(ExecutionEnvironment(TokenMock("email"))),
+    instruction3.execute(ExecutionEnvironment(notificationServiceMock, scriptsServiceMock, permissionsServiceMock, devicesServiceMock, TokenMock("email"))),
     Effect.match({
       onSuccess() { throw Error("Should not be here") },
       onFailure(err) {
@@ -147,7 +156,7 @@ test("A create constant instruction execution should return a ScriptError if the
   )
 
   await pipe(
-    instruction4.execute(ExecutionEnvironment(TokenMock("email"))),
+    instruction4.execute(ExecutionEnvironment(notificationServiceMock, scriptsServiceMock, permissionsServiceMock, devicesServiceMock, TokenMock("email"))),
     Effect.match({
       onSuccess() { throw Error("Should not be here") },
       onFailure(err) {
@@ -159,7 +168,7 @@ test("A create constant instruction execution should return a ScriptError if the
   )
 
   await pipe(
-    instruction5.execute(ExecutionEnvironment(TokenMock("email"))),
+    instruction5.execute(ExecutionEnvironment(notificationServiceMock, scriptsServiceMock, permissionsServiceMock, devicesServiceMock, TokenMock("email"))),
     Effect.match({
       onSuccess() { throw Error("Should not be here") },
       onFailure(err) {
@@ -172,7 +181,7 @@ test("A create constant instruction execution should return a ScriptError if the
 })
 
 test("A create device property constant instruction can be created", () => {
-  const instruction = CreateDevicePropertyConstantInstruction("constantName", Type.IntType, DeviceId("deviceId"), DevicePropertyId("devicePropertyId"), DevicesServiceSpy().get())
+  const instruction = CreateDevicePropertyConstantInstruction("constantName", Type.IntType, DeviceId("deviceId"), DevicePropertyId("devicePropertyId"))
   expect(instruction.name).toBe("constantName")
   expect(instruction.type).toBe(Type.IntType)
   expect(instruction.deviceId).toBe("deviceId")
@@ -185,7 +194,7 @@ test("A condition can be created", async () => {
   const condition = Condition(instruction1, instruction2, NumberGOperator())
   const condition2 = Condition(instruction1, instruction2, NumberLEOperator())
 
-  const env = ExecutionEnvironment(TokenMock("email"))
+  const env = ExecutionEnvironment(notificationServiceMock, scriptsServiceMock, permissionsServiceMock, devicesServiceMock, TokenMock("email"))
   const newEnv = await Effect.runPromise(
     instruction2.execute(
       await Effect.runPromise(instruction1.execute(env))
@@ -201,7 +210,7 @@ test("A condition can be created with a negate bool", async () => {
   const condition = Condition(instruction1, instruction2, NumberGOperator(), true)
   const condition2 = Condition(instruction1, instruction2, NumberLEOperator(), true)
 
-  const env = ExecutionEnvironment(TokenMock("email"))
+  const env = ExecutionEnvironment(notificationServiceMock, scriptsServiceMock, permissionsServiceMock, devicesServiceMock, TokenMock("email"))
   const newEnv = await Effect.runPromise(
     instruction2.execute(
       await Effect.runPromise(instruction1.execute(env))
@@ -226,7 +235,7 @@ test("An if instruction can be created", async () => {
   const condition = Condition(left, right, NumberGOperator())
   const negatedCondition = Condition(left, right, NumberGOperator(), true)
   
-  const setupEnv = ExecutionEnvironment(TokenMock("email"))
+  const setupEnv = ExecutionEnvironment(notificationServiceMock, scriptsServiceMock, permissionsServiceMock, devicesServiceMock, TokenMock("email"))
   const env = await Effect.runPromise(
     right.execute(
       await Effect.runPromise(left.execute(setupEnv))
@@ -275,7 +284,7 @@ test("An else instruction can be created", async () => {
   const condition = Condition(left, right, NumberGOperator())
   const negatedCondition = Condition(left, right, NumberGOperator(), true)
   
-  const setupEnv = ExecutionEnvironment(TokenMock("email"))
+  const setupEnv = ExecutionEnvironment(notificationServiceMock, scriptsServiceMock, permissionsServiceMock, devicesServiceMock, TokenMock("email"))
   const env = await Effect.runPromise(right.execute(await Effect.runPromise(left.execute(setupEnv))))
   
   const elseIfInstruction = ElseInstruction(thenInstructions, elseInstructions, condition)
@@ -298,30 +307,30 @@ test("An else instruction can be created", async () => {
 test("A wait instruction should stop the task for a given period of time", async () => {
   const instruction = WaitInstruction(1)
   const start = Date.now()
-  await Effect.runPromise(instruction.execute(ExecutionEnvironment(TokenMock("email"))))
+  await Effect.runPromise(instruction.execute(ExecutionEnvironment(notificationServiceMock, scriptsServiceMock, permissionsServiceMock, devicesServiceMock, TokenMock("email"))))
   expect(Date.now()).toBeGreaterThan(start + 1 * 1000)
 })
 
 test("A send notification instruction should use a notification service to send a notification", async () => {
   const email = Email("email")
   const service = NotificationsServiceSpy(email)
-  const instruction = SendNotificationInstruction(email, "this is a message", service.get())
+  const instruction = SendNotificationInstruction(email, "this is a message")
 
   expect(service.call()).toBe(0)
-  await Effect.runPromise(instruction.execute(ExecutionEnvironment(TokenMock("email"))))
+  await Effect.runPromise(instruction.execute(ExecutionEnvironment(service.get(), scriptsServiceMock, permissionsServiceMock, devicesServiceMock, TokenMock("email"))))
 
   expect(service.call()).toBe(1)
-  await Effect.runPromise(instruction.execute(ExecutionEnvironment(TokenMock("email"))))
+  await Effect.runPromise(instruction.execute(ExecutionEnvironment(service.get(), scriptsServiceMock, permissionsServiceMock, devicesServiceMock, TokenMock("email"))))
   expect(service.call()).toBe(2)
 })
 
 test("A send notification instruction should return an error if the user does not exists", async () => {
   const email = Email("email")
   const service = NotificationsServiceSpy(email)
-  const instruction = SendNotificationInstruction(Email("otherEmail"), "this is a message", service.get())
+  const instruction = SendNotificationInstruction(Email("otherEmail"), "this is a message")
 
   await pipe(
-    instruction.execute(ExecutionEnvironment(TokenMock("email"))),
+    instruction.execute(ExecutionEnvironment(service.get(), scriptsServiceMock, permissionsServiceMock, devicesServiceMock, TokenMock("email"))),
     Effect.match({
       onSuccess() { throw Error("Should not be here") },
       onFailure(err) {
@@ -337,9 +346,9 @@ test("A start task instruction should use a scripts service when executed to fin
   const task = SpyTaskMock()
   const scriptsServiceSpy = ScriptsServiceSpy(task.get())
   const permissionsService = PermissionsServiceSpy()
-  const instruction = StartTaskInstruction(task.get().id, scriptsServiceSpy.get(), permissionsService.get())
+  const instruction = StartTaskInstruction(task.get().id)
 
-  await Effect.runPromise(instruction.execute(ExecutionEnvironment()))
+  await Effect.runPromise(instruction.execute(ExecutionEnvironment(notificationServiceMock, scriptsServiceSpy.get(), permissionsService.get(), devicesServiceMock)))
   expect(permissionsService.call()).toBe(0)
   expect(scriptsServiceSpy.call()).toBe(1)
   expect(task.call()).toBe(1)
@@ -348,14 +357,14 @@ test("A start task instruction should use a scripts service when executed to fin
 test("A start task instruction should return an error if the task does not exists or if the task returns an error", async () => {
   const task = SpyTaskMock().get()
   const scriptsServiceSpy = ScriptsServiceSpy(task).get()
-  const instruction = StartTaskInstruction(TaskId("otherId"), scriptsServiceSpy, PermissionsServiceSpy().get())
+  const instruction = StartTaskInstruction(TaskId("otherId"))
 
   const taskFailed = SpyTaskMock(true).get()
   const scriptsServiceSpy2 = ScriptsServiceSpy(taskFailed).get()
-  const instruction2 = StartTaskInstruction(taskFailed.id, scriptsServiceSpy2, PermissionsServiceSpy().get())
+  const instruction2 = StartTaskInstruction(taskFailed.id)
 
   await pipe(
-    instruction.execute(ExecutionEnvironment()),
+    instruction.execute(ExecutionEnvironment(notificationServiceMock, scriptsServiceSpy, permissionsServiceMock, devicesServiceMock)),
     Effect.match({
       onSuccess() { throw Error("Should not be here") },
       onFailure(err) {
@@ -367,7 +376,7 @@ test("A start task instruction should return an error if the task does not exist
   )
 
   await pipe(
-    instruction2.execute(ExecutionEnvironment()),
+    instruction2.execute(ExecutionEnvironment(notificationServiceMock, scriptsServiceSpy2, permissionsServiceMock, devicesServiceMock)),
     Effect.match({
       onSuccess() { throw Error("Should not be here") },
       onFailure(err) {
@@ -382,19 +391,19 @@ test("A start task instruction should return an error if the task does not exist
 test("A DeviceActionInstruction should execute an action on a device with a given input", async () => {
   const device = DeviceMock()
   const devicesService = DevicesServiceSpy(device)
-  const instruction = DeviceActionInstruction(device.id, device.actions.at(0)!.id, 10, devicesService.get())
+  const instruction = DeviceActionInstruction(device.id, device.actions.at(0)!.id, 10)
 
-  await Effect.runPromise(instruction.execute(ExecutionEnvironment(TokenMock("email"))))
+  await Effect.runPromise(instruction.execute(ExecutionEnvironment(notificationServiceMock, scriptsServiceMock, permissionsServiceMock, devicesService.get(), TokenMock("email"))))
   expect(devicesService.call()).toBe(1)
 })
 
 test("A DeviceActionInstruction should return an error if the execution of the action gives an error", async () => {
   const device = DeviceMock()
   const devicesService = DevicesServiceSpy(device)
-  const instruction = DeviceActionInstruction(DeviceId("otherId"), device.actions.at(0)!.id, 10, devicesService.get())
+  const instruction = DeviceActionInstruction(DeviceId("otherId"), device.actions.at(0)!.id, 10)
 
   await pipe(
-    instruction.execute(ExecutionEnvironment(TokenMock("email"))),
+    instruction.execute(ExecutionEnvironment(notificationServiceMock, scriptsServiceMock, permissionsServiceMock, devicesService.get(), TokenMock("email"))),
     Effect.match({
       onSuccess() { throw Error("Should not be here") },
       onFailure(err) {
@@ -409,9 +418,9 @@ test("A DeviceActionInstruction should return an error if the execution of the a
 test("A CreateDevicePropertyConstantInstruction should create a constant with the value of a device property", async () => {
   const device = DeviceMock()
   const devicesService = DevicesServiceSpy(device, false)
-  const instruction = CreateDevicePropertyConstantInstruction("constantName", Type.IntType, device.id, device.properties.at(0)!.id, devicesService.get())
+  const instruction = CreateDevicePropertyConstantInstruction("constantName", Type.IntType, device.id, device.properties.at(0)!.id)
 
-  const env = ExecutionEnvironment(TokenMock("email"))
+  const env = ExecutionEnvironment(notificationServiceMock, scriptsServiceMock, permissionsServiceMock, devicesService.get(),TokenMock("email"))
   const result = await Effect.runPromise(instruction.execute(env))
   expect(result.constants.size).toBe(1)
   expect(env.constants.size).toBe(0)
@@ -425,10 +434,10 @@ test("A CreateDevicePropertyConstantInstruction should create a constant with th
 test("A CreateDevicePropertyConstantInstruction execution should return a ScriptError if the device has not been found", async () => {
   const device = DeviceMock()
   const devicesService = DevicesServiceSpy(device, false)
-  const instruction = CreateDevicePropertyConstantInstruction("constantName", Type.IntType, DeviceId("otherId"), device.properties.at(0)!.id, devicesService.get())
+  const instruction = CreateDevicePropertyConstantInstruction("constantName", Type.IntType, DeviceId("otherId"), device.properties.at(0)!.id)
 
   await pipe(
-    instruction.execute(ExecutionEnvironment(TokenMock("email"))),
+    instruction.execute(ExecutionEnvironment(notificationServiceMock, scriptsServiceMock, permissionsServiceMock, devicesService.get(), TokenMock("email"))),
     Effect.match({
       onSuccess() { throw Error("Should not be here") },
       onFailure(err) {
@@ -443,10 +452,10 @@ test("A CreateDevicePropertyConstantInstruction execution should return a Script
 test("A CreateDevicePropertyConstantInstruction execution should return a ScriptError if the property has not been found on the device", async () => {
   const device = DeviceMock()
   const devicesService = DevicesServiceSpy(device, false)
-  const instruction = CreateDevicePropertyConstantInstruction("constantName", Type.IntType, device.id, DevicePropertyId("otherId"), devicesService.get())
+  const instruction = CreateDevicePropertyConstantInstruction("constantName", Type.IntType, device.id, DevicePropertyId("otherId"))
 
   await pipe(
-    instruction.execute(ExecutionEnvironment(TokenMock("email"))),
+    instruction.execute(ExecutionEnvironment(notificationServiceMock, scriptsServiceMock, permissionsServiceMock, devicesService.get(), TokenMock("email"))),
     Effect.match({
       onSuccess() { throw Error("Should not be here") },
       onFailure(err) {
@@ -461,10 +470,10 @@ test("A CreateDevicePropertyConstantInstruction execution should return a Script
 test("A CreateDevicePropertyConstantInstruction execution should return a ScriptError if the type is wrong", async () => {
   const device = DeviceMock()
   const devicesService = DevicesServiceSpy(device, false)
-  const instruction = CreateDevicePropertyConstantInstruction("constantName", Type.StringType, device.id, device.properties.at(0)!.id, devicesService.get())
+  const instruction = CreateDevicePropertyConstantInstruction("constantName", Type.StringType, device.id, device.properties.at(0)!.id)
 
   await pipe(
-    instruction.execute(ExecutionEnvironment(TokenMock("email"))),
+    instruction.execute(ExecutionEnvironment(notificationServiceMock, scriptsServiceMock, permissionsServiceMock, devicesService.get(), TokenMock("email"))),
     Effect.match({
       onSuccess() { throw Error("Should not be here") },
       onFailure(err) {
@@ -482,10 +491,10 @@ test("A StartTaskInstruction should return an error if the user trying to execut
   const task = SpyTaskMock().get()
   const scriptsServiceSpy = ScriptsServiceSpy(task, true).get()
   const permissionsService = PermissionsServiceSpy(requiredToken)
-  const instruction = StartTaskInstruction(TaskId("id"), scriptsServiceSpy, permissionsService.get())
+  const instruction = StartTaskInstruction(TaskId("id"))
 
   await pipe(
-    instruction.execute(ExecutionEnvironment(userToken)),
+    instruction.execute(ExecutionEnvironment(notificationServiceMock, scriptsServiceSpy, permissionsService.get(), devicesServiceMock, userToken)),
     Effect.match({
       onSuccess() { throw Error("Should not be here") },
       onFailure(err) {
