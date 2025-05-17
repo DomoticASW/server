@@ -4,6 +4,7 @@ import { DeviceId } from '../../domain/devices-management/Device.js';
 import { DeviceStatusChangesSubscriber } from '../devices-management/DeviceStatusesService.js';
 import { Email } from '../../domain/users-management/User.js';
 import { Effect } from 'effect/Effect';
+import { NotificationProtocol } from './NotificationProtocol.js';
 
 export interface NotificationsService extends DeviceStatusChangesSubscriber {
     subscribeForDeviceOfflineNotifications(
@@ -20,4 +21,6 @@ export interface NotificationsService extends DeviceStatusChangesSubscriber {
         email: Email,
         message: string
     ): Effect<void, UserNotFoundError>
+
+    setupNotificationProtocol(notificationProtocol: NotificationProtocol): void
 }

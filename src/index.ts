@@ -17,6 +17,7 @@ import { NoneInt } from "./domain/devices-management/Types.js";
 import { DeviceEventsServiceImpl } from "./domain/devices-management/DeviceEventsServiceImpl.js";
 import { DeviceStatusChangesSubscriber, DeviceStatusesService } from "./ports/devices-management/DeviceStatusesService.js";
 import { DeviceOfflineNotificationSubscriptionRepositoryMongoAdapter } from "./adapters/notifications-management/DeviceOfflineNotificationSubscription.js";
+import { NotificationsService } from "./domain/notifications-management/NotificationsServiceImpl.js";
 
 const mongoDBConnection = mongoose.createConnection("mongodb://localhost:27017/DomoticASW")
 // TODO: replace with production impl
@@ -57,4 +58,5 @@ const deviceOfflineNotificationSubscriptionRepository = new DeviceOfflineNotific
 const devicesService = new DevicesServiceImpl(deviceRepository, deviceFactory, usersServiceMock, permissionsService)
 const deviceGroupsService = new DeviceGroupsServiceImpl(deviceGroupRepository, devicesService, usersServiceMock)
 const deviceEventsService = new DeviceEventsServiceImpl(devicesService)
-new HTTPServerAdapter(3000, deviceGroupsService, devicesService, deviceEventsService, usersServiceMock, deviceStatusesService, deviceOfflineNotificationSubscriptionRepository)
+const notificationsService = NotificationsService(deviceStatusesService, devicesService, usersServiceMock, deviceOfflineNotificationSubscriptionRepository)
+new HTTPServerAdapter(3000, deviceGroupsService, devicesService, deviceEventsService, usersServiceMock, notificationsService)
