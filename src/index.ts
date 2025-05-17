@@ -22,7 +22,8 @@ const mongoDBConnection = mongoose.createConnection("mongodb://localhost:27017/D
 // TODO: replace with production impl
 const usersServiceMock: UsersService = {
     makeToken() { return Effect.succeed({ role: UserRole.Admin, userEmail: Email("a@email.com") }) },
-    verifyToken() { return Effect.succeed(null) }
+    verifyToken() { return Effect.succeed(null) },
+    getUserDataUnsafe() { return Effect.succeed({  }) }
 } as unknown as UsersService
 // TODO: replace with production impl
 const permissionsService: PermissionsService = {

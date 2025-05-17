@@ -35,10 +35,10 @@ export function NotificationsServiceSpy(existingEmail: Email): Spy<Notifications
     call: () => call,
     get: () => {
       return {
-        subscribeForDeviceOfflineNotifications: function (token: Token, deviceId: DeviceId): Effect<void, DeviceNotFoundError | InvalidTokenError> {
+        subscribeForDeviceOfflineNotifications: function (email: Email, deviceId: DeviceId): Effect<void, DeviceNotFoundError | UserNotFoundError> {
           return succeed(null)
         },
-        unsubscribeForDeviceOfflineNotifications: function (token: Token, deviceId: DeviceId): Effect<void, DeviceNotFoundError | InvalidTokenError> {
+        unsubscribeForDeviceOfflineNotifications: function (email: Email, deviceId: DeviceId): Effect<void, DeviceNotFoundError | UserNotFoundError> {
           return succeed(null)
         },
         sendNotification: function (email: Email, message: string): Effect<void, UserNotFoundError> {
