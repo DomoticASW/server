@@ -366,7 +366,7 @@ export function DeviceOfflineNotificationSubscriptionRepositorySpy(operation: Re
     get: function () : DeviceOfflineNotificationSubscriptionRepository {
       return {
         add: function (entity: DeviceOfflineNotificationSubscription): Effect<void, DuplicateIdError> {
-          if (operation == RepoOperation.ADD) {
+          if (operation == RepoOperation.ADD && subscription.deviceId == entity.deviceId && subscription.email == entity.email) {
             call++
           }
           return succeed(undefined)
@@ -375,7 +375,7 @@ export function DeviceOfflineNotificationSubscriptionRepositorySpy(operation: Re
           throw new Error("Function not implemented.");
         },
         remove: function (id: { email: Email; deviceId: DeviceId; }): Effect<void, NotFoundError> {
-          if (operation == RepoOperation.REMOVE) {
+          if (operation == RepoOperation.REMOVE && id.email == subscription.email && id.deviceId == subscription.deviceId) {
             call++
           }
           return succeed(undefined)
