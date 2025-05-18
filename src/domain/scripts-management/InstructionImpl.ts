@@ -12,6 +12,7 @@ import { InvalidConstantType, ScriptError } from "../../ports/scripts-management
 import { Color } from "../devices-management/Types.js";
 import { DevicePropertyNotFound } from "../../ports/devices-management/Errors.js";
 import { PermissionsService } from "../../ports/permissions-management/PermissionsService.js"
+import { PermissionError } from "../../ports/permissions-management/Errors.js";
 
 export function SendNotificationInstruction(email: Email, message: string, notificationsService: NotificationsService): SendNotificationInstruction {
   return {
@@ -49,7 +50,14 @@ export function StartTaskInstruction(taskId: TaskId, scriptsService: ScriptsServ
     execute(env) {
       return pipe(
         env.taskToken
-          ? permissionsService.canExecuteTask(env.taskToken, taskId)
+          ?  pipe(
+                permissionsService.canExecuteTask(env.taskToken, taskId),
+                flatMap(canExecute =>
+                  canExecute
+                    ? Effect.void
+                    : Effect.fail(PermissionError("Permission denied"))
+                )
+              )
           : Effect.void,
         flatMap(() => 
           pipe(
