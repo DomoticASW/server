@@ -3,10 +3,12 @@ import { DeviceId, DeviceStatus } from "../../../src/domain/devices-management/D
 import { DeviceOfflineNotificationSubscription } from "../../../src/domain/notifications-management/DeviceOfflineNotificationSubscription.js"
 import { NotificationsService } from "../../../src/domain/notifications-management/NotificationsServiceImpl.js"
 import { Email } from "../../../src/domain/users-management/User.js"
-import { DeviceMock, DeviceOfflineNotificationSubscriptionRepositorySpy, DevicesServiceSpy, DeviceStatusesServiceSpy, NotificationProtocolSpy, RepoOperation, UserMock, UsersServiceSpy } from "../../utils/mocks.js"
+import { DeviceMock, DeviceOfflineNotificationSubscriptionRepositorySpy, DevicesServiceSpy, DeviceStatusesServiceSpy, NotificationProtocolSpy, RepoOperation, TokenMock, UserMock, UsersServiceSpy } from "../../utils/mocks.js"
 
-const user = UserMock()
+const token = TokenMock("test")
+const user = UserMock(token.userEmail)
 const device = DeviceMock()
+const deviceId = device.id
 let deviceStatusesServiceSpy = DeviceStatusesServiceSpy()
 let devicesServiceSpy = DevicesServiceSpy(device, false)
 let usersServiceSpy = UsersServiceSpy(user)
@@ -25,28 +27,24 @@ test("A notifications service can be created", () => {
 })
 
 test("A user can subscribe to notifications service to listen for offline devices", async () => {
-  const email = user.email
-  const deviceId = device.id
-  const subscriptionRepositorySpy = DeviceOfflineNotificationSubscriptionRepositorySpy(RepoOperation.ADD, DeviceOfflineNotificationSubscription(email, deviceId))
+  const subscriptionRepositorySpy = DeviceOfflineNotificationSubscriptionRepositorySpy(RepoOperation.ADD, DeviceOfflineNotificationSubscription(token.userEmail, deviceId))
   const notificationsService = NotificationsService(deviceStatusesServiceSpy.get(), devicesServiceSpy.get(), usersServiceSpy.get(), subscriptionRepositorySpy.get())
 
-  await runPromise(notificationsService.subscribeForDeviceOfflineNotifications(email, deviceId))
+  await runPromise(notificationsService.subscribeForDeviceOfflineNotifications(token, deviceId))
 
   expect(devicesServiceSpy.call()).toBe(1)
-  expect(usersServiceSpy.call()).toBe(1)
+  expect(usersServiceSpy.call()).toBe(2)
   expect(subscriptionRepositorySpy.call()).toBe(1)
 })
 
 test("A user can unsubscribe from a notifications service to stop listening for offline devices", async () => {
-  const email = user.email
-  const deviceId = device.id
-  const subscriptionRepositorySpy = DeviceOfflineNotificationSubscriptionRepositorySpy(RepoOperation.REMOVE, DeviceOfflineNotificationSubscription(email, deviceId))
+  const subscriptionRepositorySpy = DeviceOfflineNotificationSubscriptionRepositorySpy(RepoOperation.REMOVE, DeviceOfflineNotificationSubscription(token.userEmail, deviceId))
   const notificationsService = NotificationsService(deviceStatusesServiceSpy.get(), devicesServiceSpy.get(), usersServiceSpy.get(), subscriptionRepositorySpy.get())
   
-  await runPromise(notificationsService.unsubscribeForDeviceOfflineNotifications(email, deviceId))
+  await runPromise(notificationsService.unsubscribeForDeviceOfflineNotifications(token, deviceId))
   
   expect(devicesServiceSpy.call()).toBe(1)
-  expect(usersServiceSpy.call()).toBe(1)
+  expect(usersServiceSpy.call()).toBe(2)
   expect(subscriptionRepositorySpy.call()).toBe(1)
 })
 
