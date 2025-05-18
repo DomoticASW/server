@@ -13,7 +13,7 @@ export class NotificationProtocolImpl implements NotificationProtocol {
 
   private setupSocketHandling() {
     this.io.on("connection", (socket: Socket) => {
-      socket.on("login", async ({ email }: {email: Email}) => {
+      socket.on("login", ({ email } : { email: Email }) => {
         socket.data.email = email
       })
     })
