@@ -84,17 +84,19 @@ export interface ExecutionEnvironment {
 }
 
 export function Condition<T>(left: ConstantInstruction<T>, right: ConstantInstruction<T>, operator: ConditionOperator<T>, negate: boolean = false): Condition<T> {
-  return {
-    leftConstant: left,
-    rightConstant: right,
-    operator: operator,
-    negate: negate,
-    evaluate(env) {
-      const left = env.constants.get(this.leftConstant) as ConstantValue<T>
-      const right = env.constants.get(this.rightConstant) as ConstantValue<T>
-
-      return negate !== operator.evaluate(left, right);
-    },
+  return new ConditionImpl(left, right, operator, negate)
+}
+class ConditionImpl<T> implements Condition<T> {
+  constructor(
+    public leftConstant: ConstantInstruction<T>,
+    public rightConstant: ConstantInstruction<T>,
+    public operator: ConditionOperator<T>,
+    public negate: boolean,
+  ) { }
+  evaluate(env: ExecutionEnvironment): boolean {
+    const left = env.constants.get(this.leftConstant) as ConstantValue<T>
+    const right = env.constants.get(this.rightConstant) as ConstantValue<T>
+    return this.negate !== this.operator.evaluate(left, right);
   }
 }
 
