@@ -3,7 +3,7 @@ import { DeviceId } from "../../../src/domain/devices-management/Device.js"
 import { DeviceOfflineNotificationSubscription } from "../../../src/domain/notifications-management/DeviceOfflineNotificationSubscription.js"
 import { NotificationsService } from "../../../src/domain/notifications-management/NotificationsServiceImpl.js"
 import { Email } from "../../../src/domain/users-management/User.js"
-import { DeviceMock, DeviceOfflineNotificationSubscriptionRepositorySpy, DevicesServiceSpy, DeviceStatusesServiceSpy, RepoOperation, UserMock, UsersServiceSpy } from "../../utils/mocks.js"
+import { DeviceMock, DeviceOfflineNotificationSubscriptionRepositorySpy, DevicesServiceSpy, DeviceStatusesServiceSpy, NotificationProtocolSpy, RepoOperation, UserMock, UsersServiceSpy } from "../../utils/mocks.js"
 
 const user = UserMock()
 const device = DeviceMock()
@@ -48,4 +48,16 @@ test("A user can unsubscribe from a notifications service to stop listening for 
   expect(devicesServiceSpy.call()).toBe(1)
   expect(usersServiceSpy.call()).toBe(1)
   expect(subscriptionRepositorySpy.call()).toBe(1)
+})
+
+test("A user can send a notification if notification protocol has beed set", async () => {
+  const notificationProtocolSpy = NotificationProtocolSpy()
+  const notificationsService = NotificationsService(deviceStatusesServiceSpy.get(), devicesServiceSpy.get(), usersServiceSpy.get(), subscriptionRepositorySpy.get())
+  
+  notificationsService.setupNotificationProtocol(notificationProtocolSpy.get())
+  
+  await runPromise(notificationsService.sendNotification(user.email, "test"))
+  
+  expect(notificationProtocolSpy.call()).toBe(1)
+  expect(usersServiceSpy.call()).toBe(1)
 })
