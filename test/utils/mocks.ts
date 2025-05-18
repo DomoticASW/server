@@ -40,10 +40,10 @@ export function NotificationsServiceSpy(existingEmail: Email): Spy<Notifications
     call: () => call,
     get: () => {
       return {
-        subscribeForDeviceOfflineNotifications: function (email: Email, deviceId: DeviceId): Effect<void, DeviceNotFoundError | UserNotFoundError> {
+        subscribeForDeviceOfflineNotifications: function (token: Token, deviceId: DeviceId): Effect<void, DeviceNotFoundError | UserNotFoundError | InvalidTokenError> {
           return succeed(null)
         },
-        unsubscribeForDeviceOfflineNotifications: function (email: Email, deviceId: DeviceId): Effect<void, DeviceNotFoundError | UserNotFoundError> {
+        unsubscribeForDeviceOfflineNotifications: function (token: Token, deviceId: DeviceId): Effect<void, DeviceNotFoundError | UserNotFoundError| InvalidTokenError> {
           return succeed(null)
         },
         sendNotification: function (email: Email, message: string): Effect<void, UserNotFoundError> {
@@ -345,7 +345,8 @@ export function UsersServiceSpy(user: User = UserMock()): Spy<UsersService> {
           throw new Error("Function not implemented.");
         },
         verifyToken: function (token: Token): Effect<void, InvalidTokenError> {
-          throw new Error("Function not implemented.");
+          call++
+          return succeed(null)
         },
         makeToken: function (value: string): Effect<Token, InvalidTokenFormatError> {
           throw new Error("Function not implemented.");

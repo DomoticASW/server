@@ -1,7 +1,7 @@
 import { Effect, map, succeed, flatMap, catch as catch_, match, if as if_ } from "effect/Effect";
 import { DeviceNotFoundError } from "../../ports/devices-management/Errors.js";
 import { NotificationsService } from "../../ports/notifications-management/NotificationsService.js";
-import { UserNotFoundError } from "../../ports/users-management/Errors.js";
+import { InvalidTokenError, UserNotFoundError } from "../../ports/users-management/Errors.js";
 import { DeviceId, DeviceStatus } from "../devices-management/Device.js";
 import { Email } from "../users-management/User.js";
 import { DeviceStatusesService } from "../../ports/devices-management/DeviceStatusesService.js";
@@ -11,6 +11,7 @@ import { DeviceOfflineNotificationSubscriptionRepository } from "../../ports/not
 import { pipe } from "effect";
 import { DeviceOfflineNotificationSubscription } from "./DeviceOfflineNotificationSubscription.js";
 import { NotificationProtocol } from "../../ports/notifications-management/NotificationProtocol.js";
+import { Token } from "../users-management/Token.js";
 
 class NotificationsServiceImpl implements NotificationsService {
   private notificationProtocol?: NotificationProtocol
@@ -23,11 +24,12 @@ class NotificationsServiceImpl implements NotificationsService {
     this.notificationProtocol = notificationProtocol
   }
 
-  subscribeForDeviceOfflineNotifications(email: Email, deviceId: DeviceId): Effect<void, DeviceNotFoundError | UserNotFoundError> {
+  subscribeForDeviceOfflineNotifications(token: Token, deviceId: DeviceId): Effect<void, DeviceNotFoundError | UserNotFoundError | InvalidTokenError> {
     return pipe(
       this.devicesService.findUnsafe(deviceId),
-      flatMap(() => this.usersService.getUserDataUnsafe(email)),
-      flatMap(() => this.subscriptionsRepository.add(DeviceOfflineNotificationSubscription(email, deviceId))),
+      flatMap(() => this.usersService.verifyToken(token)),
+      flatMap(() => this.usersService.getUserDataUnsafe(token.userEmail)),
+      flatMap(() => this.subscriptionsRepository.add(DeviceOfflineNotificationSubscription(token.userEmail, deviceId))),
       catch_("__brand", {
         failure: "DuplicateIdError",
         onFailure: () => succeed(undefined)
@@ -35,16 +37,21 @@ class NotificationsServiceImpl implements NotificationsService {
     )
   }
 
-  unsubscribeForDeviceOfflineNotifications(email: Email, deviceId: DeviceId): Effect<void, DeviceNotFoundError | UserNotFoundError> {
+  unsubscribeForDeviceOfflineNotifications(token: Token, deviceId: DeviceId): Effect<void, DeviceNotFoundError | UserNotFoundError | InvalidTokenError> {
     return pipe(
       this.devicesService.findUnsafe(deviceId),
-      flatMap(() => this.usersService.getUserDataUnsafe(email)),
-      flatMap(() => this.subscriptionsRepository.remove(DeviceOfflineNotificationSubscription(email, deviceId))),
+      flatMap(() => this.usersService.verifyToken(token)),
+      flatMap(() => this.usersService.getUserDataUnsafe(token.userEmail)),
+      flatMap(() => this.removeSubscriptionFromRepo(token.userEmail, deviceId)),
       catch_("__brand", {
         failure: "NotFoundError",
         onFailure: () => succeed(undefined)
       })
     )
+  }
+
+  private removeSubscriptionFromRepo(email: Email, deviceId: DeviceId) {
+    return this.subscriptionsRepository.remove(DeviceOfflineNotificationSubscription(email, deviceId));
   }
 
   sendNotification(email: Email, message: string): Effect<void, UserNotFoundError> {
@@ -82,7 +89,7 @@ class NotificationsServiceImpl implements NotificationsService {
         onFailure: error => {
           switch (error.__brand) {
             case "UserNotFoundError":
-              return this.unsubscribeForDeviceOfflineNotifications(email, deviceId);
+              return this.removeSubscriptionFromRepo(email, deviceId)
             case "DeviceNotFoundError":
               return succeed(null);
           }

@@ -1,21 +1,22 @@
-import { UserNotFoundError } from '../users-management/Errors.js';
+import { InvalidTokenError, UserNotFoundError } from '../users-management/Errors.js';
 import { DeviceNotFoundError } from '../devices-management/Errors.js';
 import { DeviceId } from '../../domain/devices-management/Device.js';
 import { DeviceStatusChangesSubscriber } from '../devices-management/DeviceStatusesService.js';
 import { Email } from '../../domain/users-management/User.js';
 import { Effect } from 'effect/Effect';
 import { NotificationProtocol } from './NotificationProtocol.js';
+import { Token } from '../../domain/users-management/Token.js';
 
 export interface NotificationsService extends DeviceStatusChangesSubscriber {
     subscribeForDeviceOfflineNotifications(
-        email: Email,
+        token: Token,
         deviceId: DeviceId
-    ): Effect<void, DeviceNotFoundError | UserNotFoundError>
+    ): Effect<void, DeviceNotFoundError | UserNotFoundError | InvalidTokenError>
 
     unsubscribeForDeviceOfflineNotifications(
-        email: Email,
+        token: Token,
         deviceId: DeviceId
-    ): Effect<void, DeviceNotFoundError | UserNotFoundError>
+    ): Effect<void, DeviceNotFoundError | UserNotFoundError | InvalidTokenError>
 
     sendNotification(
         email: Email,
