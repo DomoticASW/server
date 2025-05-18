@@ -6,7 +6,7 @@ import { NumberGOperator, NumberLEOperator } from "../../../src/domain/scripts-m
 import { TaskId } from "../../../src/domain/scripts-management/Script.js"
 import { Email } from "../../../src/domain/users-management/User.js"
 import { Type } from "../../../src/ports/devices-management/Types.js"
-import { DevicesServiceSpy, NotificationsServiceSpy, ScriptsServiceSpy, DeviceMock, SpyTaskMock, UserNotFoundErrorMock, TokenMock, PermissionsServiceSpy } from "./mocks.js"
+import { DevicesServiceSpy, NotificationsServiceSpy, ScriptsServiceSpy, DeviceMock, SpyTaskMock, UserNotFoundErrorMock, TokenMock, PermissionsServiceSpy } from "../../utils/mocks.js"
 import { InvalidConstantType, ScriptError, ScriptNotFoundError } from "../../../src/ports/scripts-management/Errors.js"
 import { DeviceNotFoundError, DevicePropertyNotFound } from "../../../src/ports/devices-management/Errors.js"
 import { Color } from "../../../src/domain/devices-management/Types.js"

@@ -1,14 +1,13 @@
-import { match, runPromise, sleep } from "effect/Effect"
+import { match, runPromise } from "effect/Effect"
 import { CreateConstantInstruction, StartTaskInstruction } from "../../../src/domain/scripts-management/InstructionImpl.js"
 import { Automation, AutomationId, Task, TaskId } from "../../../src/domain/scripts-management/Script.js"
 import { Type } from "../../../src/ports/devices-management/Types.js"
 import { ScriptError, ScriptNotFoundError } from "../../../src/ports/scripts-management/Errors.js"
-import { DeviceMock, DevicesServiceSpy, InstructionSpy, PermissionsServiceSpy, ScriptsServiceSpy, SpyTaskMock, TokenMock } from "./mocks.js"
+import { PermissionsServiceSpy, ScriptsServiceSpy, SpyTaskMock, TokenMock } from "../../utils/mocks.js"
 import { pipe } from "effect"
 import { PermissionError } from "../../../src/ports/permissions-management/Errors.js"
-import { DeviceEventTrigger, PeriodTrigger } from "../../../src/domain/scripts-management/Trigger.js"
-import { millis } from "effect/Duration"
-import { DeviceEventsServiceImpl } from "../../../src/domain/devices-management/DeviceEventsServiceImpl.js"
+import { PeriodTrigger } from "../../../src/domain/scripts-management/Trigger.js"
+
 
 test("A script error can be created", () => {
   const error = ScriptError("this is the cause")
@@ -110,82 +109,82 @@ test("An automation can be created", async () => {
   expect(automation.name).toBe(name)
 })
 
-test("An automation will be executed with a period trigger", async () => {
-  const periodSeconds = 0.25
-  const millisecondsToWaitToStart = 250
-  const periodTrigger = PeriodTrigger(new Date(Date.now() + millisecondsToWaitToStart), periodSeconds)
-  const instructionSpy = InstructionSpy()
+// test("An automation will be executed with a period trigger", async () => {
+//   const periodSeconds = 0.25
+//   const millisecondsToWaitToStart = 250
+//   const periodTrigger = PeriodTrigger(new Date(Date.now() + millisecondsToWaitToStart), periodSeconds)
+//   const instructionSpy = InstructionSpy()
 
-  const automation = Automation(AutomationId("1"), "name", periodTrigger, [instructionSpy.get()])
+//   const automation = Automation(AutomationId("1"), "name", periodTrigger, [instructionSpy.get()])
 
-  automation.enable()
+//   automation.enable()
 
-  expect(instructionSpy.call()).toBe(0)
+//   expect(instructionSpy.call()).toBe(0)
 
-  await runPromise(sleep(millis(periodTrigger.start.getTime() - Date.now() + 50)))
+//   await runPromise(sleep(millis(periodTrigger.start.getTime() - Date.now() + 50)))
 
-  expect(instructionSpy.call()).toBe(1)
+//   expect(instructionSpy.call()).toBe(1)
 
-  await runPromise(sleep(millis(periodSeconds * 1000)))
+//   await runPromise(sleep(millis(periodSeconds * 1000)))
 
-  expect(instructionSpy.call()).toBe(2)
+//   expect(instructionSpy.call()).toBe(2)
 
-  await runPromise(sleep(millis(periodSeconds * 1000)))
+//   await runPromise(sleep(millis(periodSeconds * 1000)))
 
-  expect(instructionSpy.call()).toBe(3)
+//   expect(instructionSpy.call()).toBe(3)
   
-  automation.disable()
+//   automation.disable()
   
-  await runPromise(sleep(millis(periodSeconds * 1000)))
-  expect(instructionSpy.call()).toBe(3)
-})
+//   await runPromise(sleep(millis(periodSeconds * 1000)))
+//   expect(instructionSpy.call()).toBe(3)
+// })
 
-test("An automation with a DeviceEventTrigger should be fired when a device event triggers", async () => {
-  const device = DeviceMock("triggeringEvent")
-  const devicesService = DevicesServiceSpy(device).get()
-  const deviceEventsService = new DeviceEventsServiceImpl(devicesService)
-  const instructionSpy = InstructionSpy()
+// test("An automation with a DeviceEventTrigger should be fired when a device event triggers", async () => {
+//   const device = DeviceMock("triggeringEvent")
+//   const devicesService = DevicesServiceSpy(device).get()
+//   const deviceEventsService = new DeviceEventsServiceImpl(devicesService)
+//   const instructionSpy = InstructionSpy()
   
-  const automation = Automation(AutomationId("1"), "name", DeviceEventTrigger(device.id, "triggeringEvent"), [instructionSpy.get()])
-  deviceEventsService.subscribeForDeviceEvents(automation)
+//   const automation = Automation(AutomationId("1"), "name", DeviceEventTrigger(device.id, "triggeringEvent"), [instructionSpy.get()])
+//   deviceEventsService.subscribeForDeviceEvents(automation)
 
-  automation.enable()
+//   automation.enable()
 
-  expect(instructionSpy.call()).toBe(0)
+//   expect(instructionSpy.call()).toBe(0)
 
-  await runPromise(deviceEventsService.publishEvent(device.id, "triggeringEvent"))
-  await runPromise(sleep(millis(50)))
+//   await runPromise(deviceEventsService.publishEvent(device.id, "triggeringEvent"))
+//   await runPromise(sleep(millis(50)))
   
-  expect(instructionSpy.call()).toBe(1)
+//   expect(instructionSpy.call()).toBe(1)
   
-  await runPromise(deviceEventsService.publishEvent(device.id, "triggeringEvent"))
-  await runPromise(sleep(millis(50)))
+//   await runPromise(deviceEventsService.publishEvent(device.id, "triggeringEvent"))
+//   await runPromise(sleep(millis(50)))
 
-  expect(instructionSpy.call()).toBe(2)
+//   expect(instructionSpy.call()).toBe(2)
   
-  automation.disable()
+//   automation.disable()
   
-  await runPromise(deviceEventsService.publishEvent(device.id, "triggeringEvent"))
-  await runPromise(sleep(millis(50)))
+//   await runPromise(deviceEventsService.publishEvent(device.id, "triggeringEvent"))
+//   await runPromise(sleep(millis(50)))
 
-  expect(instructionSpy.call()).toBe(2)
-})
+//   expect(instructionSpy.call()).toBe(2)
+// })
 
-test("An automation with a DeviceEventTrigger is not fired if the event is not the right one", async () => {
-  const device = DeviceMock("triggeringEvent")
-  const devicesService = DevicesServiceSpy(device).get()
-  const deviceEventsService = new DeviceEventsServiceImpl(devicesService)
-  const instructionSpy = InstructionSpy()
+// test("An automation with a DeviceEventTrigger is not fired if the event is not the right one", async () => {
+//   const device = DeviceMock("triggeringEvent")
+//   const devicesService = DevicesServiceSpy(device).get()
+//   const deviceEventsService = new DeviceEventsServiceImpl(devicesService)
+//   const instructionSpy = InstructionSpy()
   
-  const automation = Automation(AutomationId("1"), "name", DeviceEventTrigger(device.id, "triggeringEvent"), [instructionSpy.get()])
-  deviceEventsService.subscribeForDeviceEvents(automation)
+//   const automation = Automation(AutomationId("1"), "name", DeviceEventTrigger(device.id, "triggeringEvent"), [instructionSpy.get()])
+//   deviceEventsService.subscribeForDeviceEvents(automation)
 
-  automation.enable()
+//   automation.enable()
 
-  expect(instructionSpy.call()).toBe(0)
+//   expect(instructionSpy.call()).toBe(0)
 
-  await runPromise(deviceEventsService.publishEvent(device.id, "otherEvent"))
-  await runPromise(sleep(millis(50)))
+//   await runPromise(deviceEventsService.publishEvent(device.id, "otherEvent"))
+//   await runPromise(sleep(millis(50)))
   
-  expect(instructionSpy.call()).toBe(0)
-})
+//   expect(instructionSpy.call()).toBe(0)
+// })

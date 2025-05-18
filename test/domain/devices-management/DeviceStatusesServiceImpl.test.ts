@@ -55,10 +55,11 @@ test("subscribeForDeviceStatusChanges lets subscriber receive updates approximat
     let updatedStatus: DeviceStatus = DeviceStatus.Online
     let calls = 0
     const subscriber: DeviceStatusChangesSubscriber = {
-        deviceStatusChanged: function (deviceId: DeviceId, status: DeviceStatus): void {
+        deviceStatusChanged: function (deviceId: DeviceId, status: DeviceStatus): Effect.Effect<void> {
             calls += 1
             updatedDeviceId = deviceId
             updatedStatus = status
+            return Effect.succeed(undefined)
         }
     }
 

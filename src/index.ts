@@ -15,12 +15,16 @@ import { DeviceUnreachableError } from "./ports/devices-management/Errors.js";
 import * as uuid from "uuid";
 import { NoneInt } from "./domain/devices-management/Types.js";
 import { DeviceEventsServiceImpl } from "./domain/devices-management/DeviceEventsServiceImpl.js";
+import { DeviceStatusChangesSubscriber, DeviceStatusesService } from "./ports/devices-management/DeviceStatusesService.js";
+import { DeviceOfflineNotificationSubscriptionRepositoryMongoAdapter } from "./adapters/notifications-management/DeviceOfflineNotificationSubscription.js";
+import { NotificationsService } from "./domain/notifications-management/NotificationsServiceImpl.js";
 
 const mongoDBConnection = mongoose.createConnection("mongodb://localhost:27017/DomoticASW")
 // TODO: replace with production impl
 const usersServiceMock: UsersService = {
     makeToken() { return Effect.succeed({ role: UserRole.Admin, userEmail: Email("a@email.com") }) },
-    verifyToken() { return Effect.succeed(null) }
+    verifyToken() { return Effect.succeed(null) },
+    getUserDataUnsafe() { return Effect.succeed({  }) }
 } as unknown as UsersService
 // TODO: replace with production impl
 const permissionsService: PermissionsService = {
@@ -37,9 +41,22 @@ const deviceFactory: DeviceFactory = {
     }
 }
 
+const deviceStatusesService: DeviceStatusesService = {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    subscribeForDeviceStatusChanges: function (subscriber: DeviceStatusChangesSubscriber): void {
+        
+    },
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    unsubscribeForDeviceStatusChanges: function (subscriber: DeviceStatusChangesSubscriber): void {
+        
+    }
+}
+
 const deviceGroupRepository = new DeviceGroupRepositoryMongoAdapter(mongoDBConnection)
 const deviceRepository = new DeviceRepositoryMongoAdapter(mongoDBConnection)
+const deviceOfflineNotificationSubscriptionRepository = new DeviceOfflineNotificationSubscriptionRepositoryMongoAdapter(mongoDBConnection)
 const devicesService = new DevicesServiceImpl(deviceRepository, deviceFactory, usersServiceMock, permissionsService)
 const deviceGroupsService = new DeviceGroupsServiceImpl(deviceGroupRepository, devicesService, usersServiceMock)
 const deviceEventsService = new DeviceEventsServiceImpl(devicesService)
-new HTTPServerAdapter(3000, deviceGroupsService, devicesService, deviceEventsService, usersServiceMock)
+const notificationsService = NotificationsService(deviceStatusesService, devicesService, usersServiceMock, deviceOfflineNotificationSubscriptionRepository)
+new HTTPServerAdapter(3000, deviceGroupsService, devicesService, deviceEventsService, usersServiceMock, notificationsService)
