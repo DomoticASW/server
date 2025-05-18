@@ -253,7 +253,7 @@ export class ScriptRepositoryMongoAdapter extends BaseRepositoryMongoAdapter<Scr
                 case InstructionType.IfElseInstruction: {
                     const i = instruction.instruction as unknown as IfInstructionSchema
                     // Fiding the constant instructions
-                    // These are safely unwrapped, the conditions must be present as the script compiled when it was created
+                    // These are safely unwrapped, the constants must be present as the script compiled when it was created
                     const [leftConstantInstructionSchema, leftConstantInstructionSchemaType] = this.findConstantInstructionSchemaByName(instructions, i.condition.leftConstantName)!
                     const [rightConstantInstructionSchema, rightConstantInstructionSchemaType] = this.findConstantInstructionSchemaByName(instructions, i.condition.rightConstantName)!
                     // Deserializing constant instructions
