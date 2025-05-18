@@ -3,7 +3,7 @@ import { Effect } from "effect/Effect";
 import { Device, DeviceAction, DeviceActionId, DeviceEvent, DeviceId, DeviceProperty, DevicePropertyId, DeviceStatus } from "../../../src/domain/devices-management/Device.js";
 import { Token, UserRole } from "../../../src/domain/users-management/Token.js";
 import { Email } from "../../../src/domain/users-management/User.js";
-import { DeviceActionError, DeviceActionNotFound, DeviceNotFoundError, DevicePropertyNotFound, DeviceUnreachableError, InvalidInputError } from "../../../src/ports/devices-management/Errors.js";
+import { DeviceActionError, DeviceActionNotFound, DeviceAlreadyRegisteredError, DeviceNotFoundError, DevicePropertyNotFound, DeviceUnreachableError, InvalidInputError } from "../../../src/ports/devices-management/Errors.js";
 import { NotificationsService } from "../../../src/ports/notifications-management/NotificationsService.js";
 import { InvalidTokenError, TokenError, UserNotFoundError } from "../../../src/ports/users-management/Errors.js";
 import { DevicePropertyUpdatesSubscriber, DevicesService } from "../../../src/ports/devices-management/DevicesService.js";
@@ -139,14 +139,14 @@ export function PermissionsServiceSpy(userToken: Token = TokenMock("email")): Sp
         removeUserDevicePermission: function (token: Token, email: Email, deviceId: DeviceId): Effect<void, UserNotFoundError | DeviceNotFoundError | TokenError> {
           throw new Error("Function not implemented.");
         },
-        canExecuteActionOnDevice: function (token: Token, deviceId: DeviceId): Effect<void, PermissionError | InvalidTokenError> {
+        canExecuteActionOnDevice: function (token: Token, deviceId: DeviceId): Effect<boolean, PermissionError | InvalidTokenError> {
           throw new Error("Function not implemented.");
         },
-        canExecuteTask: function (token: Token, taskId: TaskId): Effect<void, PermissionError | InvalidTokenError> {
+        canExecuteTask: function (token: Token, taskId: TaskId): Effect<boolean, PermissionError | InvalidTokenError> {
           call++
-          return token == userToken ? succeed(null) : fail(PermissionError())
+          return token == userToken ? succeed(true) : fail(PermissionError())
         },
-        canEdit: function (token: Token, scriptId: ScriptId): Effect<void, PermissionError | InvalidTokenError> {
+        canEdit: function (token: Token, scriptId: ScriptId): Effect<boolean, PermissionError | InvalidTokenError> {
           throw new Error("Function not implemented.");
         },
         addToEditlist: function (token: Token, email: Email, scriptId: ScriptId): Effect<void, TokenError | UserNotFoundError | ScriptNotFoundError> {
@@ -226,7 +226,7 @@ export function DevicesServiceSpy(device: Device = DeviceMock(), testingAction: 
     call: () => call,
     get: () => {
       return {
-        add: function (token: Token, deviceUrl: URL): Effect<DeviceId, DeviceUnreachableError | TokenError> {
+        add: function (token: Token, deviceUrl: URL): Effect<DeviceId, DeviceAlreadyRegisteredError | DeviceUnreachableError | TokenError> {
           throw new Error("Function not implemented.");
         },
         remove: function (token: Token, deviceId: DeviceId): Effect<void, DeviceNotFoundError | TokenError> {
@@ -259,7 +259,7 @@ export function DevicesServiceSpy(device: Device = DeviceMock(), testingAction: 
           }
           return deviceId == device.id ? succeed(null) : fail(DeviceNotFoundError())
         },
-        updateDeviceProperty: function (deviceId: DeviceId, propertyId: DevicePropertyId, value: unknown): Effect<void, InvalidInputError | DeviceNotFoundError | DevicePropertyNotFound> {
+        updateDeviceProperty: function (deviceId: DeviceId, propertyId: DevicePropertyId, value: unknown): Effect<void, DeviceNotFoundError | DevicePropertyNotFound> {
           throw new Error("Function not implemented.");
         },
         subscribeForDevicePropertyUpdates: function (subscriber: DevicePropertyUpdatesSubscriber): void {
