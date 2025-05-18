@@ -17,6 +17,13 @@ export function Color(r: number, g: number, b: number): Color {
     if (b > 255) { b = 255 }
     return { r, g, b }
 }
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function isColor(obj: any): obj is Color {
+    return typeof obj == "object" &&
+        "r" in obj && typeof obj.r == "number" &&
+        "g" in obj && typeof obj.g == "number" &&
+        "b" in obj && typeof obj.b == "number"
+}
 
 export type TypeConstraints<T> = Enum | IntRange | DoubleRange | None<T>
 
