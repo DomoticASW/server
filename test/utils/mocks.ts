@@ -1,23 +1,27 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { Effect } from "effect/Effect";
-import { Device, DeviceAction, DeviceActionId, DeviceEvent, DeviceId, DeviceProperty, DevicePropertyId, DeviceStatus } from "../../../src/domain/devices-management/Device.js";
-import { Token, UserRole } from "../../../src/domain/users-management/Token.js";
-import { Email } from "../../../src/domain/users-management/User.js";
-import { DeviceActionError, DeviceActionNotFound, DeviceAlreadyRegisteredError, DeviceNotFoundError, DevicePropertyNotFound, DeviceUnreachableError, InvalidInputError } from "../../../src/ports/devices-management/Errors.js";
-import { NotificationsService } from "../../../src/ports/notifications-management/NotificationsService.js";
-import { InvalidTokenError, TokenError, UserNotFoundError } from "../../../src/ports/users-management/Errors.js";
-import { DevicePropertyUpdatesSubscriber, DevicesService } from "../../../src/ports/devices-management/DevicesService.js";
-import { PermissionError } from "../../../src/ports/permissions/Errors.js";
-import { ScriptsService } from "../../../src/ports/scripts-management/ScriptsService.js";
-import { TaskId, Task, AutomationId, Automation, ScriptId } from "../../../src/domain/scripts-management/Script.js";
-import { TaskBuilder } from "../../../src/domain/scripts-management/ScriptBuilder.js";
-import { ScriptNotFoundError, TaskNameAlreadyInUse, InvalidTaskError, AutomationNameAlreadyInUse, InvalidAutomationError, ScriptError } from "../../../src/ports/scripts-management/Errors.js";
-import { succeed, fail } from "effect/Exit";
-import { ExecutionEnvironment, Instruction } from "../../../src/domain/scripts-management/Instruction.js";
-import { NoneInt } from "../../../src/domain/devices-management/Types.js";
-import { PermissionsService } from "../../../src/ports/permissions-management/PermissionsService.js";
-import { Spy } from "../../utils/spy.js";
-import { NotificationProtocol } from "../../../src/ports/notifications-management/NotificationProtocol.js";
+import { Effect, succeed, fail } from "effect/Effect";
+import { DeviceId, DeviceStatus, Device, DeviceProperty, DevicePropertyId, DeviceAction, DeviceActionId, DeviceEvent } from "../../src/domain/devices-management/Device.js";
+import { NoneInt } from "../../src/domain/devices-management/Types.js";
+import { ExecutionEnvironment, Instruction } from "../../src/domain/scripts-management/Instruction.js";
+import { TaskId, AutomationId, Automation, ScriptId, Task } from "../../src/domain/scripts-management/Script.js";
+import { TaskBuilder } from "../../src/domain/scripts-management/ScriptBuilder.js";
+import { Token, UserRole } from "../../src/domain/users-management/Token.js";
+import { Email, Nickname, PasswordHash, Role, User } from "../../src/domain/users-management/User.js";
+import { DevicesService, DevicePropertyUpdatesSubscriber } from "../../src/ports/devices-management/DevicesService.js";
+import { DeviceStatusesService, DeviceStatusChangesSubscriber } from "../../src/ports/devices-management/DeviceStatusesService.js";
+import { DeviceNotFoundError, InvalidInputError, DeviceActionError, DeviceUnreachableError, DeviceActionNotFound, DevicePropertyNotFound } from "../../src/ports/devices-management/Errors.js";
+import { NotificationProtocol } from "../../src/ports/notifications-management/NotificationProtocol.js";
+import { NotificationsService } from "../../src/ports/notifications-management/NotificationsService.js";
+import { PermissionError } from "../../src/ports/permissions-management/Errors.js";
+import { PermissionsService } from "../../src/ports/permissions-management/PermissionsService.js";
+import { ScriptError, ScriptNotFoundError, TaskNameAlreadyInUse, InvalidTaskError, AutomationNameAlreadyInUse, InvalidAutomationError } from "../../src/ports/scripts-management/Errors.js";
+import { ScriptsService } from "../../src/ports/scripts-management/ScriptsService.js";
+import { UserNotFoundError, InvalidTokenError, TokenError, EmailAlreadyInUseError, InvalidCredentialsError, InvalidTokenFormatError } from "../../src/ports/users-management/Errors.js";
+import { Spy } from "./spy.js";
+import { UsersService } from "../../src/ports/users-management/UserService.js";
+import { DeviceOfflineNotificationSubscriptionRepository } from "../../src/ports/notifications-management/DeviceOfflineNotificationSubscriptionRepository.js";
+import { DeviceOfflineNotificationSubscription } from "../../src/domain/notifications-management/DeviceOfflineNotificationSubscription.js";
+import { DuplicateIdError, NotFoundError } from "../../src/ports/Repository.js";
 
 export function UserNotFoundErrorMock(cause?: string): UserNotFoundError {
   return { message: "The user has not been found", cause: cause, __brand: "UserNotFoundError" }
@@ -66,16 +70,16 @@ export function SpyTaskMock(hasToFail: boolean = false): Spy<Task> {
         id: TaskId("id"),
         name: "",
         instructions: [],
-        execute: function (notificationsService: NotificationsService, scriptsService: ScriptsService, permissionsService: PermissionsService, devicesService: DevicesService, token?: Token): Effect<ExecutionEnvironment, ScriptError> {
+        execute: function (token?: Token): Effect<ExecutionEnvironment, ScriptError> {
           call++
-          return hasToFail ? fail(ScriptError()) : succeed(ExecutionEnvironment(notificationsService, scriptsService, permissionsService, devicesService, token))
+          return hasToFail ? fail(ScriptError()) : succeed(ExecutionEnvironment(token))
         }
       }
     }
   }
 }
 
-export function ScriptsServiceSpy(task: Task = SpyTaskMock().get(), isTask: boolean = false): Spy<ScriptsService> {
+export function ScriptsServiceSpy(task: Task, isTask: boolean = false): Spy<ScriptsService> {
   let call = 0
   return {
     call: () => call,
@@ -220,7 +224,7 @@ export function DevicesServiceSpy(device: Device = DeviceMock(), testingAction: 
     call: () => call,
     get: () => {
       return {
-        add: function (token: Token, deviceUrl: URL): Effect<DeviceId, DeviceAlreadyRegisteredError | DeviceUnreachableError | TokenError> {
+        add: function (token: Token, deviceUrl: URL): Effect<DeviceId, DeviceUnreachableError | TokenError> {
           throw new Error("Function not implemented.");
         },
         remove: function (token: Token, deviceId: DeviceId): Effect<void, DeviceNotFoundError | TokenError> {
@@ -277,6 +281,128 @@ export function InstructionSpy(): Spy<Instruction> {
           call++
           return succeed(env)
         },
+      }
+    }
+  }
+}
+
+export function DeviceStatusesServiceSpy(): Spy<DeviceStatusesService> {
+  let call = 0
+  return {
+    call: () => call,
+    get: function (): DeviceStatusesService {
+      return {
+        subscribeForDeviceStatusChanges: function (subscriber: DeviceStatusChangesSubscriber): void {
+          call++
+        },
+        unsubscribeForDeviceStatusChanges: function (subscriber: DeviceStatusChangesSubscriber): void {
+          throw new Error("Function not implemented.");
+        }
+      }
+    }
+  }
+}
+
+export function UserMock(email: Email = Email("test")): User {
+  return {
+    email: email,
+    role: Role.Admin
+  } as unknown as User
+}
+
+export function UsersServiceSpy(user: User = UserMock()): Spy<UsersService> {
+  let call = 0
+  return {
+    call: () => call,
+    get: function (): UsersService {
+      return {
+        publishRegistrationRequest: function (nickname: Nickname, email: Email, password: PasswordHash): Effect<void, EmailAlreadyInUseError> {
+          throw new Error("Function not implemented.");
+        },
+        approveRegistrationRequest: function (token: Token, email: Email): Effect<void, UserNotFoundError | TokenError> {
+          throw new Error("Function not implemented.");
+        },
+        rejectRegistrationRequest: function (token: Token, email: Email): Effect<void, UserNotFoundError | TokenError> {
+          throw new Error("Function not implemented.");
+        },
+        removeUser: function (token: Token, email: Email): Effect<void, UserNotFoundError | TokenError> {
+          throw new Error("Function not implemented.");
+        },
+        updateUserData: function (token: Token, nickname?: Nickname, email?: Email, password?: PasswordHash): Effect<void, UserNotFoundError | EmailAlreadyInUseError | TokenError> {
+          throw new Error("Function not implemented.");
+        },
+        getAllUsers: function (token: Token): Effect<Iterable<User>, InvalidTokenError> {
+          throw new Error("Function not implemented.");
+        },
+        getUserData: function (token: Token): Effect<User, InvalidTokenError> {
+          throw new Error("Function not implemented.");
+        },
+        getUserDataUnsafe: function (email: Email): Effect<User, UserNotFoundError> {
+          call++
+          return email == user.email ? succeed(user) : fail(UserNotFoundErrorMock())
+        },
+        login: function (email: Email, password: PasswordHash): Effect<Token, InvalidCredentialsError> {
+          throw new Error("Function not implemented.");
+        },
+        verifyToken: function (token: Token): Effect<void, InvalidTokenError> {
+          throw new Error("Function not implemented.");
+        },
+        makeToken: function (value: string): Effect<Token, InvalidTokenFormatError> {
+          throw new Error("Function not implemented.");
+        }
+      }
+    }
+  }
+}
+
+export enum RepoOperation {
+  ADD, REMOVE, GETALL, NONE
+}
+
+export function DeviceOfflineNotificationSubscriptionRepositorySpy(operation: RepoOperation, subscription: DeviceOfflineNotificationSubscription): Spy<DeviceOfflineNotificationSubscriptionRepository> {
+  let call = 0
+  return {
+    call: () => call,
+    get: function () : DeviceOfflineNotificationSubscriptionRepository {
+      return {
+        add: function (entity: DeviceOfflineNotificationSubscription): Effect<void, DuplicateIdError> {
+          if (operation == RepoOperation.ADD) {
+            call++
+          }
+          return succeed(undefined)
+        },
+        update: function (entity: DeviceOfflineNotificationSubscription): Effect<void, NotFoundError> {
+          throw new Error("Function not implemented.");
+        },
+        remove: function (id: { email: Email; deviceId: DeviceId; }): Effect<void, NotFoundError> {
+          if (operation == RepoOperation.REMOVE) {
+            call++
+          }
+          return succeed(undefined)
+        },
+        getAll: function (): Effect<Iterable<DeviceOfflineNotificationSubscription>> {
+          if (operation == RepoOperation.GETALL) {
+            call++
+          }
+          return succeed([subscription])
+        },
+        find: function (id: { email: Email; deviceId: DeviceId; }): Effect<DeviceOfflineNotificationSubscription, NotFoundError, never> {
+          throw new Error("Function not implemented.");
+        }
+      }
+    }
+  }
+}
+
+export function NotificationProtocolSpy(): Spy<NotificationProtocol> {
+  let call = 0
+  return {
+    call: () => call,
+    get: function (): NotificationProtocol {
+      return {
+        sendNotification: function (email: Email, message: string): void {
+          call++
+        }
       }
     }
   }
