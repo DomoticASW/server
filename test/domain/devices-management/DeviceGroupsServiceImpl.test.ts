@@ -24,7 +24,7 @@ function makeToken(role: UserRole = UserRole.Admin): Token {
 }
 
 beforeEach(() => {
-    repo = new InMemoryRepositoryMockCheckingUniqueness((d) => d.id, (dg1, dg2) => dg1.name != dg2.name)
+    repo = new InMemoryRepositoryMockCheckingUniqueness((d) => d.id, (id) => id, (dg1, dg2) => dg1.name != dg2.name)
     devicesService = {
         add: () => Effect.succeed(DeviceId("1")),
         find(token: Token, id: DeviceId) {

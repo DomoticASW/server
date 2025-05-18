@@ -125,8 +125,24 @@ class NoneImpl<T> implements None<T> {
         this.type = type
         this.__brand = "None"
     }
-    validate(): Effect.Effect<void, InvalidValueError> {
-        return Effect.succeed(null)
+    validate(value: T): Effect.Effect<void, InvalidValueError> {
+        function appropriateError(expectedType: string): InvalidValueError {
+            return InvalidValueError(`Received value type: ${typeof value}.\nExpected value type: ${expectedType}`)
+        }
+        switch (this.type) {
+            case Type.IntType:
+                return Number.isInteger(value) ? Effect.succeed(undefined) : Effect.fail(appropriateError("int"))
+            case Type.DoubleType:
+                return typeof value == "number" ? Effect.succeed(undefined) : Effect.fail(appropriateError("double"))
+            case Type.BooleanType:
+                return typeof value == "boolean" ? Effect.succeed(undefined) : Effect.fail(appropriateError("boolean"))
+            case Type.StringType:
+                return typeof value == "string" ? Effect.succeed(undefined) : Effect.fail(appropriateError("string"))
+            case Type.ColorType:
+                return isColor(value) ? Effect.succeed(undefined) : Effect.fail(appropriateError("Color"))
+            case Type.VoidType:
+                return Effect.succeed(undefined)
+        }
     }
 }
 export function NoneBoolean(): None<boolean> {
