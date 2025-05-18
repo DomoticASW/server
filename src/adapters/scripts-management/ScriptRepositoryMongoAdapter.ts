@@ -213,7 +213,7 @@ export class ScriptRepositoryMongoAdapter extends BaseRepositoryMongoAdapter<Scr
             } else if (isDeviceActionInstruction(i)) {
                 instruction = { deviceId: i.deviceId, deviceActionId: i.deviceActionId, input: i.input }
                 type = InstructionType.DeviceActionInstruction
-            } else if (isIfInstruction(i)) {
+            } else if (isIfInstruction(i) && !isIfElseInstruction(i)) {
                 instruction = { then: this.serializeInstructions(i.then), condition: this.serializeCondition(i.condition) }
                 type = InstructionType.IfInstruction
             } else if (isIfElseInstruction(i)) {
@@ -255,19 +255,17 @@ export class ScriptRepositoryMongoAdapter extends BaseRepositoryMongoAdapter<Scr
                     const i = instruction.instruction as unknown as IfInstructionSchema
                     // Fiding the constant instructions
                     // These are safely unwrapped, the conditions must be present as the script compiled when it was created
-                    const leftConstantInstructionSchema = this.findConstantInstructionSchemaByName(instructions, i.condition.leftConstantName)!
-                    const rightConstantInstructionSchema = this.findConstantInstructionSchemaByName(instructions, i.condition.rightConstantName)!
-
+                    const [leftConstantInstructionSchema, leftConstantInstructionSchemaType] = this.findConstantInstructionSchemaByName(instructions, i.condition.leftConstantName)!
+                    const [rightConstantInstructionSchema, rightConstantInstructionSchemaType] = this.findConstantInstructionSchemaByName(instructions, i.condition.rightConstantName)!
                     // Deserializing constant instructions
-                    const restricredInstructionType = instruction.type as (InstructionType.CreateConstantInstruction | InstructionType.CreateDevicePropertyConstantInstruction)
-                    const leftConstantInstruction = this.deserializeConstantInstruction(leftConstantInstructionSchema, restricredInstructionType)
-                    const rightConstantInstruction = this.deserializeConstantInstruction(rightConstantInstructionSchema, restricredInstructionType)
+                    const leftConstantInstruction = this.deserializeConstantInstruction(leftConstantInstructionSchema, leftConstantInstructionSchemaType)
+                    const rightConstantInstruction = this.deserializeConstantInstruction(rightConstantInstructionSchema, rightConstantInstructionSchemaType)
                     const conditionOperator = this.deserializeConditionOperator(i.condition.conditionOperatorType)
 
                     if (instruction.type == InstructionType.IfInstruction) {
                         return IfInstruction(this.deserializeInstructions(i.then), Condition(leftConstantInstruction, rightConstantInstruction, conditionOperator, i.condition.negate))
                     } else {
-                        return ElseInstruction(this.deserializeInstructions(i.then), this.deserializeInstructions((i as IfElseInstructionSchema).else), Condition(leftConstantInstruction, rightConstantInstruction, conditionOperator))
+                        return ElseInstruction(this.deserializeInstructions(i.then), this.deserializeInstructions((i as IfElseInstructionSchema).else), Condition(leftConstantInstruction, rightConstantInstruction, conditionOperator, i.condition.negate))
                     }
                 }
                 case InstructionType.CreateDevicePropertyConstantInstruction:
@@ -308,11 +306,14 @@ export class ScriptRepositoryMongoAdapter extends BaseRepositoryMongoAdapter<Scr
     }
 
     /** Searches constant instructions by name. */
-    private findConstantInstructionSchemaByName(instructions: InstructionSchema[], name: string): ConstantInstructionSchema | undefined {
-        return instructions.find(i =>
+    private findConstantInstructionSchemaByName(instructions: InstructionSchema[], name: string): [ConstantInstructionSchema, InstructionType.CreateConstantInstruction | InstructionType.CreateDevicePropertyConstantInstruction] | undefined {
+        const instr = instructions.find(i =>
             (i.type == InstructionType.CreateConstantInstruction || i.type == InstructionType.CreateDevicePropertyConstantInstruction) &&
             (i.instruction as ConstantInstructionSchema).name == name
-        ) as ConstantInstructionSchema | undefined
+        )
+        if (instr) {
+            return [instr.instruction as ConstantInstructionSchema, instr.type as InstructionType.CreateConstantInstruction | InstructionType.CreateDevicePropertyConstantInstruction]
+        }
     }
 
     private deserializeConstantInstruction(instruction: ConstantInstructionSchema, type: InstructionType.CreateConstantInstruction | InstructionType.CreateDevicePropertyConstantInstruction): ConstantInstruction<unknown> {
