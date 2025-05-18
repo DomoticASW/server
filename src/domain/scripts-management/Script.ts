@@ -2,7 +2,7 @@ import { andThen, Effect, flatMap, reduce, runFork, sleep, succeed, sync } from 
 import { ScriptError } from "../../ports/scripts-management/Errors.js"
 import { Brand } from "../../utils/Brand.js"
 import { ExecutionEnvironment, Instruction } from "./Instruction.js"
-import { DeviceEventTrigger, DeviceEventTriggerImpl, PeriodTrigger, PeriodTriggerImpl, Trigger } from "./Trigger.js"
+import { DeviceEventTrigger, DeviceEventTriggerImpl, PeriodTrigger, Trigger } from "./Trigger.js"
 import { Token } from "../users-management/Token.js"
 import { pipe } from "effect"
 import { millis, seconds } from "effect/Duration"
@@ -21,10 +21,8 @@ export interface Script<Id extends ScriptId> {
 export type Task = Script<TaskId>
 
 export interface Automation extends Script<AutomationId>, DeviceEventsSubscriber {
-  readonly enabled: boolean
+  enabled: boolean
   trigger: Trigger
-  enable(): void
-  disable(): void
 }
 
 export type ScriptId = TaskId | AutomationId
@@ -72,18 +70,18 @@ class AutomationImpl implements Automation {
     }
   }
 
-  enable(): void {
-    if (!this.enabled) {
-      this.enabled = true
-      if (this.trigger instanceof PeriodTriggerImpl) {
-        runFork(this.checkTrigger())
-      }
-    }
-  }
+  // enable(): void {
+  //   if (!this.enabled) {
+  //     this.enabled = true
+  //     if (this.trigger instanceof PeriodTriggerImpl) {
+  //       runFork(this.checkTrigger())
+  //     }
+  //   }
+  // }
 
-  disable(): void {
-    this.enabled = false
-  }
+  // disable(): void {
+  //   this.enabled = false
+  // }
   
   private checkTrigger(): Effect<undefined, ScriptError> {
     const periodTrigger = this.trigger as PeriodTrigger
