@@ -3,10 +3,11 @@ import { CreateConstantInstruction, StartTaskInstruction } from "../../../src/do
 import { Automation, AutomationId, Task, TaskId } from "../../../src/domain/scripts-management/Script.js"
 import { Type } from "../../../src/ports/devices-management/Types.js"
 import { ScriptError, ScriptNotFoundError } from "../../../src/ports/scripts-management/Errors.js"
-import { PermissionsServiceSpy, ScriptsServiceSpy, SpyTaskMock, TokenMock } from "./mocks.js"
+import { PermissionsServiceSpy, ScriptsServiceSpy, SpyTaskMock, TokenMock } from "../../utils/mocks.js"
 import { pipe } from "effect"
 import { PermissionError } from "../../../src/ports/permissions-management/Errors.js"
 import { PeriodTrigger } from "../../../src/domain/scripts-management/Trigger.js"
+
 
 test("A script error can be created", () => {
   const error = ScriptError("this is the cause")
