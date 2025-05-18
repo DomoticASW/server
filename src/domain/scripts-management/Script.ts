@@ -27,10 +27,8 @@ export interface Script<Id extends ScriptId> {
 export type Task = Script<TaskId>
 
 export interface Automation extends Script<AutomationId> {
-  readonly enabled: boolean
+  enabled: boolean
   trigger: Trigger
-  enable(): void
-  disable(): void
 }
 
 export type ScriptId = TaskId | AutomationId
@@ -87,18 +85,18 @@ class AutomationImpl implements Automation {
   //   }
   // }
 
-  enable(): void {
-    if (!this.enabled) {
-      this.enabled = true
-      // if (this.trigger instanceof PeriodTriggerImpl) {
-      //   runFork(this.checkTrigger())
-      // }
-    }
-  }
+  // enable(): void {
+  //   if (!this.enabled) {
+  //     this.enabled = true
+  //     // if (this.trigger instanceof PeriodTriggerImpl) {
+  //     //   runFork(this.checkTrigger())
+  //     // }
+  //   }
+  // }
 
-  disable(): void {
-    this.enabled = false
-  }
+  // disable(): void {
+  //   this.enabled = false
+  // }
 
   // private checkTrigger(): Effect<undefined, ScriptError> {
   //   const periodTrigger = this.trigger as PeriodTrigger
