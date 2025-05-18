@@ -134,7 +134,6 @@ export function isSendNotificationInstruction(o: any): o is SendNotificationInst
     typeof o === 'object' &&
     'email' in o && typeof o.email === 'string' &&
     'message' in o && typeof o.message === 'string' &&
-    'notificationsService' in o && typeof o.notificationsService === 'object' &&
     typeof o.execute === 'function';
 }
 
@@ -151,8 +150,6 @@ export function isStartTaskInstruction(o: any): o is StartTaskInstruction {
   return o &&
     typeof o === 'object' &&
     'taskId' in o && typeof o.taskId === 'string' &&
-    'scriptsService' in o && typeof o.scriptsService === 'object' &&
-    'permissionsService' in o && typeof o.permissionsService === 'object' &&
     typeof o.execute === 'function';
 }
 
@@ -163,7 +160,6 @@ export function isDeviceActionInstruction(o: any): o is DeviceActionInstruction 
     'deviceId' in o && typeof o.deviceId === 'string' &&
     'deviceActionId' in o && typeof o.deviceActionId === 'string' &&
     'input' in o &&
-    'devicesService' in o && typeof o.devicesService === 'object' &&
     typeof o.execute === 'function';
 }
 
@@ -185,7 +181,6 @@ export function isCreateDevicePropertyConstantInstruction<T>(o: any): o is Creat
     'type' in o && typeof o.type === 'string' &&
     'deviceId' in o && typeof o.deviceId === 'string' &&
     'devicePropertyId' in o && typeof o.devicePropertyId === 'string' &&
-    'devicesService' in o && typeof o.devicesService === 'object' &&
     typeof o.execute === 'function';
 }
 
