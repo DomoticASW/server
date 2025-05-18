@@ -6,7 +6,7 @@ import { DeviceActionId, DeviceId, DevicePropertyId } from "../../domain/devices
 import { Type } from "../../ports/devices-management/Types.js";
 import { Condition, ConditionOperator, ConstantInstruction, Instruction, isCreateConstantInstruction, isCreateDevicePropertyConstantInstruction, isDeviceActionInstruction, isIfElseInstruction, isIfInstruction, isSendNotificationInstruction, isStartTaskInstruction, isWaitInstruction } from "../../domain/scripts-management/Instruction.js";
 import { CreateConstantInstruction, CreateDevicePropertyConstantInstruction, DeviceActionInstruction, ElseInstruction, IfInstruction, SendNotificationInstruction, StartTaskInstruction, WaitInstruction } from "../../domain/scripts-management/InstructionImpl.js";
-import { BooleanEOperator, ColorEOperator, NumberEOperator, NumberGEOperator, NumberGOperator, NumberLEOperator, NumberLOperator, StringEOperator } from "../../domain/scripts-management/Operators.js";
+import { BooleanEOperator, ColorEOperator, isBooleanEOperator, isColorEOperator, isNumberEOperator, isNumberGEOperator, isNumberGOperator, isNumberLEOperator, isNumberLOperator, isStringEOperator, NumberEOperator, NumberGEOperator, NumberGOperator, NumberLEOperator, NumberLOperator, StringEOperator } from "../../domain/scripts-management/Operators.js";
 import { Email } from "../../domain/users-management/User.js";
 import { ScriptRepository } from "../../ports/scripts-management/ScriptRepository.js";
 
@@ -171,13 +171,12 @@ export class ScriptRepositoryMongoAdapter extends BaseRepositoryMongoAdapter<Scr
             const trigger: TriggerSchema = { triggerType: triggerType, trigger: e.trigger }
             automationData = { enabled: e.enabled, trigger: trigger }
         }
-        // TODO: serialize instructions
-        return new this.Script({ _id: e.id, name: e.name, scriptType: scriptType, automationData: automationData })
+        return new this.Script({ _id: e.id, name: e.name, scriptType: scriptType, instructions: this.serializeInstructions(e.instructions), automationData: automationData })
     }
 
     protected toEntity(s: ScriptSchema): Script<ScriptId> {
         let trigger: PeriodTrigger | DeviceEventTrigger
-        const instructions: Instruction[] = [] // TODO: deserialize instructions
+        const instructions: Instruction[] = this.deserializeInstructions(s.instructions)
         switch (s.scriptType) {
             case ScriptType.Automation:
                 if (s.automationData!.trigger.triggerType == TriggerType.Period) {
@@ -282,7 +281,25 @@ export class ScriptRepositoryMongoAdapter extends BaseRepositoryMongoAdapter<Scr
     }
 
     private serializeConditionOperator(operator: ConditionOperator<unknown>): ConditionOperatorType {
-        throw Error("Unimplemented")
+        if (isNumberEOperator(operator)) {
+            return ConditionOperatorType.NumberEOperator
+        } else if (isNumberGEOperator(operator)) {
+            return ConditionOperatorType.NumberGEOperator
+        } else if (isNumberGOperator(operator)) {
+            return ConditionOperatorType.NumberGOperator
+        } else if (isNumberLEOperator(operator)) {
+            return ConditionOperatorType.NumberLEOperator
+        } else if (isNumberLOperator(operator)) {
+            return ConditionOperatorType.NumberLOperator
+        } else if (isBooleanEOperator(operator)) {
+            return ConditionOperatorType.BooleanEOperator
+        } else if (isStringEOperator(operator)) {
+            return ConditionOperatorType.StringEOperator
+        } else if (isColorEOperator(operator)) {
+            return ConditionOperatorType.ColorEOperator
+        } else {
+            throw new Error("It was not possible to serialize the following operator into a known type of operator:\n" + JSON.stringify(operator))
+        }
     }
     private deserializeConditionOperator(type: ConditionOperatorType) {
         switch (type) {
