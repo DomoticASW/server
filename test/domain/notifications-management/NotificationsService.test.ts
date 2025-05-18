@@ -1,5 +1,5 @@
 import { runPromise } from "effect/Effect"
-import { DeviceId } from "../../../src/domain/devices-management/Device.js"
+import { DeviceId, DeviceStatus } from "../../../src/domain/devices-management/Device.js"
 import { DeviceOfflineNotificationSubscription } from "../../../src/domain/notifications-management/DeviceOfflineNotificationSubscription.js"
 import { NotificationsService } from "../../../src/domain/notifications-management/NotificationsServiceImpl.js"
 import { Email } from "../../../src/domain/users-management/User.js"
@@ -42,9 +42,9 @@ test("A user can unsubscribe from a notifications service to stop listening for 
   const deviceId = device.id
   const subscriptionRepositorySpy = DeviceOfflineNotificationSubscriptionRepositorySpy(RepoOperation.REMOVE, DeviceOfflineNotificationSubscription(email, deviceId))
   const notificationsService = NotificationsService(deviceStatusesServiceSpy.get(), devicesServiceSpy.get(), usersServiceSpy.get(), subscriptionRepositorySpy.get())
-
+  
   await runPromise(notificationsService.unsubscribeForDeviceOfflineNotifications(email, deviceId))
-
+  
   expect(devicesServiceSpy.call()).toBe(1)
   expect(usersServiceSpy.call()).toBe(1)
   expect(subscriptionRepositorySpy.call()).toBe(1)
@@ -60,4 +60,21 @@ test("A user can send a notification if notification protocol has beed set", asy
   
   expect(notificationProtocolSpy.call()).toBe(1)
   expect(usersServiceSpy.call()).toBe(1)
+})
+
+test("A notifications Service sends a notification to subscribers when a device is offline", async () => {
+  const email = user.email
+  const deviceId = device.id
+  const subscriptionRepositorySpy = DeviceOfflineNotificationSubscriptionRepositorySpy(RepoOperation.GETALL, DeviceOfflineNotificationSubscription(email, deviceId))
+  const notificationProtocolSpy = NotificationProtocolSpy()
+
+  const notificationsService = NotificationsService(deviceStatusesServiceSpy.get(), devicesServiceSpy.get(), usersServiceSpy.get(), subscriptionRepositorySpy.get())
+  notificationsService.setupNotificationProtocol(notificationProtocolSpy.get())
+
+  await(runPromise(notificationsService.deviceStatusChanged(deviceId, DeviceStatus.Offline)))
+
+  expect(subscriptionRepositorySpy.call()).toBe(1)
+  expect(notificationProtocolSpy.call()).toBe(1)
+  expect(usersServiceSpy.call()).toBe(1)
+  expect(devicesServiceSpy.call()).toBe(1)
 })
