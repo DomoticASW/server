@@ -11,9 +11,9 @@ import { ScriptNotFoundError } from "../scripts-management/Errors.js";
 export interface PermissionsService {
   addUserDevicePermission(token: Token, email: Email, devideId: DeviceId): Effect<void, UserNotFoundError | DeviceNotFoundError | TokenError>;
   removeUserDevicePermission(token: Token, email: Email, deviceId: DeviceId): Effect<void, UserNotFoundError | DeviceNotFoundError | TokenError>;
-  canExecuteActionOnDevice(token: Token, deviceId: DeviceId): Effect<boolean, PermissionError | InvalidTokenError>;
-  canExecuteTask(token: Token, taskId: TaskId): Effect<boolean, PermissionError | InvalidTokenError | TaskNotFoundError>;
-  canEdit(token: Token, scriptId: ScriptId): Effect<boolean, PermissionError | InvalidTokenError | ScriptNotFoundError>;
+  canExecuteActionOnDevice(token: Token, deviceId: DeviceId): Effect<void, PermissionError | InvalidTokenError>;
+  canExecuteTask(token: Token, taskId: TaskId): Effect<void, PermissionError | InvalidTokenError | TaskNotFoundError>;
+  canEdit(token: Token, scriptId: ScriptId): Effect<void, PermissionError | InvalidTokenError | ScriptNotFoundError>;
   addToEditlist(token: Token, email: Email, scriptId: ScriptId): Effect<void, TokenError | UserNotFoundError | ScriptNotFoundError>;
   removeFromEditlist(token: Token, email: Email, scriptId: ScriptId): Effect<void, TokenError | UserNotFoundError | ScriptNotFoundError>;
   addToWhitelist(token: Token, email: Email, taskId: TaskId): Effect<void, TokenError | UserNotFoundError | ScriptNotFoundError>;

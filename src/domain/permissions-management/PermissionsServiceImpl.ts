@@ -112,7 +112,7 @@ export class PermissionsServiceImpl implements PermissionsService {
       Effect.asVoid
     )
   }
-  canExecuteActionOnDevice(token: Token, deviceId: DeviceId): Effect.Effect<boolean, PermissionError | InvalidTokenError> {
+  canExecuteActionOnDevice(token: Token, deviceId: DeviceId): Effect.Effect<void, PermissionError | InvalidTokenError> {
     return pipe(
       this.usersService.verifyToken(token),
       Effect.flatMap(() => this.userDevicePermissionRepo.find([token.userEmail, deviceId])),
@@ -129,7 +129,7 @@ export class PermissionsServiceImpl implements PermissionsService {
       Effect.map(() => true)
     )
   }
-  canExecuteTask(token: Token, taskId: TaskId): Effect.Effect<boolean, PermissionError | InvalidTokenError | TaskNotFoundError> {
+  canExecuteTask(token: Token, taskId: TaskId): Effect.Effect<void, PermissionError | InvalidTokenError | TaskNotFoundError> {
     return pipe(
       this.usersService.verifyToken(token),
       Effect.flatMap(() => this.taskListsRepo.find(taskId)),
@@ -155,7 +155,7 @@ export class PermissionsServiceImpl implements PermissionsService {
     )
   }
 
-  canEdit(token: Token, scriptId: ScriptId): Effect.Effect<boolean, PermissionError | InvalidTokenError | ScriptNotFoundError> {
+  canEdit(token: Token, scriptId: ScriptId): Effect.Effect<void, PermissionError | InvalidTokenError | ScriptNotFoundError> {
     return pipe(
       this.usersService.verifyToken(token),
       Effect.flatMap(() => this.editListRepo.find(scriptId)),
