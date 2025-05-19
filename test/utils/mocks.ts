@@ -137,14 +137,14 @@ export function PermissionsServiceSpy(userToken: Token = TokenMock("email")): Sp
         removeUserDevicePermission: function (token: Token, email: Email, deviceId: DeviceId): Effect<void, UserNotFoundError | DeviceNotFoundError | TokenError> {
           throw new Error("Function not implemented.");
         },
-        canExecuteActionOnDevice: function (token: Token, deviceId: DeviceId): Effect<boolean, PermissionError | InvalidTokenError> {
+        canExecuteActionOnDevice: function (token: Token, deviceId: DeviceId): Effect<void, PermissionError | InvalidTokenError> {
           throw new Error("Function not implemented.");
         },
-        canExecuteTask: function (token: Token, taskId: TaskId): Effect<boolean, PermissionError | InvalidTokenError> {
+        canExecuteTask: function (token: Token, taskId: TaskId): Effect<void, PermissionError | InvalidTokenError> {
           call++
           return token == userToken ? succeed(true) : fail(PermissionError())
         },
-        canEdit: function (token: Token, scriptId: ScriptId): Effect<boolean, PermissionError | InvalidTokenError> {
+        canEdit: function (token: Token, scriptId: ScriptId): Effect<void, PermissionError | InvalidTokenError> {
           throw new Error("Function not implemented.");
         },
         addToEditlist: function (token: Token, email: Email, scriptId: ScriptId): Effect<void, TokenError | UserNotFoundError | ScriptNotFoundError> {
