@@ -2,6 +2,8 @@ import { runPromise } from "effect/Effect"
 import { TaskBuilder } from "../../../src/domain/scripts-management/ScriptBuilder.js"
 import { RootNodeRef } from "../../../src/domain/scripts-management/Refs.js"
 import { DeviceMock, DevicesServiceSpy, NotificationsServiceSpy, PermissionsServiceSpy, ScriptsServiceSpy, SpyTaskMock, TokenMock, UserMock } from "../../utils/mocks.js"
+import { Type } from "../../../src/ports/devices-management/Types.js"
+import { ConstantInstruction } from "../../../src/domain/scripts-management/Instruction.js"
 
 const builderAndRoot = TaskBuilder("taskName")
 const taskBuilder: TaskBuilder = builderAndRoot[0]
@@ -72,4 +74,25 @@ test("A StartTaskInstruction can be added", async () => {
   expect(permissionsService.call()).toBe(1)
   expect(scriptsService.call()).toBe(1)
   expect(startedTask.call()).toBe(1)
+})
+
+test("A CreateConstantInstruction can be added", async () => {
+  const builderAndConstant = taskBuilder.addCreateConstant(root, "constantName", Type.IntType, 10)
+  const taskBuilderCreateConstant = builderAndConstant[0]
+  const ref = builderAndConstant[1]
+
+  const task = await runPromise(taskBuilderCreateConstant.build())
+
+  const env = await runPromise(task.execute(notificationService, scriptsService, permissionsService, devicesService, token))
+
+  expect(env.constants.size).toBe(1)
+
+  const instruction = task.instructions.at(0)
+  expect(instruction).toBeDefined()
+  const constant = env.constants.get(instruction as ConstantInstruction<number>)
+  expect(constant).toBeDefined()
+  expect(constant?.value).toBe<number>(10)
+
+  expect(ref.type).toBe(Type.IntType)
+  expect(ref.name).toBe("constantName")
 })

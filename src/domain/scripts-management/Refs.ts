@@ -5,7 +5,7 @@ export interface Ref {
   name: string
 }
 
-export interface Constant extends Ref {
+interface Constant extends Ref {
   type: Type
 }
 
