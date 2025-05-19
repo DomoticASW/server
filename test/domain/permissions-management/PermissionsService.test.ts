@@ -21,8 +21,8 @@ let dbConnection: mongoose.Connection
 let service: PermissionsService
 let devicesService: DevicesService
 let userDevicePermissionRepo: UserDevicePermissionRepository
-let taskListsRepo: InMemoryRepositoryMockCheckingUniqueness<TaskId, TaskLists>
-let editListRepo: InMemoryRepositoryMockCheckingUniqueness<ScriptId, EditList>
+let taskListsRepo: InMemoryRepositoryMock<TaskId, TaskLists>
+let editListRepo: InMemoryRepositoryMock<ScriptId, EditList>
 let userRepo: InMemoryRepositoryMockCheckingUniqueness<Email, User>
 
 function makeToken(role: UserRole = UserRole.Admin): Token {
@@ -196,15 +196,15 @@ test("addToEditList, expect a ScriptNotFoundError", async () => {
     expect(editListRepo.callsToUpdate).toBe(0)
 })
 
-// test("addToEditList, expect a UserNotFoundError", async () => {
-//     expect(editListRepo.callsToUpdate).toBe(0)
-//     await expect(
-//         Effect.runPromise(
-//             service.addToEditlist(makeToken(), Email("unkown@user.com") ,TaskId("1")),
-//         )
-//     ).rejects.toThrow("UserNotFoundError");
-//     expect(editListRepo.callsToUpdate).toBe(0)
-// })
+test("addToEditList, expect a UserNotFoundError", async () => {
+    expect(editListRepo.callsToUpdate).toBe(0)
+    await expect(
+        Effect.runPromise(
+            service.addToEditlist(makeToken(), Email("unkown@user.com") ,TaskId("1")),
+        )
+    ).rejects.toThrow("UserNotFoundError");
+    expect(editListRepo.callsToUpdate).toBe(0)
+})
 
 test("addToEditList, expect a UnauthorizedError because user is not an admin", async () => {
     expect(editListRepo.callsToUpdate).toBe(0)

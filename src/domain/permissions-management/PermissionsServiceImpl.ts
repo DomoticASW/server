@@ -59,8 +59,6 @@ export class PermissionsServiceImpl implements PermissionsService {
       }),
       Effect.mapError(e => {
           switch (e.__brand) {
-              case "UniquenessConstraintViolatedError":
-                  return UserNotFoundError(e.cause)
               case "DeviceNotFoundError":
                   return DeviceNotFoundError(e.cause)
               case "UserNotFoundError":
@@ -188,24 +186,25 @@ export class PermissionsServiceImpl implements PermissionsService {
         onFalse: () => Effect.fail(UnauthorizedError())
     }),
       Effect.flatMap(() => this.userRepo.find(email)),
-      Effect.flatMap((user) =>
-        Effect.if(!!user, {
-          onTrue: () => Effect.succeed(user),
-          onFalse: () => Effect.fail(UserNotFoundError("User not found"))
-        })),
+      Effect.catch("__brand", {
+        failure: "NotFoundError",
+        onFailure: () => Effect.fail(UserNotFoundError())
+      }),
       Effect.flatMap(() => this.editListRepo.find(scriptId)),
+      Effect.catch("__brand", {
+        failure: "NotFoundError",
+        onFailure: () => Effect.fail(ScriptNotFoundError())
+      }),
       Effect.flatMap((editList) => {
         editList.addUserToUsers(token.userEmail);
         return this.editListRepo.update(editList);
       }),
+      Effect.catch("__brand", {
+        failure: "NotFoundError",
+        onFailure: () => Effect.fail(ScriptNotFoundError())
+      }),
       Effect.mapError(e => {
           switch (e.__brand) {
-              case "UniquenessConstraintViolatedError":
-                return UserNotFoundError(e.cause)
-              case "UserNotFoundError":
-                  return UserNotFoundError(e.cause)
-              case "NotFoundError":
-                  return ScriptNotFoundError(e.cause)
               case "UnauthorizedError":
                   return UnauthorizedError(e.cause)
               case "InvalidTokenError":
@@ -224,24 +223,25 @@ export class PermissionsServiceImpl implements PermissionsService {
         onFalse: () => Effect.fail(UnauthorizedError())
     }),
       Effect.flatMap(() => this.userRepo.find(email)),
-      Effect.flatMap((user) =>
-        Effect.if(!!user, {
-          onTrue: () => Effect.succeed(user),
-          onFalse: () => Effect.fail(UserNotFoundError("User not found"))
-        })),
+      Effect.catch("__brand", {
+        failure: "NotFoundError",
+        onFailure: () => Effect.fail(UserNotFoundError())
+      }),
       Effect.flatMap(() => this.editListRepo.find(scriptId)),
+      Effect.catch("__brand", {
+        failure: "NotFoundError",
+        onFailure: () => Effect.fail(ScriptNotFoundError())
+      }),
       Effect.flatMap((editList) => {
         editList.removeUserToUsers(token.userEmail);
         return this.editListRepo.update(editList);
       }),
+      Effect.catch("__brand", {
+        failure: "NotFoundError",
+        onFailure: () => Effect.fail(ScriptNotFoundError())
+      }),
       Effect.mapError(e => {
           switch (e.__brand) {
-              case "UniquenessConstraintViolatedError":
-                  return UserNotFoundError(e.cause)
-              case "UserNotFoundError":
-                  return UserNotFoundError(e.cause)
-              case "NotFoundError":
-                  return ScriptNotFoundError(e.cause)
               case "UnauthorizedError":
                   return UnauthorizedError(e.cause)
               case "InvalidTokenError":
@@ -259,26 +259,27 @@ export class PermissionsServiceImpl implements PermissionsService {
       Effect.if(token.role == UserRole.Admin, {
         onTrue: () => this.usersService.verifyToken(token),
         onFalse: () => Effect.fail(UnauthorizedError())
-    }),
+      }),
       Effect.flatMap(() => this.userRepo.find(email)),
-      Effect.flatMap((user) =>
-        Effect.if(!!user, {
-          onTrue: () => Effect.succeed(user),
-          onFalse: () => Effect.fail(UserNotFoundError("User not found"))
-        })),
-        Effect.flatMap(() => this.taskListsRepo.find(taskId)),
+      Effect.catch("__brand", {
+        failure: "NotFoundError",
+        onFailure: () => Effect.fail(UserNotFoundError())
+      }),
+      Effect.flatMap(() => this.taskListsRepo.find(taskId)),
+      Effect.catch("__brand", {
+        failure: "NotFoundError",
+        onFailure: () => Effect.fail(ScriptNotFoundError())
+      }),
         Effect.flatMap((taskList) => {
           taskList.addEmailToWhitelist(token.userEmail);
           return this.taskListsRepo.update(taskList);
-        }),
+      }),
+      Effect.catch("__brand", {
+        failure: "NotFoundError",
+        onFailure: () => Effect.fail(ScriptNotFoundError())
+      }),
       Effect.mapError(e => {
           switch (e.__brand) {
-              case "UniquenessConstraintViolatedError":
-                  return UserNotFoundError(e.cause)
-              case "UserNotFoundError":
-                  return UserNotFoundError(e.cause)
-              case "NotFoundError":
-                  return ScriptNotFoundError(e.cause)
               case "UnauthorizedError":
                   return UnauthorizedError(e.cause)
               case "InvalidTokenError":
@@ -297,24 +298,25 @@ export class PermissionsServiceImpl implements PermissionsService {
         onFalse: () => Effect.fail(UnauthorizedError())
     }),
       Effect.flatMap(() => this.userRepo.find(email)),
-      Effect.flatMap((user) =>
-        Effect.if(!!user, {
-          onTrue: () => Effect.succeed(user),
-          onFalse: () => Effect.fail(UserNotFoundError("User not found"))
-        })),
-        Effect.flatMap(() => this.taskListsRepo.find(taskId)),
-        Effect.flatMap((taskList) => {
-          taskList.removeEmailFromWhitelist(token.userEmail);
-          return this.taskListsRepo.update(taskList);
-        }),
+      Effect.catch("__brand", {
+        failure: "NotFoundError",
+        onFailure: () => Effect.fail(UserNotFoundError())
+      }),
+      Effect.flatMap(() => this.taskListsRepo.find(taskId)),
+      Effect.catch("__brand", {
+        failure: "NotFoundError",
+        onFailure: () => Effect.fail(ScriptNotFoundError())
+      }),
+      Effect.flatMap((taskList) => {
+        taskList.removeEmailFromWhitelist(token.userEmail);
+        return this.taskListsRepo.update(taskList);
+      }),
+      Effect.catch("__brand", {
+        failure: "NotFoundError",
+        onFailure: () => Effect.fail(ScriptNotFoundError())
+      }),
       Effect.mapError(e => {
           switch (e.__brand) {
-              case "UniquenessConstraintViolatedError":
-                  return UserNotFoundError(e.cause)
-              case "UserNotFoundError":
-                  return UserNotFoundError(e.cause)
-              case "NotFoundError":
-                  return ScriptNotFoundError(e.cause)
               case "UnauthorizedError":
                   return UnauthorizedError(e.cause)
               case "InvalidTokenError":
@@ -333,24 +335,25 @@ export class PermissionsServiceImpl implements PermissionsService {
         onFalse: () => Effect.fail(UnauthorizedError())
     }),
       Effect.flatMap(() => this.userRepo.find(email)),
-      Effect.flatMap((user) =>
-        Effect.if(!!user, {
-          onTrue: () => Effect.succeed(user),
-          onFalse: () => Effect.fail(UserNotFoundError("User not found"))
-        })),
-        Effect.flatMap(() => this.taskListsRepo.find(taskId)),
+      Effect.catch("__brand", {
+        failure: "NotFoundError",
+        onFailure: () => Effect.fail(UserNotFoundError())
+      }),
+      Effect.flatMap(() => this.taskListsRepo.find(taskId)),
+      Effect.catch("__brand", {
+        failure: "NotFoundError",
+        onFailure: () => Effect.fail(ScriptNotFoundError())
+      }),
         Effect.flatMap((taskList) => {
           taskList.addEmailToBlacklist(token.userEmail);
           return this.taskListsRepo.update(taskList);
         }),
+      Effect.catch("__brand", {
+        failure: "NotFoundError",
+        onFailure: () => Effect.fail(ScriptNotFoundError())
+      }),
       Effect.mapError(e => {
           switch (e.__brand) {
-              case "UniquenessConstraintViolatedError":
-                  return UserNotFoundError(e.cause)
-              case "UserNotFoundError":
-                  return UserNotFoundError(e.cause)
-              case "NotFoundError":
-                  return ScriptNotFoundError(e.cause)
               case "UnauthorizedError":
                   return UnauthorizedError(e.cause)
               case "InvalidTokenError":
@@ -369,24 +372,25 @@ export class PermissionsServiceImpl implements PermissionsService {
         onFalse: () => Effect.fail(UnauthorizedError())
     }),
       Effect.flatMap(() => this.userRepo.find(email)),
-      Effect.flatMap((user) =>
-        Effect.if(!!user, {
-          onTrue: () => Effect.succeed(user),
-          onFalse: () => Effect.fail(UserNotFoundError("User not found"))
-        })),
-        Effect.flatMap(() => this.taskListsRepo.find(taskId)),
-        Effect.flatMap((taskList) => {
+      Effect.catch("__brand", {
+        failure: "NotFoundError",
+        onFailure: () => Effect.fail(UserNotFoundError())
+      }),
+      Effect.flatMap(() => this.taskListsRepo.find(taskId)),
+      Effect.catch("__brand", {
+        failure: "NotFoundError",
+        onFailure: () => Effect.fail(ScriptNotFoundError())
+      }),
+      Effect.flatMap((taskList) => {
           taskList.removeEmailFromBlacklist(token.userEmail);
           return this.taskListsRepo.update(taskList);
         }),
+      Effect.catch("__brand", {
+        failure: "NotFoundError",
+        onFailure: () => Effect.fail(ScriptNotFoundError())
+      }),
       Effect.mapError(e => {
           switch (e.__brand) {
-              case "UniquenessConstraintViolatedError":
-                  return UserNotFoundError(e.cause)
-              case "UserNotFoundError":
-                  return UserNotFoundError(e.cause)
-              case "NotFoundError":
-                  return ScriptNotFoundError(e.cause)
               case "UnauthorizedError":
                   return UnauthorizedError(e.cause)
               case "InvalidTokenError":
