@@ -70,16 +70,16 @@ export function SpyTaskMock(hasToFail: boolean = false): Spy<Task> {
         id: TaskId("id"),
         name: "",
         instructions: [],
-        execute: function (token?: Token): Effect<ExecutionEnvironment, ScriptError> {
+        execute: function (notificationsService: NotificationsService, scriptsService: ScriptsService, permissionsService: PermissionsService, devicesService: DevicesService, token?: Token): Effect<ExecutionEnvironment, ScriptError> {
           call++
-          return hasToFail ? fail(ScriptError()) : succeed(ExecutionEnvironment(token))
+          return hasToFail ? fail(ScriptError()) : succeed(ExecutionEnvironment(notificationsService, scriptsService, permissionsService, devicesService, token))
         }
       }
     }
   }
 }
 
-export function ScriptsServiceSpy(task: Task, isTask: boolean = false): Spy<ScriptsService> {
+export function ScriptsServiceSpy(task: Task = SpyTaskMock().get(), isTask: boolean = false): Spy<ScriptsService> {
   let call = 0
   return {
     call: () => call,
