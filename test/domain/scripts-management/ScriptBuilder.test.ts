@@ -1,7 +1,7 @@
 import { runPromise } from "effect/Effect"
 import { TaskBuilder } from "../../../src/domain/scripts-management/ScriptBuilder.js"
 import { RootNodeRef } from "../../../src/domain/scripts-management/Refs.js"
-import { DeviceMock, DevicesServiceSpy, NotificationsServiceSpy, PermissionsServiceSpy, ScriptsServiceSpy, TokenMock, UserMock } from "../../utils/mocks.js"
+import { DeviceMock, DevicesServiceSpy, NotificationsServiceSpy, PermissionsServiceSpy, ScriptsServiceSpy, SpyTaskMock, TokenMock, UserMock } from "../../utils/mocks.js"
 
 const builderAndRoot = TaskBuilder("taskName")
 const taskBuilder: TaskBuilder = builderAndRoot[0]
@@ -57,4 +57,19 @@ test("A DeviceActionInstruction can be added", async () => {
 
   await runPromise(task.execute(notificationService, scriptsService, permissionsService, devicesService.get(), token))
   expect(devicesService.call()).toBe(1)
+})
+
+test("A StartTaskInstruction can be added", async () => {
+  const startedTask = SpyTaskMock()
+  const scriptsService = ScriptsServiceSpy(startedTask.get())
+  const permissionsService = PermissionsServiceSpy(token)
+
+  const taskBuilderStartTask = taskBuilder.addStartTask(root, startedTask.get().id)
+  const task = await runPromise(taskBuilderStartTask.build())
+
+  await runPromise(task.execute(notificationService, scriptsService.get(), permissionsService.get(), devicesService, token))
+
+  expect(permissionsService.call()).toBe(1)
+  expect(scriptsService.call()).toBe(1)
+  expect(startedTask.call()).toBe(1)
 })
