@@ -9,7 +9,7 @@ import { Token, UserRole } from "../../src/domain/users-management/Token.js";
 import { Email, Nickname, PasswordHash, Role, User } from "../../src/domain/users-management/User.js";
 import { DevicesService, DevicePropertyUpdatesSubscriber } from "../../src/ports/devices-management/DevicesService.js";
 import { DeviceStatusesService, DeviceStatusChangesSubscriber } from "../../src/ports/devices-management/DeviceStatusesService.js";
-import { DeviceNotFoundError, InvalidInputError, DeviceActionError, DeviceUnreachableError, DeviceActionNotFound, DevicePropertyNotFound } from "../../src/ports/devices-management/Errors.js";
+import { DeviceNotFoundError, InvalidInputError, DeviceActionError, DeviceUnreachableError, DeviceActionNotFound, DevicePropertyNotFound, DeviceAlreadyRegisteredError } from "../../src/ports/devices-management/Errors.js";
 import { NotificationProtocol } from "../../src/ports/notifications-management/NotificationProtocol.js";
 import { NotificationsService } from "../../src/ports/notifications-management/NotificationsService.js";
 import { PermissionError } from "../../src/ports/permissions-management/Errors.js";
@@ -70,16 +70,16 @@ export function SpyTaskMock(hasToFail: boolean = false): Spy<Task> {
         id: TaskId("id"),
         name: "",
         instructions: [],
-        execute: function (token?: Token): Effect<ExecutionEnvironment, ScriptError> {
+        execute: function (notificationsService: NotificationsService, scriptsService: ScriptsService, permissionsService: PermissionsService, devicesService: DevicesService, token?: Token): Effect<ExecutionEnvironment, ScriptError> {
           call++
-          return hasToFail ? fail(ScriptError()) : succeed(ExecutionEnvironment(token))
+          return hasToFail ? fail(ScriptError()) : succeed(ExecutionEnvironment(notificationsService, scriptsService, permissionsService, devicesService, token))
         }
       }
     }
   }
 }
 
-export function ScriptsServiceSpy(task: Task, isTask: boolean = false): Spy<ScriptsService> {
+export function ScriptsServiceSpy(task: Task = SpyTaskMock().get(), isTask: boolean = false): Spy<ScriptsService> {
   let call = 0
   return {
     call: () => call,
@@ -224,7 +224,7 @@ export function DevicesServiceSpy(device: Device = DeviceMock(), testingAction: 
     call: () => call,
     get: () => {
       return {
-        add: function (token: Token, deviceUrl: URL): Effect<DeviceId, DeviceUnreachableError | TokenError> {
+        add: function (token: Token, deviceUrl: URL): Effect<DeviceId, DeviceAlreadyRegisteredError | DeviceUnreachableError | TokenError> {
           throw new Error("Function not implemented.");
         },
         remove: function (token: Token, deviceId: DeviceId): Effect<void, DeviceNotFoundError | TokenError> {
