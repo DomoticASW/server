@@ -9,7 +9,7 @@ import { Type } from "../../ports/devices-management/Types.js";
 import { InvalidScriptError } from "../../ports/scripts-management/Errors.js";
 import { Trigger } from "./Trigger.js";
 import * as uuid from "uuid";
-import { WaitInstruction } from "./InstructionImpl.js";
+import { SendNotificationInstruction, WaitInstruction } from "./InstructionImpl.js";
 
 interface ScriptBuilder<S = Task | Automation> {
   addIf<T>(ref: NodeRef, left: ConstantRef, right: ConstantRef, operator: ConditionOperator<T>, negate: boolean): [ScriptBuilder<S>, ThenNodeRef];
@@ -48,7 +48,7 @@ abstract class ScriptBuilderImpl<S = Task | Automation> implements ScriptBuilder
     return this.createCopy(WaitInstruction(seconds))
   }
   addSendNotification(ref: NodeRef, email: Email, message: string): ScriptBuilder<S> {
-    throw new Error("Method not implemented.");
+    return this.createCopy(SendNotificationInstruction(email, message))
   }
   addDeviceAction(ref: NodeRef, deviceId: DeviceId, actionId: DeviceActionId, input: object): ScriptBuilder<S> {
     throw new Error("Method not implemented.");

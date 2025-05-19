@@ -30,3 +30,22 @@ test("A wait instruction can be added", async () => {
   await runPromise(task.execute(notificationService, scriptsService, permissionsService, devicesService, token))
   expect(Date.now()).toBeGreaterThan(start + 0.5 * 1000)
 })
+
+
+test("A SendNotificationInstruction can be added", async () => {
+  const taskBuilderSendNotification = taskBuilder.addSendNotification(root, user.email, "message")
+  const task = await runPromise(taskBuilderSendNotification.build())
+  const notificationService = NotificationsServiceSpy(user.email)
+  
+  await runPromise(task.execute(notificationService.get(), scriptsService, permissionsService, devicesService, token))
+  expect(notificationService.call()).toBe(1)
+})
+
+test("Adding instructions does not modify the builder (it is immutable, returning the new one)", async () => {
+  taskBuilder.addSendNotification(root, user.email, "message")
+  const task = await runPromise(taskBuilder.build())
+  const notificationService = NotificationsServiceSpy(user.email)
+  
+  await runPromise(task.execute(notificationService.get(), scriptsService, permissionsService, devicesService, token))
+  expect(notificationService.call()).toBe(0)
+})
