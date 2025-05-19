@@ -9,7 +9,7 @@ import { Type } from "../../ports/devices-management/Types.js";
 import { InvalidScriptError } from "../../ports/scripts-management/Errors.js";
 import { Trigger } from "./Trigger.js";
 import * as uuid from "uuid";
-import { CreateConstantInstruction, DeviceActionInstruction, SendNotificationInstruction, StartTaskInstruction, WaitInstruction } from "./InstructionImpl.js";
+import { CreateConstantInstruction, CreateDevicePropertyConstantInstruction, DeviceActionInstruction, SendNotificationInstruction, StartTaskInstruction, WaitInstruction } from "./InstructionImpl.js";
 
 interface ScriptBuilder<S = Task | Automation> {
   addIf<T>(ref: NodeRef, left: ConstantRef, right: ConstantRef, operator: ConditionOperator<T>, negate: boolean): [ScriptBuilder<S>, ThenNodeRef];
@@ -70,7 +70,10 @@ abstract class ScriptBuilderImpl<S = Task | Automation> implements ScriptBuilder
   }
 
   addCreateDevicePropertyConstant(ref: NodeRef, name: string, type: Type, deviceId: DeviceId, propertyId: DevicePropertyId): [ScriptBuilder<S>, ConstantRef] {
-    throw new Error("Method not implemented.");
+    return [
+      this.createCopy(CreateDevicePropertyConstantInstruction(name, type, deviceId, propertyId)),
+      ConstantRef(name, type)
+    ]
   }
 
   abstract build(): Effect<S, InvalidScriptError>

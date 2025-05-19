@@ -96,3 +96,26 @@ test("A CreateConstantInstruction can be added", async () => {
   expect(ref.type).toBe(Type.IntType)
   expect(ref.name).toBe("constantName")
 })
+
+test("A CreateDevicePropertyConstantInstruction can be added", async () => {
+  const devicesService = DevicesServiceSpy(device, false)
+  const builderAndConstant = taskBuilder.addCreateDevicePropertyConstant(root, "constantName", Type.IntType, deviceId, device.properties.at(0)!.id)
+  const taskBuilderPropertyConstant = builderAndConstant[0]
+  const ref = builderAndConstant[1]
+
+  const task = await runPromise(taskBuilderPropertyConstant.build())
+
+  const env = await runPromise(task.execute(notificationService, scriptsService, permissionsService, devicesService.get(), token))
+
+  expect(env.constants.size).toBe(1)
+  expect(devicesService.call()).toBe(1)
+
+  const instruction = task.instructions.at(0)
+  expect(instruction).toBeDefined()
+  const constant = env.constants.get(instruction as ConstantInstruction<number>)
+  expect(constant).toBeDefined();
+  expect(constant?.value).toBe<number>(device.properties.at(0)!.value as number)
+
+  expect(ref.name).toBe("constantName")
+  expect(ref.type).toBe(Type.IntType)
+})
