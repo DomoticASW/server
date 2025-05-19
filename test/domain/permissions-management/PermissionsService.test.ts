@@ -32,6 +32,20 @@ function makeToken(role: UserRole = UserRole.Admin): Token {
     }
 }
 
+function makeTokenUserRole(role: UserRole = UserRole.User): Token {
+    return {
+        userEmail: Email("test@test.com"),
+        role: role
+    }
+}
+
+function makeTokenWithUnknownUser(role: UserRole = UserRole.Admin): Token {
+    return {
+        userEmail: Email("unkown@user.com"),
+        role: role
+    }
+}
+
 beforeEach(async () => {
     editListRepo = new InMemoryRepositoryMock((s) => s.id, (id) => id.toString())
     taskListsRepo = new InMemoryRepositoryMock((t) => t.id, (id) => id.toString())
@@ -147,6 +161,22 @@ test("canEdit wiht an existing script and user has permissions ", async () => {
     expect(result).toBe(true);
 })
 
+test("canEdit, expect a ScriptNotFoundError", async () => {
+    await expect(
+        Effect.runPromise(
+            service.canEdit(makeToken(), TaskId("200")),
+        )
+    ).rejects.toThrow("ScriptNotFoundError");
+})
+
+test("canEdit, expect a PermissionError", async () => {
+    await expect(
+        Effect.runPromise(
+            service.canEdit(makeTokenWithUnknownUser(), TaskId("1")),
+        )
+    ).rejects.toThrow("PermissionError");
+})
+
 test("addToEditList", async () => {
     expect(editListRepo.callsToUpdate).toBe(0)
     await pipe(
@@ -154,6 +184,36 @@ test("addToEditList", async () => {
         Effect.runPromise
     );
     expect(editListRepo.callsToUpdate).toBe(1)
+})
+
+test("addToEditList, expect a ScriptNotFoundError", async () => {
+    expect(editListRepo.callsToUpdate).toBe(0)
+    await expect(
+        Effect.runPromise(
+            service.addToEditlist(makeToken(), Email("test@test.com") ,TaskId("200")),
+        )
+    ).rejects.toThrow("ScriptNotFoundError");
+    expect(editListRepo.callsToUpdate).toBe(0)
+})
+
+// test("addToEditList, expect a UserNotFoundError", async () => {
+//     expect(editListRepo.callsToUpdate).toBe(0)
+//     await expect(
+//         Effect.runPromise(
+//             service.addToEditlist(makeToken(), Email("unkown@user.com") ,TaskId("1")),
+//         )
+//     ).rejects.toThrow("UserNotFoundError");
+//     expect(editListRepo.callsToUpdate).toBe(0)
+// })
+
+test("addToEditList, expect a UnauthorizedError because user is not an admin", async () => {
+    expect(editListRepo.callsToUpdate).toBe(0)
+    await expect(
+        Effect.runPromise(
+            service.addToEditlist(makeTokenUserRole(), Email("test@test.com") ,TaskId("1")),
+        )
+    ).rejects.toThrow("UnauthorizedError");
+    expect(editListRepo.callsToUpdate).toBe(0)
 })
 
 test("removeFromEditList wiht an existing script", async () => {
@@ -212,3 +272,7 @@ test("removeFromBlackList wiht an existing task", async () => {
     );
     expect(taskListsRepo.callsToUpdate).toBe(2)
 })
+
+afterAll(async () => {
+  await mongoose.connection.close();
+});
