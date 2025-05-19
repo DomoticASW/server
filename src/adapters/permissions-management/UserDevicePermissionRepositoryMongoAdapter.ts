@@ -75,7 +75,7 @@ export class UserDevicePermissionRepositoryMongoAdapter implements UserDevicePer
         return this.toEntity(permission);
       },
       catch: () => NotFoundError(),
-    }).pipe(orDie);
+    })
   }
 
   toEntity(permission: UserDevicePermissionSchema): UserDevicePermission {

@@ -117,7 +117,7 @@ export class PermissionsServiceImpl implements PermissionsService {
       Effect.mapError(e => {
           switch (e.__brand) {
               case "NotFoundError":
-                  return PermissionError(e.cause)
+                return PermissionError(e.cause)
               case "InvalidTokenError":
                   return InvalidTokenError(e.cause)
               default:

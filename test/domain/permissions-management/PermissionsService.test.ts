@@ -129,6 +129,18 @@ test("canExecuteAction on an existing device and user has permissions ", async (
     expect(result).toBe(true);
 })
 
+test("canExecuteAction, expect PermissionError", async () => {
+    await pipe(
+        service.addUserDevicePermission(makeToken(), Email("test@test.com"), DeviceId("1")),
+        Effect.runPromise
+    );
+    await expect(
+        Effect.runPromise(
+            service.canExecuteActionOnDevice(makeTokenWithUnknownUser(), DeviceId("1")),
+        )
+    ).rejects.toThrow("PermissionError");
+})
+
 test("canExecuteTask with an existing task and user has permissions ", async () => {
     const result = await pipe(
         service.canExecuteTask(makeToken(), TaskId("1")),
