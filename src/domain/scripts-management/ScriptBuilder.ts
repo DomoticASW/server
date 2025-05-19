@@ -1,11 +1,14 @@
-import { Effect } from "effect/Effect";
+/* eslint-disable @typescript-eslint/no-unused-vars */
+import { Effect, succeed } from "effect/Effect";
 import { DeviceActionId, DeviceId, DevicePropertyId } from "../devices-management/Device.js";
 import { ConditionOperator } from "./Instruction.js";
 import { ConstantRef, ElseNodeRef, NodeRef, ThenNodeRef } from "./Refs.js";
-import { Automation, Task, TaskId } from "./Script.js";
+import { Automation, Script, ScriptId, Task, TaskId } from "./Script.js";
 import { Email } from "../users-management/User.js";
 import { Type } from "../../ports/devices-management/Types.js";
 import { InvalidScriptError } from "../../ports/scripts-management/Errors.js";
+import { Trigger } from "./Trigger.js";
+import * as uuid from "uuid";
 
 interface ScriptBuilder<S = Task | Automation> {
   addIf<T>(ref: NodeRef, left: ConstantRef, right: ConstantRef, operator: ConditionOperator<T>, negate: boolean): [ScriptBuilder<S>, ThenNodeRef];
@@ -22,3 +25,56 @@ interface ScriptBuilder<S = Task | Automation> {
 
 export type AutomationBuilder = ScriptBuilder<Automation>
 export type TaskBuilder = ScriptBuilder<Task>
+
+abstract class ScriptBuilderImpl<S = Task | Automation> implements ScriptBuilder<S> {
+  constructor(protected name: string) {
+
+  }
+
+  addIf<T>(ref: NodeRef, left: ConstantRef, right: ConstantRef, operator: ConditionOperator<T>, negate: boolean): [ScriptBuilder<S>, ThenNodeRef] {
+    throw new Error("Method not implemented.");
+  }
+  addIfElse<T>(ref: NodeRef, left: ConstantRef, right: ConstantRef, operator: ConditionOperator<T>, negate: boolean): [ScriptBuilder<S>, ThenNodeRef, ElseNodeRef] {
+    throw new Error("Method not implemented.");
+  }
+  addWait(ref: string, time: number): ScriptBuilder<S> {
+    throw new Error("Method not implemented.");
+  }
+  addSendNotification(ref: NodeRef, email: Email, message: string): ScriptBuilder<S> {
+    throw new Error("Method not implemented.");
+  }
+  addDeviceAction(ref: NodeRef, deviceId: DeviceId, actionId: DeviceActionId, input: object): ScriptBuilder<S> {
+    throw new Error("Method not implemented.");
+  }
+  addStartTask(ref: NodeRef, taskId: TaskId): ScriptBuilder<S> {
+    throw new Error("Method not implemented.");
+  }
+  addCreateConstant<T>(ref: NodeRef, name: string, type: Type, value: T): [ScriptBuilder<S>, ConstantRef] {
+    throw new Error("Method not implemented.");
+  }
+  addCreateDevicePropertyConstant(ref: NodeRef, name: string, type: Type, deviceId: DeviceId, propertyId: DevicePropertyId): [ScriptBuilder<S>, ConstantRef] {
+    throw new Error("Method not implemented.");
+  }
+  abstract build(): Effect<S, InvalidScriptError>
+}
+
+class TaskBuilderImpl extends ScriptBuilderImpl<Task> {
+  build(): Effect<Task, InvalidScriptError> {
+    return succeed(Task(TaskId(uuid.v4()), this.name, []))
+  }
+}
+
+class AutomationBuilderImpl extends ScriptBuilderImpl<Automation> {
+  constructor(name: string, private trigger: Trigger) {
+    super(name)
+  }
+
+  build(): Effect<Automation, InvalidScriptError, never> {
+    throw new Error("Method not implemented.");
+  }
+
+}
+
+export function TaskBuilder(name: string): TaskBuilder {
+  return new TaskBuilderImpl(name)
+}
