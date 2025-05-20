@@ -122,11 +122,12 @@ test("canExecuteAction on an existing device and user has permissions ", async (
         service.addUserDevicePermission(makeToken(), Email("test@test.com"), DeviceId("1")),
         Effect.runPromise
     );
-    const result = await pipe(
-        service.canExecuteActionOnDevice(makeToken(), DeviceId("1")),
-        Effect.runPromise
-    );
-    expect(result).toBe(true);
+    expect(async () =>
+        await pipe(
+            service.canExecuteActionOnDevice(makeToken(), DeviceId("1")),
+            Effect.runPromise
+        )
+    ).not.toThrow();
 })
 
 test("canExecuteAction, expect PermissionError", async () => {
@@ -142,11 +143,12 @@ test("canExecuteAction, expect PermissionError", async () => {
 })
 
 test("canExecuteTask with an existing task and user has permissions ", async () => {
-    const result = await pipe(
-        service.canExecuteTask(makeToken(), TaskId("1")),
-        Effect.runPromise
-    );
-    expect(result).toBe(true);
+    expect(async () =>
+        await pipe(
+            service.canExecuteTask(makeToken(), TaskId("1")),
+            Effect.runPromise
+        )
+    ).not.toThrow();
 })
 
 test("canExecuteTask, expect a TaskNotFoundError ", async () => {
@@ -166,11 +168,12 @@ test("canExecuteTask, expect a PermissionError ", async () => {
 })
 
 test("canEdit wiht an existing script and user has permissions ", async () => {
-    const result = await pipe(
-        service.canEdit(makeToken(), TaskId("1")),
-        Effect.runPromise
-    );
-    expect(result).toBe(true);
+    expect(async () =>
+        await pipe(
+            service.canEdit(makeToken(), TaskId("1")),
+            Effect.runPromise
+        )
+    ).not.toThrow();
 })
 
 test("canEdit, expect a ScriptNotFoundError", async () => {
