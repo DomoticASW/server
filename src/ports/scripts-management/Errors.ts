@@ -21,3 +21,7 @@ export function ScriptNotFoundError(cause?: string): ScriptNotFoundError {
 export function InvalidConstantType(cause?: string): InvalidConstantType {
   return { message: "The constant type is not valid", cause: cause, __brand: "InvalidConstantType" }
 }
+
+export function InvalidScriptError(cause?: string): InvalidScriptError {
+  return { message: "There is an error in the script syntax", cause: cause, __brand: "InvalidScriptError" }
+}

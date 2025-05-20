@@ -1,7 +1,7 @@
 import { Effect, pipe } from "effect"
 import { DeviceActionId, DeviceId, DevicePropertyId } from "../../../src/domain/devices-management/Device.js"
 import { Condition, ConstantValue, ExecutionEnvironment, ExecutionEnvironmentCopy } from "../../../src/domain/scripts-management/Instruction.js"
-import { CreateConstantInstruction, CreateDevicePropertyConstantInstruction, DeviceActionInstruction, ElseInstruction, IfInstruction, SendNotificationInstruction, StartTaskInstruction, WaitInstruction } from "../../../src/domain/scripts-management/InstructionImpl.js"
+import { CreateConstantInstruction, CreateDevicePropertyConstantInstruction, DeviceActionInstruction, IfElseInstruction, IfInstruction, SendNotificationInstruction, StartTaskInstruction, WaitInstruction } from "../../../src/domain/scripts-management/InstructionImpl.js"
 import { NumberGOperator, NumberLEOperator } from "../../../src/domain/scripts-management/Operators.js"
 import { TaskId } from "../../../src/domain/scripts-management/Script.js"
 import { Email } from "../../../src/domain/users-management/User.js"
@@ -287,8 +287,8 @@ test("An else instruction can be created", async () => {
   const setupEnv = ExecutionEnvironment(notificationServiceMock, scriptsServiceMock, permissionsServiceMock, devicesServiceMock, TokenMock("email"))
   const env = await Effect.runPromise(right.execute(await Effect.runPromise(left.execute(setupEnv))))
   
-  const elseIfInstruction = ElseInstruction(thenInstructions, elseInstructions, condition)
-  const falseElseIfInstruction = ElseInstruction(thenInstructions, elseInstructions, negatedCondition)
+  const elseIfInstruction = IfElseInstruction(thenInstructions, elseInstructions, condition)
+  const falseElseIfInstruction = IfElseInstruction(thenInstructions, elseInstructions, negatedCondition)
 
   //ACT
   const stringInstruction1 = (await Effect.runPromise(elseIfInstruction.execute(env))).constants.get(thenInstruction)

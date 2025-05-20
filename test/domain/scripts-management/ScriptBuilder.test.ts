@@ -1,13 +1,15 @@
 import { runPromise } from "effect/Effect"
 import { TaskBuilder } from "../../../src/domain/scripts-management/ScriptBuilder.js"
-import { RootNodeRef } from "../../../src/domain/scripts-management/Refs.js"
 import { DeviceMock, DevicesServiceSpy, NotificationsServiceSpy, PermissionsServiceSpy, ScriptsServiceSpy, SpyTaskMock, TokenMock, UserMock } from "../../utils/mocks.js"
 import { Type } from "../../../src/ports/devices-management/Types.js"
 import { ConstantInstruction } from "../../../src/domain/scripts-management/Instruction.js"
+import { NumberEOperator } from "../../../src/domain/scripts-management/Operators.js"
+import { NodeRef } from "../../../src/domain/scripts-management/Refs.js"
+import { InvalidScriptError } from "../../../src/ports/scripts-management/Errors.js"
 
 const builderAndRoot = TaskBuilder("taskName")
 const taskBuilder: TaskBuilder = builderAndRoot[0]
-const root: RootNodeRef = builderAndRoot[1]
+const root: NodeRef = builderAndRoot[1]
 
 const user = UserMock()
 const token = TokenMock(user.email)
@@ -17,7 +19,14 @@ const deviceId = device.id
 const notificationService = NotificationsServiceSpy(user.email).get()
 const devicesService = DevicesServiceSpy().get()
 const scriptsService = ScriptsServiceSpy().get()
-const permissionsService = PermissionsServiceSpy().get()
+const permissionsService = PermissionsServiceSpy(token).get()
+
+test("An InvalidScriptError can be created", async () => {
+  const error = InvalidScriptError("cause")
+  expect(error.__brand).toBe("InvalidScriptError")
+  expect(error.message).toBe("There is an error in the script syntax")
+  expect(error.cause).toBe("cause")
+})
 
 test("A TaskBuilder can be created", async () => {
   const task = await runPromise(taskBuilder.build())
@@ -47,7 +56,7 @@ test("Adding instructions does not modify the builder (it is immutable, returnin
   taskBuilder.addSendNotification(root, user.email, "message")
   const task = await runPromise(taskBuilder.build())
   const notificationService = NotificationsServiceSpy(user.email)
-  
+
   await runPromise(task.execute(notificationService.get(), scriptsService, permissionsService, devicesService, token))
   expect(notificationService.call()).toBe(0)
 })
@@ -118,4 +127,47 @@ test("A CreateDevicePropertyConstantInstruction can be added", async () => {
 
   expect(ref.name).toBe("constantName")
   expect(ref.type).toBe(Type.IntType)
+})
+
+test("An IfInstruction can be added", async () => {
+  const builderAndConstant = taskBuilder.addCreateConstant(root, "constantName", Type.IntType, 10)
+  const taskBuilderOneConstant = builderAndConstant[0]
+
+  const builderAndConstant2 = taskBuilderOneConstant.addCreateDevicePropertyConstant(root, "constantName2", Type.IntType, deviceId, device.properties.at(0)!.id)
+  const taskBuilderTwoConstants = builderAndConstant2[0]
+
+  const builderAndRef = taskBuilderTwoConstants.addIf(root, builderAndConstant[1], builderAndConstant2[1], NumberEOperator(), false)
+  const taskBuilderIf = builderAndRef[0]
+  const ifRef = builderAndRef[1]
+
+  const taskBuilderComplete = taskBuilderIf.addWait(ifRef, 0.5)
+
+  const task = await runPromise(taskBuilderComplete.build())
+
+  const start = Date.now()
+
+  await runPromise(task.execute(notificationService, scriptsService, permissionsService, devicesService, token))
+
+  expect(Date.now()).toBeGreaterThan(start + 0.5 * 1000)
+})
+
+test("An IfInstruction does not execute instructions if is evaluated to false", async () => {
+  const builderAndConstant = taskBuilder.addCreateConstant(root, "constantName", Type.IntType, 10)
+  const taskBuilderOneConstant = builderAndConstant[0]
+
+  const builderAndConstant2 = taskBuilderOneConstant.addCreateDevicePropertyConstant(root, "constantName2", Type.IntType, deviceId, device.properties.at(0)!.id)
+  const taskBuilderTwoConstants = builderAndConstant2[0]
+
+  const builderAndRefNegate = taskBuilderTwoConstants.addIf(root, builderAndConstant[1], builderAndConstant2[1], NumberEOperator(), true)
+  const taskBuilderIfNegate = builderAndRefNegate[0]
+  const negateIfRef = builderAndRefNegate[1]
+
+  const taskBuilderCompleteNegate = taskBuilderIfNegate.addWait(negateIfRef, 0.5)
+  const taskNegate = await runPromise(taskBuilderCompleteNegate.build())
+
+  const startNegate = Date.now()
+  
+  await runPromise(taskNegate.execute(notificationService, scriptsService, permissionsService, devicesService, token))
+  
+  expect(Date.now()).toBeLessThan(startNegate + 0.5 * 1000)
 })

@@ -9,19 +9,16 @@ test("A ConstantRef can be created", () => {
 })
 
 test("A RootNodeRef can be created", () => {
-  const ref: RootNodeRef = RootNodeRef("name")
+  const ref: RootNodeRef = RootNodeRef()
   expect(ref.__brand).toBe("RootNodeRef")
-  expect(ref.name).toBe("name")
 })
 
 test("A ThenNodeRef can be created", () => {
-  const ref: ThenNodeRef = ThenNodeRef("name")
+  const ref: ThenNodeRef = ThenNodeRef()
   expect(ref.__brand).toBe("ThenNodeRef")
-  expect(ref.name).toBe("name")
 })
 
 test("A ElseNodeRef can be created", () => {
-  const ref: ElseNodeRef = ElseNodeRef("name")
+  const ref: ElseNodeRef = ElseNodeRef()
   expect(ref.__brand).toBe("ElseNodeRef")
-  expect(ref.name).toBe("name")
 })
