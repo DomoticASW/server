@@ -1,5 +1,5 @@
 import { InvalidInputError, DeviceActionError, DeviceActionNotFound } from "../../ports/devices-management/Errors.js";
-import { Color, TypeConstraints } from "../../domain/devices-management/Types.js";
+import { isColor, TypeConstraints } from "../../domain/devices-management/Types.js";
 import { Brand } from "../../utils/Brand.js";
 import { Effect } from "effect";
 import { Type } from "../../ports/devices-management/Types.js";
@@ -58,10 +58,6 @@ class DeviceImpl implements Device {
 
     executeAction(actionId: DeviceActionId, input: unknown): Effect.Effect<void, InvalidInputError | DeviceActionError | DeviceActionNotFound> {
         const action = this.actions.find(a => a.id === actionId)
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        function isColor(obj: any): obj is Color {
-            return "r" in obj && "g" in obj && "b" in obj
-        }
         if (action) {
             let err
             switch (action.inputTypeConstraints.type) {

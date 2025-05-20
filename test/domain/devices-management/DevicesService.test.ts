@@ -37,7 +37,7 @@ function makeToken(role: Role = Role.Admin): Token {
 }
 
 beforeEach(() => {
-    repo = new InMemoryRepositoryMock((d) => d.id)
+    repo = new InMemoryRepositoryMock((d) => d.id, (id) => id)
     deviceFactory = {
         create(deviceUrl: URL): Effect.Effect<Device, DeviceUnreachableError> {
             const properties = [DeviceProperty(DevicePropertyId("prop"), "prop", 0, NoneInt())]
@@ -405,7 +405,7 @@ describe("all methods requiring a token fail if the token is invalid", () => {
         (s) => s.rename(token, deviceId, "Oven"),
         (s) => s.find(token, deviceId),
         (s) => s.getAllDevices(token),
-        (s) => s.executeAction(token, deviceId, DeviceActionId("action"), null)
+        (s) => s.executeAction(token, deviceId, DeviceActionId("action"), undefined)
     ]
 
     beforeEach(() => {

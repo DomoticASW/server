@@ -5,7 +5,7 @@ import { ConstantRef, ElseNodeRef, NodeRef, ThenNodeRef } from "./Refs.js";
 import { Automation, Task, TaskId } from "./Script.js";
 import { Email } from "../users-management/User.js";
 import { Type } from "../../ports/devices-management/Types.js";
-import { InvalidScriptError } from "../../ports/scripts/Errors.js";
+import { InvalidScriptError } from "../../ports/scripts-management/Errors.js";
 
 interface ScriptBuilder<S = Task | Automation> {
   addIf<T>(ref: NodeRef, left: ConstantRef<T>, right: ConstantRef<T>, operator: ConditionOperator<T>, negate: boolean): [ScriptBuilder<S>, ThenNodeRef];

@@ -1,4 +1,4 @@
-import { ScriptId } from "../scripts/Script.js";
+import { ScriptId } from "../scripts-management/Script.js";
 import { Email } from "../users-management/User.js";
 
 export interface EditList {

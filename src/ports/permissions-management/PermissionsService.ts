@@ -2,10 +2,10 @@ import { Effect } from "effect/Effect";
 import { Email } from "../../domain/users-management/User.js";
 import { DeviceNotFoundError } from "../devices-management/Errors.js"
 import { InvalidTokenError, TokenError, UserNotFoundError } from "../users-management/Errors.js"
-import { ScriptNotFoundError } from "../scripts/Errors.js"
+import { ScriptNotFoundError } from "../scripts-management/Errors.js"
 import { PermissionError } from "./Errors.js";
 import { Token } from "../../domain/users-management/Token.js";
-import { ScriptId, TaskId } from "../../domain/scripts/Script.js"
+import { ScriptId, TaskId } from "../../domain/scripts-management/Script.js"
 import { DeviceId } from "../../domain/devices-management/Device.js";
 
 export interface PermissionsService {

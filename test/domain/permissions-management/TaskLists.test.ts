@@ -1,16 +1,10 @@
+import { TaskId } from "../../../src/domain/scripts-management/Script.js"
 import { TaskLists } from "../../../src/domain/permissions-management/TaskLists.js"
-import { TaskId } from "../../../src/domain/scripts/Script.js"
 import { Email } from "../../../src/domain/users-management/User.js"
  
  function makeTaskLists(id: string = "1") {
     return TaskLists(TaskId(id), [], [])
  }
- 
- test("TaskLists creation", () => {
-    const taskId = "1"
-    const id = TaskId(taskId)
-    expect(id).toBe(taskId)
- })
  
  test("TaskLists testing field", () => {
     expect(makeTaskLists().id).toBe("1")
