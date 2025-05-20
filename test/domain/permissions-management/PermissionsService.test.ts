@@ -46,11 +46,14 @@ function makeTokenWithUnknownUser(role: UserRole = UserRole.Admin): Token {
     }
 }
 
+beforeAll(async () => {
+    dbConnection = await mongoose.createConnection(`mongodb://localhost:27018/${dbName}`).asPromise();
+})
+
 beforeEach(async () => {
     editListRepo = new InMemoryRepositoryMock((s) => s.id, (id) => id.toString())
     taskListsRepo = new InMemoryRepositoryMock((t) => t.id, (id) => id.toString())
     // userDevicePermissionRepo = new InMemoryRepositoryMock((p) => [p.email, p.deviceId])
-    dbConnection = await mongoose.createConnection(`mongodb://localhost:27018/${dbName}`).asPromise();
     userDevicePermissionRepo = new UserDevicePermissionRepositoryMongoAdapter(dbConnection);
     userRepo = new InMemoryRepositoryMockCheckingUniqueness(
         (u) => u.email,
@@ -468,5 +471,5 @@ test("removeFromBlackList, expect UserNotFoundError", async () => {
 })
 
 afterAll(async () => {
-  await mongoose.connection.close();
+  await dbConnection.close()
 });
