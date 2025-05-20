@@ -5,7 +5,7 @@ import { NoneInt } from "../../src/domain/devices-management/Types.js";
 import { ExecutionEnvironment, Instruction } from "../../src/domain/scripts-management/Instruction.js";
 import { TaskId, AutomationId, Automation, ScriptId, Task } from "../../src/domain/scripts-management/Script.js";
 import { AutomationBuilder, TaskBuilder } from "../../src/domain/scripts-management/ScriptBuilder.js";
-import { Token, UserRole } from "../../src/domain/users-management/Token.js";
+import { Token } from "../../src/domain/users-management/Token.js";
 import { Email, Nickname, PasswordHash, Role, User } from "../../src/domain/users-management/User.js";
 import { DevicesService, DevicePropertyUpdatesSubscriber } from "../../src/ports/devices-management/DevicesService.js";
 import { DeviceStatusesService, DeviceStatusChangesSubscriber } from "../../src/ports/devices-management/DeviceStatusesService.js";
@@ -31,7 +31,8 @@ export function UserNotFoundErrorMock(cause?: string): UserNotFoundError {
 export function TokenMock(email: string): Token {
   return {
     userEmail: Email(email),
-    role: UserRole.Admin
+    role: Role.Admin,
+    source: "test",
   }
 }
 
@@ -343,7 +344,7 @@ export function UsersServiceSpy(user: User = UserMock(), usedToken: Token = Toke
         removeUser: function (token: Token, email: Email): Effect<void, UserNotFoundError | TokenError> {
           throw new Error("Function not implemented.");
         },
-        updateUserData: function (token: Token, nickname?: Nickname, email?: Email, password?: PasswordHash): Effect<void, UserNotFoundError | EmailAlreadyInUseError | TokenError> {
+        updateUserData: function (token: Token, nickname?: Nickname, password?: PasswordHash): Effect<void, UserNotFoundError | TokenError> {
           throw new Error("Function not implemented.");
         },
         getAllUsers: function (token: Token): Effect<Iterable<User>, InvalidTokenError> {
