@@ -6,17 +6,21 @@ import { DevicePropertyUpdatesSubscriber, DevicesService } from "../../../src/po
 import { InMemoryRepositoryMock } from "../../InMemoryRepositoryMock.js"
 import { DevicesServiceImpl } from "../../../src/domain/devices-management/DevicesServiceImpl.js"
 import { DeviceFactory } from "../../../src/ports/devices-management/DeviceFactory.js"
-import { DeviceActionError, DeviceUnreachableError, InvalidInputError } from "../../../src/ports/devices-management/Errors.js"
+import { DeviceUnreachableError } from "../../../src/ports/devices-management/Errors.js"
 import { DeviceRepository } from "../../../src/ports/devices-management/DeviceRepository.js"
 import { IntRange, NoneInt } from "../../../src/domain/devices-management/Types.js"
 import { InvalidTokenError } from "../../../src/ports/users-management/Errors.js"
 import { UsersService } from "../../../src/ports/users-management/UserService.js"
 import { PermissionsService } from "../../../src/ports/permissions-management/PermissionsService.js"
 import { PermissionError } from "../../../src/ports/permissions-management/Errors.js"
+import { DeviceCommunicationProtocol } from "../../../src/ports/devices-management/DeviceCommunicationProtocol.js"
 
 let service: DevicesService
 let deviceFactory: DeviceFactory
 let repo: DeviceRepository
+const deviceCommunicationProtocol: DeviceCommunicationProtocol = {
+    executeDeviceAction: () => Effect.succeed(undefined),
+} as unknown as DeviceCommunicationProtocol
 const alwaysValidTokenUsersService = {
     verifyToken() {
         return Effect.succeed(null)
@@ -45,7 +49,7 @@ beforeEach(() => {
             return Effect.succeed(Device(DeviceId(deviceUrl.toString()), "device", deviceUrl, DeviceStatus.Online, properties, actions, events))
         }
     }
-    service = new DevicesServiceImpl(repo, deviceFactory, alwaysValidTokenUsersService, freePermissionsService)
+    service = new DevicesServiceImpl(repo, deviceFactory, alwaysValidTokenUsersService, freePermissionsService, deviceCommunicationProtocol)
 })
 
 test("has 0 devices initially", () => {
@@ -291,16 +295,21 @@ describe("executeAction", () => {
     beforeEach(() => {
         deviceFactory = {
             create(deviceUrl: URL): Effect.Effect<Device, DeviceUnreachableError> {
-                const action: DeviceAction<number> = {
-                    id: actionId,
-                    name: "action",
-                    inputTypeConstraints: IntRange(0, 100),
-                    execute: function (input: number): Effect.Effect<void, InvalidInputError | DeviceActionError> {
+                const action = DeviceAction(actionId, "action", IntRange(0, 100))
+                const d = Device(deviceId, "device", deviceUrl, DeviceStatus.Online, [], [action], [])
+                return Effect.succeed({
+                    id: d.id,
+                    name: d.name,
+                    address: d.address,
+                    status: d.status,
+                    properties: d.properties,
+                    actions: d.actions,
+                    events: d.events,
+                    executeAction(actionId, input, comm) {
                         receivedInput = input
-                        return Effect.succeed(null)
-                    }
-                }
-                return Effect.succeed(Device(deviceId, "device", deviceUrl, DeviceStatus.Online, [], [action], []))
+                        return d.executeAction(actionId, input, comm)
+                    },
+                })
             }
         }
         const permissionsService: PermissionsService = {
@@ -309,7 +318,7 @@ describe("executeAction", () => {
                 else return Effect.fail(PermissionError())
             }
         } as unknown as PermissionsService
-        service = new DevicesServiceImpl(repo, deviceFactory, alwaysValidTokenUsersService, permissionsService)
+        service = new DevicesServiceImpl(repo, deviceFactory, alwaysValidTokenUsersService, permissionsService, deviceCommunicationProtocol)
     })
 
     test("executes the given action on the given device with the given input", () => {
@@ -356,19 +365,24 @@ describe("executeAutomationAction", () => {
     beforeEach(() => {
         deviceFactory = {
             create(deviceUrl: URL): Effect.Effect<Device, DeviceUnreachableError> {
-                const action: DeviceAction<number> = {
-                    id: actionId,
-                    name: "action",
-                    inputTypeConstraints: IntRange(0, 100),
-                    execute: function (input: number): Effect.Effect<void, InvalidInputError | DeviceActionError> {
+                const action = DeviceAction(actionId, "action", IntRange(0, 100))
+                const d = Device(deviceId, "device", deviceUrl, DeviceStatus.Online, [], [action], [])
+                return Effect.succeed({
+                    id: d.id,
+                    name: d.name,
+                    address: d.address,
+                    status: d.status,
+                    properties: d.properties,
+                    actions: d.actions,
+                    events: d.events,
+                    executeAction(actionId, input, comm) {
                         receivedInput = input
-                        return Effect.succeed(null)
-                    }
-                }
-                return Effect.succeed(Device(deviceId, "device", deviceUrl, DeviceStatus.Online, [], [action], []))
+                        return d.executeAction(actionId, input, comm)
+                    },
+                })
             }
         }
-        service = new DevicesServiceImpl(repo, deviceFactory, alwaysValidTokenUsersService, freePermissionsService)
+        service = new DevicesServiceImpl(repo, deviceFactory, alwaysValidTokenUsersService, freePermissionsService, deviceCommunicationProtocol)
     })
 
     test("executes the given action on the given device with the given input", () => {
@@ -412,7 +426,7 @@ describe("all methods requiring a token fail if the token is invalid", () => {
                 return Effect.fail({ __brand: "InvalidTokenError", message: "" })
             }
         } as unknown as UsersService
-        service = new DevicesServiceImpl(repo, deviceFactory, alwaysInvalidTokenUsersService, freePermissionsService)
+        service = new DevicesServiceImpl(repo, deviceFactory, alwaysInvalidTokenUsersService, freePermissionsService, deviceCommunicationProtocol)
     })
 
     allMethods.forEach(m => {

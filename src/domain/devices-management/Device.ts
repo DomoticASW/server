@@ -1,8 +1,9 @@
 import { InvalidInputError, DeviceActionError, DeviceActionNotFound } from "../../ports/devices-management/Errors.js";
 import { isColor, TypeConstraints } from "../../domain/devices-management/Types.js";
 import { Brand } from "../../utils/Brand.js";
-import { Effect } from "effect";
+import { Effect, pipe } from "effect";
 import { Type } from "../../ports/devices-management/Types.js";
+import { DeviceCommunicationProtocol } from "../../ports/devices-management/DeviceCommunicationProtocol.js";
 
 export type DeviceId = Brand<string, "DeviceId">
 export type DeviceActionId = Brand<string, "DeviceActionId">
@@ -27,7 +28,7 @@ export interface Device {
     readonly actions: DeviceAction<unknown>[];
     readonly events: DeviceEvent[];
 
-    executeAction(actionId: DeviceActionId, input: unknown): Effect.Effect<void, InvalidInputError | DeviceActionError | DeviceActionNotFound>;
+    executeAction(actionId: DeviceActionId, input: unknown, communicationProtocol: DeviceCommunicationProtocol): Effect.Effect<void, InvalidInputError | DeviceActionError | DeviceActionNotFound>;
 }
 
 class DeviceImpl implements Device {
@@ -56,43 +57,56 @@ class DeviceImpl implements Device {
         this.events = events
     }
 
-    executeAction(actionId: DeviceActionId, input: unknown): Effect.Effect<void, InvalidInputError | DeviceActionError | DeviceActionNotFound> {
+    executeAction(actionId: DeviceActionId, input: unknown, protocol: DeviceCommunicationProtocol): Effect.Effect<void, InvalidInputError | DeviceActionError | DeviceActionNotFound> {
         const action = this.actions.find(a => a.id === actionId)
-        if (action) {
-            let err
-            switch (action.inputTypeConstraints.type) {
-                case Type.BooleanType:
-                    if (typeof input !== "boolean") err = Effect.fail(InvalidInputError("This action only accepts boolean inputs"));
-                    break;
-
-                case Type.IntType:
-                    if (!Number.isInteger(input)) err = Effect.fail(InvalidInputError("This action only accepts integer inputs"));
-                    break;
-
-                case Type.DoubleType:
-                    if (typeof input !== "number") err = Effect.fail(InvalidInputError("This action only accepts double inputs"));
-                    break;
-
-                case Type.StringType:
-                    if (typeof input !== "string") err = Effect.fail(InvalidInputError("This action only accepts string inputs"));
-                    break;
-
-                case Type.ColorType:
-                    if (typeof input === "object" && !isColor(input)) err = Effect.fail(InvalidInputError("This action only accepts RGB color inputs"));
-                    break;
-
-                case Type.VoidType:
-                    if (input !== undefined && input !== null) err = Effect.fail(InvalidInputError("This action does not accept any input"));
-                    break;
-            }
-            if (err) {
-                return err
-            } else {
-                return action.execute(input)
-            }
-        } else {
+        if (!action) {
             return Effect.fail(DeviceActionNotFound(`Action with id ${actionId} does not exist on device "${this.name}"`))
         }
+
+        let invalidInputErrorCause: string | undefined
+        switch (action.inputTypeConstraints.type) {
+            case Type.BooleanType:
+                if (typeof input !== "boolean") invalidInputErrorCause = "This action only accepts boolean inputs";
+                break;
+
+            case Type.IntType:
+                if (!Number.isInteger(input)) invalidInputErrorCause = "This action only accepts integer inputs";
+                break;
+
+            case Type.DoubleType:
+                if (typeof input !== "number") invalidInputErrorCause = "This action only accepts double inputs";
+                break;
+
+            case Type.StringType:
+                if (typeof input !== "string") invalidInputErrorCause = "This action only accepts string inputs";
+                break;
+
+            case Type.ColorType:
+                if (typeof input === "object" && !isColor(input)) invalidInputErrorCause = "This action only accepts RGB color inputs";
+                break;
+
+            case Type.VoidType:
+                if (input !== undefined && input !== null) invalidInputErrorCause = "This action does not accept any input";
+                break;
+        }
+        if (invalidInputErrorCause) {
+            return Effect.fail(InvalidInputError(invalidInputErrorCause))
+        }
+        return pipe(
+            // Don't ask me why validate wants a never, thanks TypeScript
+            action.inputTypeConstraints.validate(input as never),
+            Effect.flatMap(() => protocol.executeDeviceAction(this.address, actionId, input)),
+            Effect.mapError(err => {
+                switch (err.__brand) {
+                    case "InvalidValueError":
+                        return InvalidInputError(err.cause)
+                    case "CommunicationError":
+                        return DeviceActionError(`${err.message}\n${err.cause}`)
+                    default:
+                        return err
+                }
+            })
+        )
     }
 }
 
@@ -133,8 +147,6 @@ export interface DeviceAction<T> {
     readonly description?: string;
 
     readonly inputTypeConstraints: TypeConstraints<T>;
-
-    execute(input: T): Effect.Effect<void, InvalidInputError | DeviceActionError>;
 }
 class DeviceActionImpl<T> implements DeviceAction<T> {
     id: DeviceActionId;
@@ -147,12 +159,6 @@ class DeviceActionImpl<T> implements DeviceAction<T> {
         this.inputTypeConstraints = inputTypeConstraints
         this.description = description
     }
-    execute(input: T): Effect.Effect<void, InvalidInputError | DeviceActionError> {
-        // Don't ask me why validate wants a never, thanks TypeScript
-        return this.inputTypeConstraints.validate(input as never).pipe(Effect.mapError(err => InvalidInputError(err.cause)))
-        // TODO: actually execute the action on the device
-    }
-
 }
 export function DeviceAction<T>(id: DeviceActionId, name: string, inputTypeConstraints: TypeConstraints<T>, description?: string): DeviceAction<T> {
     return new DeviceActionImpl(id, name, inputTypeConstraints, description)

@@ -26,7 +26,7 @@ beforeEach(() => {
         checkDeviceStatus() {
             return Effect.succeed(DeviceStatus.Online)
         },
-    }
+    } as unknown as DeviceCommunicationProtocol
     pollingRateMillis = 10
     service = new DeviceStatusesServiceImpl(pollingRateMillis, devicesService, protocol)
 })
@@ -47,7 +47,7 @@ test("subscribeForDeviceStatusChanges lets subscriber receive updates approximat
             }
             return Effect.succeed(DeviceStatus.Online)
         },
-    }
+    } as unknown as DeviceCommunicationProtocol
     service.stop() // stops old service since it is going to be overwritten
     service = new DeviceStatusesServiceImpl(pollingRateMillis, devicesService, protocol)
 

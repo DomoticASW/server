@@ -43,7 +43,7 @@ export function NotificationsServiceSpy(existingEmail: Email): Spy<Notifications
         subscribeForDeviceOfflineNotifications: function (token: Token, deviceId: DeviceId): Effect<void, DeviceNotFoundError | UserNotFoundError | InvalidTokenError> {
           return succeed(null)
         },
-        unsubscribeForDeviceOfflineNotifications: function (token: Token, deviceId: DeviceId): Effect<void, DeviceNotFoundError | UserNotFoundError| InvalidTokenError> {
+        unsubscribeForDeviceOfflineNotifications: function (token: Token, deviceId: DeviceId): Effect<void, DeviceNotFoundError | UserNotFoundError | InvalidTokenError> {
           return succeed(null)
         },
         sendNotification: function (email: Email, message: string): Effect<void, UserNotFoundError> {
@@ -54,7 +54,7 @@ export function NotificationsServiceSpy(existingEmail: Email): Spy<Notifications
           return succeed(null)
         },
         setupNotificationProtocol(notificationProtocol: NotificationProtocol): void {
-          
+
         }
       }
     }
@@ -205,10 +205,7 @@ function DeviceActionMock(): DeviceAction<unknown> {
   return {
     id: DeviceActionId("actionId"),
     name: "",
-    inputTypeConstraints: NoneInt(),
-    execute: function (input: unknown): Effect<void, InvalidInputError | DeviceActionError> {
-      throw new Error("Function not implemented.");
-    }
+    inputTypeConstraints: NoneInt()
   }
 }
 
@@ -364,7 +361,7 @@ export function DeviceOfflineNotificationSubscriptionRepositorySpy(operation: Re
   let call = 0
   return {
     call: () => call,
-    get: function () : DeviceOfflineNotificationSubscriptionRepository {
+    get: function (): DeviceOfflineNotificationSubscriptionRepository {
       return {
         add: function (entity: DeviceOfflineNotificationSubscription): Effect<void, DuplicateIdError> {
           if (operation == RepoOperation.ADD && subscription.deviceId == entity.deviceId && subscription.email == entity.email) {

@@ -1,4 +1,4 @@
-import { InvalidValueError, InvalidInputError, DeviceActionError, DeviceNotFoundError, DeviceActionNotFound, DevicePropertyNotFound, DeviceGroupNameAlreadyInUseError, DeviceGroupNotFoundError, DeviceUnreachableError, NotDeviceEventError, DeviceAlreadyRegisteredError } from "../../../src/ports/devices-management/Errors.js"
+import { InvalidValueError, InvalidInputError, DeviceActionError, DeviceNotFoundError, DeviceActionNotFound, DevicePropertyNotFound, DeviceGroupNameAlreadyInUseError, DeviceGroupNotFoundError, DeviceUnreachableError, NotDeviceEventError, DeviceAlreadyRegisteredError, CommunicationError } from "../../../src/ports/devices-management/Errors.js"
 
 test("InvalidValueError construction", () => {
     const cause = "cause"
@@ -85,5 +85,13 @@ test("NotDeviceEventError construction", () => {
     const e = NotDeviceEventError(cause)
     expect(e.__brand).toBe("NotDeviceEventError")
     expect(e.message).toBe("The given event is not part of the device events")
+    expect(e.cause).toBe(cause)
+})
+
+test("CommunicationError construction", () => {
+    const cause = "cause"
+    const e = CommunicationError(cause)
+    expect(e.__brand).toBe("CommunicationError")
+    expect(e.message).toBe("Something went wrong while communicating with a device")
     expect(e.cause).toBe(cause)
 })

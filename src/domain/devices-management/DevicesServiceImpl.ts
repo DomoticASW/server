@@ -9,18 +9,16 @@ import { DeviceFactory } from "../../ports/devices-management/DeviceFactory.js";
 import { DeviceRepository } from "../../ports/devices-management/DeviceRepository.js";
 import { UsersService } from "../../ports/users-management/UserService.js";
 import { PermissionsService } from "../../ports/permissions-management/PermissionsService.js";
+import { DeviceCommunicationProtocol } from "../../ports/devices-management/DeviceCommunicationProtocol.js";
 
 export class DevicesServiceImpl implements DevicesService {
-    private repo: DeviceRepository
-    private deviceFactory: DeviceFactory
-    private usersService: UsersService
-    private permissionsService: PermissionsService
     private propertyUpdatesSubscribers: DevicePropertyUpdatesSubscriber[] = [];
-    constructor(repository: DeviceRepository, deviceFactory: DeviceFactory, usersService: UsersService, permissionsService: PermissionsService) {
-        this.repo = repository
-        this.deviceFactory = deviceFactory
-        this.usersService = usersService
-        this.permissionsService = permissionsService
+    constructor(
+        private repo: DeviceRepository,
+        private deviceFactory: DeviceFactory,
+        private usersService: UsersService,
+        private permissionsService: PermissionsService,
+        private deviceCommunicationProtocol: DeviceCommunicationProtocol) {
     }
 
     add(token: Token, deviceUrl: URL): Effect.Effect<DeviceId, DeviceAlreadyRegisteredError | DeviceUnreachableError | TokenError> {
@@ -129,12 +127,7 @@ export class DevicesServiceImpl implements DevicesService {
     executeAutomationAction(deviceId: DeviceId, actionId: DeviceActionId, input: unknown): Effect.Effect<void, InvalidInputError | DeviceActionError | DeviceActionNotFound | DeviceNotFoundError> {
         return Effect.Do.pipe(
             Effect.bind("device", () => this.findUnsafe(deviceId)),
-            Effect.let("action", ({ device }) => device.actions.find(a => a.id === actionId)),
-            Effect.bind("__", ({ action }) => Effect.if(action != undefined, {
-                onTrue: () => Effect.succeed(null),
-                onFalse: () => Effect.fail(DeviceActionNotFound())
-            })),
-            Effect.bind("___", ({ action }) => action!.execute(input))
+            Effect.bind("_", ({ device }) => device.executeAction(actionId, input, this.deviceCommunicationProtocol))
         )
     }
 

@@ -45,3 +45,11 @@ export type NotDeviceEventError = Brand<Error, "NotDeviceEventError">
 export function NotDeviceEventError(cause?: string): NotDeviceEventError {
     return { message: "The given event is not part of the device events", cause: cause, __brand: "NotDeviceEventError" }
 }
+export type CommunicationError = Brand<Error, "CommunicationError">
+export function CommunicationError(cause?: string): CommunicationError {
+    return {
+        __brand: "CommunicationError",
+        message: "Something went wrong while communicating with a device",
+        cause: cause
+    }
+}
