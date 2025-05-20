@@ -115,36 +115,40 @@ class TaskBuilderImpl extends ScriptBuilderImpl<Task> {
   build(): Effect<Task, InvalidScriptError> {
     const instructions: Array<Instruction> = []
     const nestedInstructions: Map<NodeRef, Array<Instruction>> = new Map()
-    let actualNode: NodeRef
-    let previousNode: NodeRef
+    let actualNode: ThenNodeRef
+    let previousNode: ThenNodeRef
     let superNode: NodeRef
+    let startingNode: NodeRef
     let i: number = 0
 
     this.nodeRefs.forEach(([ref, instruction]) => {
+      previousNode = actualNode
       i++
       switch(ref.__brand) {
         case "RootNodeRef":
-          actualNode = ref
           superNode = ref
-          if (previousNode && previousNode.__brand == "ThenNodeRef") {
-            instructions.push(IfInstruction(nestedInstructions.get(previousNode)!, this.ifRefs.get(previousNode)![1]))
+          startingNode = ref
+          if (previousNode) {
+            this.addOuterIfToInstructions(instructions, nestedInstructions, previousNode, ref);
           }
           instructions.push(instruction)
           break;
         case "ThenNodeRef":
-          previousNode = actualNode
           actualNode = ref
-          
-          if (previousNode.__brand == "ThenNodeRef") {
+
+          if (previousNode) {
             superNode = this.ifRefs.get(previousNode)![0]
           }
 
-          this.createIf(actualNode, superNode, nestedInstructions, previousNode);
+          if (actualNode == superNode) {
+            // If I'm the super node of the previous instruction I can create the If that comes before me
+            this.createIfsUntilStartingNodeIsReached(nestedInstructions, previousNode, actualNode)
+          }
           this.updateNestedInstructions(nestedInstructions, actualNode, instruction);
 
           if (this.nodeRefs.length == i) {
             //If I'm the last instruction of the script than I add myself to the If instructions and then can create the If on my superNode, then create all the Ifs that I am inside, if there are some
-            this.createIfAsLastInstruction(actualNode, superNode, nestedInstructions, instructions)
+            this.createIfAsLastInstruction(actualNode, superNode, nestedInstructions, instructions, startingNode)
           }
 
           break;
@@ -153,6 +157,26 @@ class TaskBuilderImpl extends ScriptBuilderImpl<Task> {
       
       return succeed(Task(TaskId(uuid.v4()), this.name, instructions))
     }
+
+  private addOuterIfToInstructions(
+    instructions: Instruction[], 
+    nestedInstructions: Map<NodeRef, Instruction[]>, 
+    previousNode: ThenNodeRef,
+    startingNode: NodeRef
+  ) {
+    const lastNode = this.createIfsUntilStartingNodeIsReached(nestedInstructions, previousNode, startingNode)
+    instructions.push(IfInstruction(nestedInstructions.get(lastNode)!, this.ifRefs.get(lastNode)![1]));
+  }
+
+  private createIfsUntilStartingNodeIsReached(nestedInstructions: Map<NodeRef, Instruction[]>, previousNode: ThenNodeRef, startingNode: NodeRef): ThenNodeRef {
+    const superNode = this.ifRefs.get(previousNode)![0]
+    this.updateNestedInstructions(nestedInstructions, superNode, IfInstruction(nestedInstructions.get(previousNode)!, this.ifRefs.get(previousNode)![1]))
+    if (superNode != startingNode && superNode.__brand == "ThenNodeRef") {
+      return this.createIfsUntilStartingNodeIsReached(nestedInstructions, superNode, startingNode)
+    }
+
+    return previousNode
+  }
 
   private updateNestedInstructions(nestedInstructions: Map<NodeRef, Instruction[]>, actualNode: NodeRef, instruction: Instruction) {
     let tempInstructions = nestedInstructions.get(actualNode);
@@ -165,29 +189,18 @@ class TaskBuilderImpl extends ScriptBuilderImpl<Task> {
     nestedInstructions.set(actualNode, tempInstructions);
   }
 
-  private createIf(
-    actualNode: ThenNodeRef,
-    superNode: NodeRef,
-    nestedInstructions: Map<NodeRef, Instruction[]>,
-    previousNode: NodeRef
-  ) {
-    if (actualNode == superNode && previousNode.__brand == "ThenNodeRef") {
-      // If I'm the super node of the previous instruction I can create the If that comes before me
-      this.updateNestedInstructions(nestedInstructions, actualNode, IfInstruction(nestedInstructions.get(previousNode)!, this.ifRefs.get(previousNode)![1]))
-    }
-  }
-
   private createIfAsLastInstruction(
     actualNode: ThenNodeRef,
     superNode: NodeRef,
     nestedInstructions: Map<NodeRef, Instruction[]>,
-    instructions: Array<Instruction>
+    instructions: Array<Instruction>,
+    startingNode: NodeRef
   ) {
     if (superNode.__brand == "ThenNodeRef") {
       this.updateNestedInstructions(nestedInstructions, superNode, IfInstruction(nestedInstructions.get(actualNode)!, this.ifRefs.get(actualNode)![1]));
-      this.createIfAsLastInstruction(superNode, this.ifRefs.get(superNode)![0], nestedInstructions, instructions)
+      this.createIfAsLastInstruction(superNode, this.ifRefs.get(superNode)![0], nestedInstructions, instructions, startingNode)
     } else {
-      instructions.push(IfInstruction(nestedInstructions.get(actualNode)!, this.ifRefs.get(actualNode)![1]))
+      this.addOuterIfToInstructions(instructions, nestedInstructions, actualNode, startingNode)
     }
   }
 

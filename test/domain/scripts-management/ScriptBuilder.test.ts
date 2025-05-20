@@ -175,8 +175,7 @@ test("An IfInstruction does not execute instructions if is evaluated to false", 
   
 })
 
-test("A big test with the if instruction", async () =>
-  {
+test("A big test with the if instruction", async () => {
   const notificationService = NotificationsServiceSpy(user.email)
   const builderAndConstant1 = taskBuilder.addCreateConstant(root, "number1 Constant", Type.IntType, 10)
   const newTaskBuilder1 = builderAndConstant1[0]
@@ -201,4 +200,31 @@ test("A big test with the if instruction", async () =>
 
   expect(Date.now()).toBeGreaterThan(start + 0.7 * 1000)
   expect(notificationService.call()).toBe(3)
+  expect(notificationService.getMessages()).toStrictEqual(["firstMessage", "secondMessage", "thirdMessage"])
+})
+
+test("Another big test with the if instruction", async () => {
+  const notificationService = NotificationsServiceSpy(user.email)
+  const builderAndConstant1 = taskBuilder.addCreateConstant(root, "number1 Constant", Type.IntType, 10)
+  const newTaskBuilder1 = builderAndConstant1[0]
+  const builderAndConstant2 = newTaskBuilder1.addCreateConstant(root, "number2 Constant", Type.IntType, 15)
+  const newTaskBuilder2 = builderAndConstant2[0]
+
+  const builderAndRef1 = newTaskBuilder2.addIf(root, builderAndConstant1[1], builderAndConstant2[1], NumberLOperator(), false)
+  const newTaskBuilder3 = builderAndRef1[0]
+  const thenNode1 = builderAndRef1[1]
+
+  const builderAndRef2 = newTaskBuilder3.addSendNotification(thenNode1, user.email, "firstMessage").addIf(thenNode1, builderAndConstant1[1], builderAndConstant2[1], NumberLOperator(), false)
+  const newTaskBuilder4 = builderAndRef2[0]
+  const thenNode2 = builderAndRef2[1]
+
+  const completeBuilder = newTaskBuilder4.addSendNotification(thenNode2, user.email, "secondMessage").addSendNotification(root, user.email, "thirdMessage")
+  // [C1 = 10, C2 = 15, If 10 < 15 then [Send, If 10 < 15 then [Send]], Send]
+
+  const task = await runPromise(completeBuilder.build())
+
+  await runPromise(task.execute(notificationService.get(), scriptsService, permissionsService, devicesService, token))
+
+  expect(notificationService.call()).toBe(3)
+  expect(notificationService.getMessages()).toStrictEqual(["firstMessage", "secondMessage", "thirdMessage"])
 })
