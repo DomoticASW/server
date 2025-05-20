@@ -3,7 +3,7 @@ import { TaskBuilder } from "../../../src/domain/scripts-management/ScriptBuilde
 import { DeviceMock, DevicesServiceSpy, NotificationsServiceSpy, PermissionsServiceSpy, ScriptsServiceSpy, SpyTaskMock, TokenMock, UserMock } from "../../utils/mocks.js"
 import { Type } from "../../../src/ports/devices-management/Types.js"
 import { ConstantInstruction } from "../../../src/domain/scripts-management/Instruction.js"
-import { NumberEOperator } from "../../../src/domain/scripts-management/Operators.js"
+import { NumberEOperator, NumberLOperator } from "../../../src/domain/scripts-management/Operators.js"
 import { NodeRef } from "../../../src/domain/scripts-management/Refs.js"
 import { InvalidScriptError } from "../../../src/ports/scripts-management/Errors.js"
 
@@ -143,6 +143,7 @@ test("An IfInstruction can be added", async () => {
   const taskBuilderComplete = taskBuilderIf.addWait(ifRef, 0.5)
 
   const task = await runPromise(taskBuilderComplete.build())
+  // [C1 = 10, C2 = 10, If C1 == C2 then [Wait]]
 
   const start = Date.now()
 
@@ -164,10 +165,40 @@ test("An IfInstruction does not execute instructions if is evaluated to false", 
 
   const taskBuilderCompleteNegate = taskBuilderIfNegate.addWait(negateIfRef, 0.5)
   const taskNegate = await runPromise(taskBuilderCompleteNegate.build())
+  // [C1 = 10, C2 = 10, If C1 != C2 then [Wait]]
 
   const startNegate = Date.now()
   
   await runPromise(taskNegate.execute(notificationService, scriptsService, permissionsService, devicesService, token))
   
   expect(Date.now()).toBeLessThan(startNegate + 0.5 * 1000)
+  
+})
+
+test("A big test with the if instruction", async () =>
+  {
+  const notificationService = NotificationsServiceSpy(user.email)
+  const builderAndConstant1 = taskBuilder.addCreateConstant(root, "number1 Constant", Type.IntType, 10)
+  const newTaskBuilder1 = builderAndConstant1[0]
+  const builderAndConstant2 = newTaskBuilder1.addCreateConstant(root, "number2 Constant", Type.IntType, 15)
+  const newTaskBuilder2 = builderAndConstant2[0]
+
+  const builderAndRef1 = newTaskBuilder2.addWait(root, 0.5).addIf(root, builderAndConstant1[1], builderAndConstant2[1], NumberLOperator(), false)
+  const newTaskBuilder3 = builderAndRef1[0]
+  const thenNode1 = builderAndRef1[1]
+
+  const builderAndRef2 = newTaskBuilder3.addSendNotification(thenNode1, user.email, "firstMessage").addIf(thenNode1, builderAndConstant1[1], builderAndConstant2[1], NumberLOperator(), true)
+  const newTaskBuilder4 = builderAndRef2[0]
+  const thenNode2 = builderAndRef2[1]
+
+  const completeBuilder = newTaskBuilder4.addWait(thenNode2, 0.3).addSendNotification(thenNode2, user.email, "notFired").addSendNotification(thenNode1, user.email, "secondMessage").addWait(thenNode1, 0.2).addSendNotification(root, user.email, "thirdMessage")
+  // [C1 = 10, C2 = 15, Wait, If 10 < 15 then [Send, If 10 >= 15 then [Wait, Send], Send, Wait], Send]
+
+  const task = await runPromise(completeBuilder.build())
+  const start = Date.now()
+
+  await runPromise(task.execute(notificationService.get(), scriptsService, permissionsService, devicesService, token))
+
+  expect(Date.now()).toBeGreaterThan(start + 0.7 * 1000)
+  expect(notificationService.call()).toBe(3)
 })

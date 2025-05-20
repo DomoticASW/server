@@ -31,7 +31,7 @@ abstract class ScriptBuilderImpl<S = Task | Automation> implements ScriptBuilder
     protected name: string,
     protected nodeRefs: Array<[NodeRef, Instruction]>,
     protected constantRefs: Map<ConstantRef, ConstantInstruction<unknown>>,
-    protected ifRefs: Map<NodeRef, [NodeRef, Condition<unknown>]>
+    protected ifRefs: Map<ThenNodeRef, [NodeRef, Condition<unknown>]>
   ) {}
 
   private addIfNode<T>(ref: NodeRef, thenNodeRef: ThenNodeRef, left: ConstantRef, right: ConstantRef, operator: ConditionOperator<T>, negate: boolean): ScriptBuilder<S> {
@@ -115,7 +115,6 @@ class TaskBuilderImpl extends ScriptBuilderImpl<Task> {
   build(): Effect<Task, InvalidScriptError> {
     const instructions: Array<Instruction> = []
     const nestedInstructions: Map<NodeRef, Array<Instruction>> = new Map()
-    let tempInstructions: Array<Instruction> | undefined
     let actualNode: NodeRef
     let previousNode: NodeRef
     let superNode: NodeRef
@@ -126,48 +125,76 @@ class TaskBuilderImpl extends ScriptBuilderImpl<Task> {
       switch(ref.__brand) {
         case "RootNodeRef":
           actualNode = ref
+          superNode = ref
+          if (previousNode && previousNode.__brand == "ThenNodeRef") {
+            instructions.push(IfInstruction(nestedInstructions.get(previousNode)!, this.ifRefs.get(previousNode)![1]))
+          }
           instructions.push(instruction)
           break;
         case "ThenNodeRef":
           previousNode = actualNode
           actualNode = ref
-          tempInstructions = nestedInstructions.get(actualNode)
-
-          if (tempInstructions) {
-            tempInstructions.push(instruction)
-          } else {
-            tempInstructions = [instruction]
-          }
-          nestedInstructions.set(actualNode, tempInstructions)
-
-          superNode = this.ifRefs.get(actualNode)![0]
-
-          // If I'm the super node of the previous instruction I can create the If that comes before me
-          if(actualNode == superNode) {
-            instructions.push(IfInstruction(nestedInstructions.get(previousNode)!, this.ifRefs.get(superNode)![1]))
-          } else if (this.nodeRefs.length == i){
-            //If I'm the last instruction of the script than I can create the If
-            instructions.push(IfInstruction(tempInstructions, this.ifRefs.get(actualNode)![1]))
-          }
           
-          break;
-      }
-    });
+          if (previousNode.__brand == "ThenNodeRef") {
+            superNode = this.ifRefs.get(previousNode)![0]
+          }
 
-    return succeed(Task(TaskId(uuid.v4()), this.name, instructions))
+          this.createIf(actualNode, superNode, nestedInstructions, previousNode);
+          this.updateNestedInstructions(nestedInstructions, actualNode, instruction);
+
+          if (this.nodeRefs.length == i) {
+            //If I'm the last instruction of the script than I add myself to the If instructions and then can create the If on my superNode, then create all the Ifs that I am inside, if there are some
+            this.createIfAsLastInstruction(actualNode, superNode, nestedInstructions, instructions)
+          }
+
+          break;
+        }
+      });
+      
+      return succeed(Task(TaskId(uuid.v4()), this.name, instructions))
+    }
+
+  private updateNestedInstructions(nestedInstructions: Map<NodeRef, Instruction[]>, actualNode: NodeRef, instruction: Instruction) {
+    let tempInstructions = nestedInstructions.get(actualNode);
+
+    if (tempInstructions) {
+      tempInstructions.push(instruction);
+    } else {
+      tempInstructions = [instruction];
+    }
+    nestedInstructions.set(actualNode, tempInstructions);
   }
 
-  private updateSuper(superNodeMap: Map<NodeRef, NodeRef>, actualNode: NodeRef, superNode: NodeRef): Map<NodeRef, NodeRef> {
-    if (!superNodeMap.get(actualNode)) {
-      superNodeMap.set(actualNode, superNode)
+  private createIf(
+    actualNode: ThenNodeRef,
+    superNode: NodeRef,
+    nestedInstructions: Map<NodeRef, Instruction[]>,
+    previousNode: NodeRef
+  ) {
+    if (actualNode == superNode && previousNode.__brand == "ThenNodeRef") {
+      // If I'm the super node of the previous instruction I can create the If that comes before me
+      this.updateNestedInstructions(nestedInstructions, actualNode, IfInstruction(nestedInstructions.get(previousNode)!, this.ifRefs.get(previousNode)![1]))
     }
-    return superNodeMap
+  }
+
+  private createIfAsLastInstruction(
+    actualNode: ThenNodeRef,
+    superNode: NodeRef,
+    nestedInstructions: Map<NodeRef, Instruction[]>,
+    instructions: Array<Instruction>
+  ) {
+    if (superNode.__brand == "ThenNodeRef") {
+      this.updateNestedInstructions(nestedInstructions, superNode, IfInstruction(nestedInstructions.get(actualNode)!, this.ifRefs.get(actualNode)![1]));
+      this.createIfAsLastInstruction(superNode, this.ifRefs.get(superNode)![0], nestedInstructions, instructions)
+    } else {
+      instructions.push(IfInstruction(nestedInstructions.get(actualNode)!, this.ifRefs.get(actualNode)![1]))
+    }
   }
 
   protected copy(
     nodeRefs: Array<[NodeRef, Instruction]>,
     constantRefs: Map<ConstantRef, ConstantInstruction<unknown>>,
-    ifRefs: Map<NodeRef, [NodeRef, Condition<unknown>]>
+    ifRefs: Map<ThenNodeRef, [NodeRef, Condition<unknown>]>
   ): TaskBuilderImpl {
     return new TaskBuilderImpl(this.name, Array.from(nodeRefs), new Map(constantRefs), new Map(ifRefs))
   }
@@ -180,7 +207,7 @@ class AutomationBuilderImpl extends ScriptBuilderImpl<Automation> {
     private trigger: Trigger,
     nodeRefs: Array<[NodeRef, Instruction]>,
     constantRefs: Map<ConstantRef, ConstantInstruction<unknown>>,
-    ifRefs: Map<NodeRef, [NodeRef, Condition<unknown>]>
+    ifRefs: Map<ThenNodeRef, [NodeRef, Condition<unknown>]>
   ) {
     super(name, nodeRefs, constantRefs, ifRefs)
   }
@@ -192,7 +219,7 @@ class AutomationBuilderImpl extends ScriptBuilderImpl<Automation> {
   protected copy(
     nodeRefs: Array<[NodeRef, Instruction]>,
     constantRefs: Map<ConstantRef, ConstantInstruction<unknown>>,
-    ifRefs: Map<NodeRef, [NodeRef, Condition<unknown>]>
+    ifRefs: Map<ThenNodeRef, [NodeRef, Condition<unknown>]>
   ): AutomationBuilderImpl {
     return new AutomationBuilderImpl(this.name, this.trigger, Array.from(nodeRefs), new Map(constantRefs), new Map(ifRefs))
   }
