@@ -1,8 +1,8 @@
-import { Effect } from "effect";
+import { Effect, pipe } from "effect";
 import { Email } from "../../domain/users-management/User.js";
 import { DuplicateIdError, NotFoundError } from "../../ports/Repository.js";
 import mongoose from "mongoose";
-import { orDie, tryPromise } from "effect/Effect";
+import { flatMap, orDie, tryPromise } from "effect/Effect";
 import { TaskLists } from "../../domain/permissions-management/TaskLists.js";
 import { TaskId } from "../../domain/scripts-management/Script.js";
 import { TaskListsRepository } from "../../ports/permissions-management/TaskListsRepository.js";
@@ -39,27 +39,33 @@ export class TaskListsRepositoryMongoAdapter implements TaskListsRepository {
   }
 
   update(entity: TaskLists): Effect.Effect<void, NotFoundError> {
-    return tryPromise({
-      try: async () => {
-        const taskLists = await this.tasks.findByIdAndUpdate(entity.id, { blacklist: entity.blacklist, whitelist: entity.whitelist }, { new: true });
-        if (!taskLists) {
-          throw NotFoundError();
+    const promise = async () => await this.tasks.findByIdAndUpdate(entity.id, { blacklist: entity.blacklist, whitelist: entity.whitelist }, { new: true });
+    return pipe(
+      tryPromise(promise),
+      orDie,
+      flatMap(taskLists => {
+        if (taskLists) {
+          return Effect.succeed(null);
+        } else {
+          return Effect.fail(NotFoundError());
         }
-      },
-      catch: () => NotFoundError(),
-    }).pipe(orDie);
+      })
+    )
   }
 
   remove(id: TaskId): Effect.Effect<void, NotFoundError> {
-    return tryPromise({
-      try: async () => {
-        const taskLists = await this.tasks.findByIdAndDelete(id);
-        if (!taskLists) {
-          throw NotFoundError();
+    const promise = async () => await this.tasks.findByIdAndDelete(id);
+    return pipe(
+      tryPromise(promise),
+      orDie,
+      flatMap(taskLists => {
+        if (taskLists) {
+          return Effect.succeed(null);
+        } else {
+          return Effect.fail(NotFoundError());
         }
-      },
-      catch: () => NotFoundError(),
-    }).pipe(orDie);
+      })
+    )
   }
 
   getAll(): Effect.Effect<Iterable<TaskLists>, never> {
@@ -70,17 +76,18 @@ export class TaskListsRepositoryMongoAdapter implements TaskListsRepository {
   }
 
   find(id: TaskId): Effect.Effect<TaskLists, NotFoundError> {
-    const promise = this.tasks.findById(id);
-    return tryPromise({
-      try: async () => {
-        const taskLists = await promise;
-        if (!taskLists) {
-          throw NotFoundError();
+    const promise = async () => this.tasks.findById(id);
+    return pipe(
+      tryPromise(promise),
+      orDie,
+      flatMap(taskLists => {
+        if (taskLists) {
+          return Effect.succeed(this.toEntity(taskLists));
+        } else {
+          return Effect.fail(NotFoundError());
         }
-        return this.toEntity(taskLists);
-      },
-      catch: () => NotFoundError(),
-    }).pipe(orDie);
+      })
+    )
   }
 
   toEntity(taskLists: TaskListsSchema): TaskLists {
