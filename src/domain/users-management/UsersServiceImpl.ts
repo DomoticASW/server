@@ -9,7 +9,6 @@ import { UsersService } from "../../ports/users-management/UsersService.js";
 import { UserRepositoryAdapter } from "../../adapters/users-management/UserRepositoryAdapter.js";
 import { RegistrationRequestRepositoryAdapter } from "../../adapters/users-management/RegistrationRequestRepositoryAdapter.js";
 import { EmailAlreadyInUseError, UserNotFoundError, TokenError, InvalidTokenError, InvalidCredentialsError, InvalidTokenFormatError, UnauthorizedError, } from "../../ports/users-management/Errors.js";
-import { NotFoundError } from "../../ports/Repository.js";
 
 export class UsersServiceImpl implements UsersService {
     
