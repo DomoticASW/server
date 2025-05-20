@@ -57,20 +57,6 @@ export class PermissionsServiceImpl implements PermissionsService {
         failure: "DuplicateIdError",
         onFailure: () => Effect.succeed(null)
       }),
-      Effect.mapError(e => {
-          switch (e.__brand) {
-              case "DeviceNotFoundError":
-                  return DeviceNotFoundError(e.cause)
-              case "UserNotFoundError":
-                  return UserNotFoundError(e.cause)
-              case "UnauthorizedError":
-                  return UnauthorizedError(e.cause)
-              case "InvalidTokenError":
-                  return InvalidTokenError(e.cause)
-              default:
-                  return e
-          }
-      }),
       Effect.asVoid
     )
   }
@@ -95,18 +81,6 @@ export class PermissionsServiceImpl implements PermissionsService {
         failure: "NotFoundError",
         onFailure: () => Effect.succeed(null)
       }),
-      Effect.mapError(e => {
-          switch (e.__brand) {
-              case "UserNotFoundError":
-                  return UserNotFoundError(e.cause)
-              case "UnauthorizedError":
-                  return UnauthorizedError(e.cause)
-              case "InvalidTokenError":
-                  return InvalidTokenError(e.cause)
-              default:
-                  return e
-          }
-      }),
       Effect.asVoid
     )
   }
@@ -118,8 +92,6 @@ export class PermissionsServiceImpl implements PermissionsService {
           switch (e.__brand) {
               case "NotFoundError":
                 return PermissionError(e.cause)
-              case "InvalidTokenError":
-                  return InvalidTokenError(e.cause)
               default:
                   return e
           }
@@ -139,12 +111,8 @@ export class PermissionsServiceImpl implements PermissionsService {
       ),
       Effect.mapError(e => {
           switch (e.__brand) {
-              case "PermissionError":
-                return PermissionError(e.cause)
               case "NotFoundError":
                   return TaskNotFoundError(e.cause)
-              case "InvalidTokenError":
-                  return InvalidTokenError(e.cause)
               default:
                   return e
           }
@@ -165,12 +133,8 @@ export class PermissionsServiceImpl implements PermissionsService {
       ),
       Effect.mapError(e => {
           switch (e.__brand) {
-              case "PermissionError":
-                return PermissionError(e.cause)
               case "NotFoundError":
                   return ScriptNotFoundError(e.cause)
-              case "InvalidTokenError":
-                  return InvalidTokenError(e.cause)
               default:
                   return e
           }
@@ -203,16 +167,6 @@ export class PermissionsServiceImpl implements PermissionsService {
         failure: "NotFoundError",
         onFailure: () => Effect.fail(ScriptNotFoundError())
       }),
-      Effect.mapError(e => {
-          switch (e.__brand) {
-              case "UnauthorizedError":
-                  return UnauthorizedError(e.cause)
-              case "InvalidTokenError":
-                  return InvalidTokenError(e.cause)
-              default:
-                  return e
-          }
-      }),
       Effect.map(() => id)
     )
   }
@@ -239,16 +193,6 @@ export class PermissionsServiceImpl implements PermissionsService {
       Effect.catch("__brand", {
         failure: "NotFoundError",
         onFailure: () => Effect.fail(ScriptNotFoundError())
-      }),
-      Effect.mapError(e => {
-          switch (e.__brand) {
-              case "UnauthorizedError":
-                  return UnauthorizedError(e.cause)
-              case "InvalidTokenError":
-                  return InvalidTokenError(e.cause)
-              default:
-                  return e
-          }
       }),
       Effect.map(() => id)
     )
@@ -278,16 +222,6 @@ export class PermissionsServiceImpl implements PermissionsService {
         failure: "NotFoundError",
         onFailure: () => Effect.fail(ScriptNotFoundError())
       }),
-      Effect.mapError(e => {
-          switch (e.__brand) {
-              case "UnauthorizedError":
-                  return UnauthorizedError(e.cause)
-              case "InvalidTokenError":
-                  return InvalidTokenError(e.cause)
-              default:
-                  return e
-          }
-      }),
       Effect.asVoid
     )
   }
@@ -314,16 +248,6 @@ export class PermissionsServiceImpl implements PermissionsService {
       Effect.catch("__brand", {
         failure: "NotFoundError",
         onFailure: () => Effect.fail(ScriptNotFoundError())
-      }),
-      Effect.mapError(e => {
-          switch (e.__brand) {
-              case "UnauthorizedError":
-                  return UnauthorizedError(e.cause)
-              case "InvalidTokenError":
-                  return InvalidTokenError(e.cause)
-              default:
-                  return e
-          }
       }),
       Effect.asVoid
     )
@@ -352,16 +276,6 @@ export class PermissionsServiceImpl implements PermissionsService {
         failure: "NotFoundError",
         onFailure: () => Effect.fail(ScriptNotFoundError())
       }),
-      Effect.mapError(e => {
-          switch (e.__brand) {
-              case "UnauthorizedError":
-                  return UnauthorizedError(e.cause)
-              case "InvalidTokenError":
-                  return InvalidTokenError(e.cause)
-              default:
-                  return e
-          }
-      }),
       Effect.asVoid
     )
   }
@@ -388,16 +302,6 @@ export class PermissionsServiceImpl implements PermissionsService {
       Effect.catch("__brand", {
         failure: "NotFoundError",
         onFailure: () => Effect.fail(ScriptNotFoundError())
-      }),
-      Effect.mapError(e => {
-          switch (e.__brand) {
-              case "UnauthorizedError":
-                  return UnauthorizedError(e.cause)
-              case "InvalidTokenError":
-                  return InvalidTokenError(e.cause)
-              default:
-                  return e
-          }
       }),
       Effect.asVoid
     )
