@@ -160,6 +160,13 @@ describe("UsersServiceImpl", () => {
         expect(user.email).toEqual(testEmail);
     });
 
+    test("getUserDataUnsafe - should return user data without verifying token", async () => {
+        await Effect.runPromise(usersRepo.add(User(testNickname, testEmail, testPassword, Role.User)));
+
+        const user = await Effect.runPromise(usersService.getUserDataUnsafe(testEmail));
+        expect(user.email).toEqual(testEmail);
+    });
+
     test("login - should return token for valid credentials", async () => {
         await Effect.runPromise(usersRepo.add(User(testNickname, testEmail, testPassword, Role.User)));
         
