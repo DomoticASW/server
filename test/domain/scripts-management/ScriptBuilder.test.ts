@@ -140,7 +140,7 @@ test("An IfInstruction can be added", async () => {
   const taskBuilderIf = builderAndRef[0]
   const ifRef = builderAndRef[1]
 
-  const taskBuilderComplete = taskBuilderIf.addWait(ifRef, 0.5)
+  const taskBuilderComplete = taskBuilderIf.addWait(ifRef, 0.2)
 
   const task = await runPromise(taskBuilderComplete.build())
   // [C1 = 10, C2 = 10, If C1 == C2 then [Wait]]
@@ -149,7 +149,7 @@ test("An IfInstruction can be added", async () => {
 
   await runPromise(task.execute(notificationService, scriptsService, permissionsService, devicesService, token))
 
-  expect(Date.now()).toBeGreaterThan(start + 0.5 * 1000)
+  expect(Date.now()).toBeGreaterThan(start + 0.2 * 1000)
 })
 
 test("An IfInstruction does not execute instructions if is evaluated to false", async () => {
@@ -172,7 +172,6 @@ test("An IfInstruction does not execute instructions if is evaluated to false", 
   await runPromise(taskNegate.execute(notificationService, scriptsService, permissionsService, devicesService, token))
   
   expect(Date.now()).toBeLessThan(startNegate + 0.5 * 1000)
-  
 })
 
 test("A big test with the if instruction", async () => {
