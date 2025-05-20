@@ -9,6 +9,7 @@ import { UsersService } from "../../ports/users-management/UserService.js";
 import { UserRepositoryAdapter } from "../../adapters/users-management/UserRepositoryAdapter.js";
 import { RegistrationRequestRepositoryAdapter } from "../../adapters/users-management/RegistrationRequestRepositoryAdapter.js";
 import { EmailAlreadyInUseError, UserNotFoundError, TokenError, InvalidTokenError, InvalidCredentialsError, InvalidTokenFormatError, UnauthorizedError, } from "../../ports/users-management/Errors.js";
+import { NotFoundError } from "../../ports/Repository.js";
 
 export class UsersServiceImpl implements UsersService {
     
@@ -131,6 +132,13 @@ export class UsersServiceImpl implements UsersService {
             this.verifyToken(token),
             Eff.flatMap(() => this.userRepository.find(token.userEmail)),
             Eff.mapError(() => InvalidTokenError())
+        );
+    }
+
+    getUserDataUnsafe(email: Email): Effect<User, UserNotFoundError> {
+        return pipe(
+            this.userRepository.find(email),
+            Eff.mapError(() => UserNotFoundError())
         );
     }
     
