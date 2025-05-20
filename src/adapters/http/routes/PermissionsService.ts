@@ -11,7 +11,7 @@ import { Email } from "../../../domain/users-management/User.js";
 export function registerDevicesServiceRoutes(app: express.Express, service: PermissionsService, usersService: UsersService) {
   
   // add to user device permission
-  app.post('/api/permissions/user/device/:id', async (req, res) => {
+  app.post('/api/permissions/user-device/:id', async (req, res) => {
     const key = "email"
     const response = await Effect.Do.pipe(
         Effect.bind("token", () => deserializeToken(req, usersService)),
@@ -36,7 +36,7 @@ export function registerDevicesServiceRoutes(app: express.Express, service: Perm
   });
 
   // remove from user device permission
-  app.delete('/api/permissions/user/device/:id', async (req, res) => {
+  app.delete('/api/permissions/user-device/:id', async (req, res) => {
     const key = "email"
     const response = await Effect.Do.pipe(
         Effect.bind("token", () => deserializeToken(req, usersService)),
@@ -61,7 +61,7 @@ export function registerDevicesServiceRoutes(app: express.Express, service: Perm
   });
 
   // can execute action on device
-  app.get('/api/permissions/can/device/:id', async (req, res) => {
+  app.get('/api/permissions/canExecute/device/:id', async (req, res) => {
     const response = await Effect.Do.pipe(
         Effect.bind("token", () => deserializeToken(req, usersService)),
         Effect.bind("_", ({ token }) => service.canExecuteActionOnDevice(token, DeviceId(req.params.id))),
@@ -73,7 +73,7 @@ export function registerDevicesServiceRoutes(app: express.Express, service: Perm
   });
 
   // can execute task
-  app.get('/api/permissions/can/task/:id', async (req, res) => {
+  app.get('/api/permissions/canExecute/task/:id', async (req, res) => {
       const response = await Effect.Do.pipe(
         Effect.bind("token", () => deserializeToken(req, usersService)),
         Effect.bind("_", ({ token }) => service.canExecuteTask(token, TaskId(req.params.id))),
@@ -89,7 +89,7 @@ export function registerDevicesServiceRoutes(app: express.Express, service: Perm
   });
 
    // can edit
-   app.get('/api/permissions/can/edit/:id', async (req, res) => {
+   app.get('/api/permissions/canEdit/:id', async (req, res) => {
     const response = await Effect.Do.pipe(
         Effect.bind("token", () => deserializeToken(req, usersService)),
         Effect.bind("_", ({ token }) => service.canEdit(token, TaskId(req.params.id))),
