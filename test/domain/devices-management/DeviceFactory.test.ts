@@ -3,6 +3,35 @@ import { DeviceCommunicationProtocol } from "../../../src/ports/devices-manageme
 import { DeviceFactoryImpl } from "../../../src/domain/devices-management/DeviceFactoryImpl.js";
 import { DeviceStatus, Device, DeviceId } from "../../../src/domain/devices-management/Device.js";
 import { CommunicationError, DeviceActionError, DeviceUnreachableError } from "../../../src/ports/devices-management/Errors.js";
+import { DeviceFactory } from "../../../src/ports/devices-management/DeviceFactory.js";
+
+let address: URL
+let commProtocol: DeviceCommunicationProtocolSpy
+let exampleDevice: Device
+let factory: DeviceFactory
+
+beforeEach(() => {
+    address = new URL("deviceurl:8080")
+    exampleDevice = Device(DeviceId("1"), "device", address, DeviceStatus.Online, [], [], [])
+    commProtocol = new DeviceCommunicationProtocolSpy(exampleDevice)
+    factory = new DeviceFactoryImpl(commProtocol)
+})
+
+test("DeviceFactory creates a device by reaching the given address through the communication protocol", () => {
+    const device = factory.create(address).pipe(Effect.runSync)
+    expect(device.address).toEqual(address)
+    expect(device).toEqual(exampleDevice)
+    expect(commProtocol.callsToRegister).toBe(1)
+    expect(commProtocol.deviceAddress).toEqual(address)
+})
+
+test("DeviceFactory maps DeviceUnreachableErrors from CommunicationProtocol into DeviceUnreachableErrors", () => {
+    const failingProtocol = {
+        register: () => Effect.fail(CommunicationError())
+    } as unknown as DeviceCommunicationProtocol
+    factory = new DeviceFactoryImpl(failingProtocol)
+    expect(() => factory.create(address).pipe(Effect.runSync)).toThrow("DeviceUnreachableError")
+})
 
 class DeviceCommunicationProtocolSpy implements DeviceCommunicationProtocol {
     callsToRegister: number = 0
@@ -19,15 +48,3 @@ class DeviceCommunicationProtocolSpy implements DeviceCommunicationProtocol {
         throw new Error("Method not implemented.");
     }
 }
-
-test("DeviceFactory creates a device by reaching the given address through the communication protocol", () => {
-    const address = new URL("deviceurl:8080")
-    const expectedDevice = Device(DeviceId("1"), "device", address, DeviceStatus.Online, [], [], [])
-    const commProtocol = new DeviceCommunicationProtocolSpy(expectedDevice)
-    const factory = new DeviceFactoryImpl(commProtocol)
-    const device = factory.create(address).pipe(Effect.runSync)
-    expect(device.address).toEqual(address)
-    expect(device).toEqual(expectedDevice)
-    expect(commProtocol.callsToRegister).toBe(1)
-    expect(commProtocol.deviceAddress).toEqual(address)
-})

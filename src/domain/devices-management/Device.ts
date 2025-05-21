@@ -100,6 +100,7 @@ class DeviceImpl implements Device {
                 switch (err.__brand) {
                     case "InvalidValueError":
                         return InvalidInputError(err.cause)
+                    case "DeviceUnreachableError":
                     case "CommunicationError":
                         return DeviceActionError(`${err.message}\n${err.cause}`)
                     default:
