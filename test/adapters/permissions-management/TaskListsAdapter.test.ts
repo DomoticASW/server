@@ -1,6 +1,6 @@
 import mongoose from "mongoose"
 import { Effect } from "effect"
-import { TaskId } from "../../../src/domain/scripts/Script.js"
+import { TaskId } from "../../../src/domain/scripts-management/Script.js"
 import { TaskListsRepository } from "../../../src/ports/permissions-management/TaskListsRepository.js"
 import { TaskListsMongoAdapter } from "../../../src/adapters/permissions-management/TaskListsAdapter.js"
 import { TaskLists } from "../../../src/domain/permissions-management/TaskLists.js"

@@ -5,7 +5,7 @@ import mongoose from "mongoose";
 import { orDie, tryPromise } from "effect/Effect";
 import { EditList } from "../../domain/permissions-management/EditList.js";
 import { EditListRepository } from "../../ports/permissions-management/EditListRepository.js";
-import { ScriptId } from "../../domain/scripts/Script.js";
+import { ScriptId, TaskId } from "../../domain/scripts-management/Script.js";
 
 export interface EditListSchema {
   _id: string,
@@ -129,6 +129,6 @@ export class EditListMongoAdapter implements EditListRepository {
   }
 
   toEntity(editList: EditListSchema): EditList {
-    return EditList(ScriptId(editList._id, "Task"), editList.users.map(user => Email(user)));
+    return EditList(TaskId(editList._id), editList.users.map(user => Email(user)));
   }
 }

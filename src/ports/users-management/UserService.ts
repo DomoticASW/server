@@ -8,7 +8,7 @@ export interface UsersService {
     approveRegistrationRequest(token: Token, email: Email): Effect<void, UserNotFoundError | TokenError>;
     rejectRegistrationRequest(token: Token, email: Email): Effect<void, UserNotFoundError | TokenError>;
     removeUser(token: Token, email: Email): Effect<void, UserNotFoundError | TokenError>;
-    updateUserData(token: Token, nickname?: Nickname, password?: PasswordHash): Effect<void, UserNotFoundError | TokenError>;
+    updateUserData(token: Token, nickname?: Nickname, password?: PasswordHash): Effect<void, UserNotFoundError | EmailAlreadyInUseError | TokenError>;
     getAllUsers(token: Token): Effect<Iterable<User>, InvalidTokenError>;
     getUserData(token: Token): Effect<User, InvalidTokenError>;
     getUserDataUnsafe(email: Email): Effect<User, UserNotFoundError>;

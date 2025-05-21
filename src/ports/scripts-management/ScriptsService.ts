@@ -3,13 +3,8 @@ import { Automation, AutomationId, Task, TaskId } from "../../domain/scripts-man
 import { Token } from "../../domain/users-management/Token.js";
 import { InvalidTokenError } from "../users-management/Errors.js";
 import { AutomationNameAlreadyInUse, InvalidAutomationError, InvalidTaskError, ScriptNotFoundError, TaskNameAlreadyInUse } from "./Errors.js";
-<<<<<<< HEAD:src/ports/scripts/ScriptsService.ts
-import { TaskBuilder } from "../../domain/scripts/ScriptBuilder.js";
-import { PermissionError } from "../permissions-management/Errors.js";
-=======
 import { TaskBuilder } from "../../domain/scripts-management/ScriptBuilder.js";
-import { PermissionError } from "../permissions/Errors.js";
->>>>>>> a9fd43e (chore: changed names of packages of scripts into scripts-management):src/ports/scripts-management/ScriptsService.ts
+import { PermissionError } from "../permissions-management/Errors.js";
 
 export interface ScriptsService {
   findTask(token: Token, taskId: TaskId): Effect<Task, InvalidTokenError | ScriptNotFoundError>

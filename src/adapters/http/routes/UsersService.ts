@@ -143,9 +143,17 @@ export function registerUsersServiceRoutes(app: express.Application, service: Us
             Effect.bind("_", ({ token, nickname, password }) => service.updateUserData(token, nickname, password)),
             Effect.map(() => Response(StatusCodes.OK)),
             Effect.catch("__brand", {
+                failure: "InvalidTokenError",
+                onFailure: (err) => Effect.succeed(Response(StatusCodes.NOT_FOUND, err))
+            }),
+            Effect.catch("__brand", {
+                failure: "EmailAlreadyInUseError",
+                onFailure: (err) => Effect.succeed(Response(StatusCodes.CONFLICT, err))
+            }),
+            Effect.catch("__brand", {
                 failure: "UserNotFoundError",
                 onFailure: (err) => Effect.succeed(Response(StatusCodes.NOT_FOUND, err))
-            }),            
+            }), 
             handleCommonErrors,
             Effect.runPromise
         )
