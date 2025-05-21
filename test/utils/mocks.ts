@@ -142,7 +142,7 @@ export function PermissionsServiceSpy(userToken: Token = TokenMock("email")): Sp
         },
         canExecuteTask: function (token: Token, taskId: TaskId): Effect<void, PermissionError | InvalidTokenError> {
           call++
-          return token == userToken ? succeed(null) : fail(PermissionError())
+          return token == userToken ? succeed(true) : fail(PermissionError())
         },
         canEdit: function (token: Token, scriptId: ScriptId): Effect<void, PermissionError | InvalidTokenError> {
           throw new Error("Function not implemented.");
