@@ -2,7 +2,7 @@ import { Effect } from "effect"
 import { Device, DeviceEvent, DeviceId, DeviceStatus, DeviceProperty, DeviceAction, DeviceActionId, DevicePropertyId } from "../../../src/domain/devices-management/Device.js"
 import { Enum, IntRange, NoneBoolean, NoneColor, NoneDouble, NoneInt, NoneString, NoneVoid, TypeConstraints } from "../../../src/domain/devices-management/Types.js"
 import { DeviceCommunicationProtocol } from "../../../src/ports/devices-management/DeviceCommunicationProtocol.js"
-import { CommunicationError } from "../../../src/ports/devices-management/Errors.js"
+import { CommunicationError, DeviceUnreachableError } from "../../../src/ports/devices-management/Errors.js"
 
 interface MakeDeviceParameters {
     id?: string,
@@ -69,6 +69,9 @@ class DeviceCommunicationProtocolSpy implements DeviceCommunicationProtocol {
         return Effect.void
     }
     checkDeviceStatus(): Effect.Effect<DeviceStatus, CommunicationError> {
+        throw new Error("Unimplemented")
+    }
+    register(): Effect.Effect<Device, DeviceUnreachableError> {
         throw new Error("Unimplemented")
     }
 }

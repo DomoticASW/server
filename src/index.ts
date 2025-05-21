@@ -8,10 +8,8 @@ import { Email } from "./domain/users-management/User.js";
 import { DeviceGroupsServiceImpl } from "./domain/devices-management/DeviceGroupsServiceImpl.js";
 import { DeviceRepositoryMongoAdapter } from "./adapters/devices-management/DeviceRepositoryMongoAdapter.js";
 import { DevicesServiceImpl } from "./domain/devices-management/DevicesServiceImpl.js";
-import { DeviceFactory } from "./ports/devices-management/DeviceFactory.js";
 import { PermissionsService } from "./ports/permissions-management/PermissionsService.js";
 import { Device, DeviceAction, DeviceActionId, DeviceEvent, DeviceId, DeviceProperty, DevicePropertyId, DeviceStatus } from "./domain/devices-management/Device.js";
-import { DeviceUnreachableError } from "./ports/devices-management/Errors.js";
 import * as uuid from "uuid";
 import { NoneInt } from "./domain/devices-management/Types.js";
 import { DeviceEventsServiceImpl } from "./domain/devices-management/DeviceEventsServiceImpl.js";
@@ -19,6 +17,7 @@ import { DeviceStatusChangesSubscriber, DeviceStatusesService } from "./ports/de
 import { DeviceOfflineNotificationSubscriptionRepositoryMongoAdapter } from "./adapters/notifications-management/DeviceOfflineNotificationSubscription.js";
 import { NotificationsService } from "./domain/notifications-management/NotificationsServiceImpl.js";
 import { DeviceCommunicationProtocol } from "./ports/devices-management/DeviceCommunicationProtocol.js";
+import { DeviceFactoryImpl } from "./domain/devices-management/DeviceFactoryImpl.js";
 
 const mongoDBConnection = mongoose.createConnection("mongodb://localhost:27017/DomoticASW")
 // TODO: replace with production impl
@@ -32,19 +31,16 @@ const permissionsService: PermissionsService = {
     canExecuteActionOnDevice: () => Effect.succeed(undefined)
 } as unknown as PermissionsService
 // TODO: replace with production impl
-const deviceFactory: DeviceFactory = {
-    create: function (deviceUrl: URL): Effect.Effect<Device, DeviceUnreachableError> {
+const deviceCommunicationProtocol: DeviceCommunicationProtocol = {
+    checkDeviceStatus: () => Effect.succeed(DeviceStatus.Online),
+    executeDeviceAction: () => Effect.succeed(undefined),
+    register(deviceAddress) {
         const action = DeviceAction(DeviceActionId("1"), "Action", NoneInt())
         const property = DeviceProperty(DevicePropertyId("1"), "Name", 3, NoneInt())
         const event1 = DeviceEvent("event1")
         const event2 = DeviceEvent("event2")
-        return Effect.succeed(Device(DeviceId(uuid.v4()), deviceUrl.hostname, deviceUrl, DeviceStatus.Online, [property], [action], [event1, event2]))
-    }
-}
-// TODO: replace with production impl
-const deviceCommunicationProtocol: DeviceCommunicationProtocol = {
-    checkDeviceStatus: () => Effect.succeed(DeviceStatus.Online),
-    executeDeviceAction: () => Effect.succeed(undefined)
+        return Effect.succeed(Device(DeviceId(uuid.v4()), deviceAddress.hostname, deviceAddress, DeviceStatus.Online, [property], [action], [event1, event2]))
+    },
 }
 
 const deviceStatusesService: DeviceStatusesService = {
@@ -58,6 +54,7 @@ const deviceStatusesService: DeviceStatusesService = {
     }
 }
 
+const deviceFactory = new DeviceFactoryImpl(deviceCommunicationProtocol)
 const deviceGroupRepository = new DeviceGroupRepositoryMongoAdapter(mongoDBConnection)
 const deviceRepository = new DeviceRepositoryMongoAdapter(mongoDBConnection)
 const deviceOfflineNotificationSubscriptionRepository = new DeviceOfflineNotificationSubscriptionRepositoryMongoAdapter(mongoDBConnection)
