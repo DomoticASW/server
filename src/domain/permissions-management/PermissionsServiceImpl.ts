@@ -1,5 +1,5 @@
 import { DeviceNotFoundError } from "../../ports/devices-management/Errors.js";
-import { PermissionError, TaskNotFoundError } from "../../ports/permissions-management/Errors.js";
+import { InvalidOperationError, PermissionError, TaskNotFoundError } from "../../ports/permissions-management/Errors.js";
 import { PermissionsService } from "../../ports/permissions-management/PermissionsService.js";
 import { DeviceId } from "../devices-management/Device.js";
 import { Token, UserRole } from "../users-management/Token.js";
@@ -190,7 +190,7 @@ export class PermissionsServiceImpl implements PermissionsService {
     )
   }
 
-  addToWhitelist(token: Token, email: Email, taskId: TaskId): Effect.Effect<void, TokenError | UserNotFoundError | ScriptNotFoundError> {
+  addToWhitelist(token: Token, email: Email, taskId: TaskId): Effect.Effect<void, TokenError | UserNotFoundError | ScriptNotFoundError | InvalidOperationError> {
     return pipe(
       Effect.if(token.role == UserRole.Admin, {
         onTrue: () => this.usersService.verifyToken(token),
@@ -207,8 +207,13 @@ export class PermissionsServiceImpl implements PermissionsService {
         onFailure: () => Effect.fail(ScriptNotFoundError())
       }),
       Effect.flatMap((taskList) => {
-        taskList.addEmailToWhitelist(token.userEmail);
-        return this.taskListsRepo.update(taskList);
+        return Effect.if(taskList.blacklist.includes(email), {
+          onTrue: () => Effect.fail(InvalidOperationError("User is blacklisted")),
+          onFalse: () => {
+            taskList.addEmailToWhitelist(token.userEmail);
+            return this.taskListsRepo.update(taskList);
+          }
+        })
       }),
       Effect.catch("__brand", {
         failure: "NotFoundError",
@@ -242,7 +247,7 @@ export class PermissionsServiceImpl implements PermissionsService {
       })
     )
   }
-  addToBlacklist(token: Token, email: Email, taskId: TaskId): Effect.Effect<void, TokenError | UserNotFoundError | ScriptNotFoundError> {
+  addToBlacklist(token: Token, email: Email, taskId: TaskId): Effect.Effect<void, TokenError | UserNotFoundError | ScriptNotFoundError | InvalidOperationError> {
     return pipe(
       Effect.if(token.role == UserRole.Admin, {
         onTrue: () => this.usersService.verifyToken(token),
@@ -259,8 +264,13 @@ export class PermissionsServiceImpl implements PermissionsService {
         onFailure: () => Effect.fail(ScriptNotFoundError())
       }),
       Effect.flatMap((taskList) => {
-        taskList.addEmailToBlacklist(token.userEmail);
-        return this.taskListsRepo.update(taskList);
+        return Effect.if(taskList.whitelist.includes(email), {
+          onTrue: () => Effect.fail(InvalidOperationError("User is whitelisted")),
+          onFalse: () => {
+            taskList.addEmailToBlacklist(token.userEmail);
+            return this.taskListsRepo.update(taskList);
+          }
+        });
       }),
       Effect.catch("__brand", {
         failure: "NotFoundError",

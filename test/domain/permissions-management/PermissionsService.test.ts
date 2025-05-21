@@ -326,6 +326,20 @@ test("addToWhiteList, expect UserNotFoundError", async () => {
     ).rejects.toThrow("UserNotFoundError");
 })
 
+test("addToWhiteList, expect PermissionError", async () => {
+    expect(taskListsRepo.callsToUpdate).toBe(0)
+    await pipe(
+        service.addToBlacklist(makeToken(), Email("test@test.com"), TaskId("1")),
+        Effect.runPromise
+    )
+    expect(taskListsRepo.callsToUpdate).toBe(1)
+    await expect(
+        Effect.runPromise(
+            service.addToWhitelist(makeToken(), Email("test@test.com") , TaskId("1")),    
+        )
+    ).rejects.toThrow("InvalidOperationError");
+})
+
 test("removeToWhiteList wiht an existing task", async () => {
     expect(taskListsRepo.callsToUpdate).toBe(0)
     await pipe(
@@ -416,6 +430,20 @@ test("addToBlackList, expect UnauthorizedError", async () => {
             service.addToBlacklist(makeTokenUserRole(), Email("test@test.com") , TaskId("1")),
         )
     ).rejects.toThrow("UnauthorizedError");
+})
+
+test("addToBlackList, expect PermissionError", async () => {
+    expect(taskListsRepo.callsToUpdate).toBe(0)
+    await pipe(
+        service.addToWhitelist(makeToken(), Email("test@test.com"), TaskId("1")),
+        Effect.runPromise
+    )
+    expect(taskListsRepo.callsToUpdate).toBe(1)
+    await expect(
+        Effect.runPromise(
+            service.addToBlacklist(makeToken(), Email("test@test.com") , TaskId("1")),    
+        )
+    ).rejects.toThrow("InvalidOperationError");
 })
 
 test("removeFromBlackList wiht an existing task", async () => {
