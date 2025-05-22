@@ -1,5 +1,5 @@
 import { Brand } from "../../utils/Brand.js";
-import { Condition, ConstantInstruction } from "./Instruction.js";
+import { ConstantInstruction, IfElseInstruction, IfInstruction } from "./Instruction.js";
 
 interface Constant {
   constantInstruction: ConstantInstruction<unknown>,
@@ -8,20 +8,19 @@ interface Constant {
 
 export type ConstantRef = Brand<Constant, "ConstantRef">
 
-interface Ref {
-  scopeLevel: number,
-  superNode: NodeRef
+interface IfRef {
+  instruction: IfInstruction
 }
 
-interface IfRef {
-  condition: Condition<unknown>
+interface IfElseRef {
+  instruction: IfElseInstruction
 }
 
 export type NodeRef = RootNodeRef | ThenNodeRef | ElseNodeRef
 
-export type RootNodeRef = Brand<Ref, "RootNodeRef">
-export type ThenNodeRef = Brand<Ref & IfRef, "ThenNodeRef">
-export type ElseNodeRef = Brand<Ref & IfRef, "ElseNodeRef">
+export type RootNodeRef = Brand<unknown, "RootNodeRef">
+export type ThenNodeRef = Brand<IfRef, "ThenNodeRef">
+export type ElseNodeRef = Brand<IfElseRef, "ElseNodeRef">
 
 
 export function ConstantRef(constantInstruction: ConstantInstruction<unknown>, scopeNode: NodeRef): ConstantRef {
@@ -42,20 +41,16 @@ export function RootNodeRef(): RootNodeRef {
   return new RootNodeRefImpl()
 }
 
-export function ThenNodeRef(level: number, superNode: NodeRef, condition: Condition<unknown>): ThenNodeRef {
+export function ThenNodeRef(ifInstruction: IfInstruction): ThenNodeRef {
   return {
-    scopeLevel: level,
-    superNode: superNode,
-    condition: condition,
+    instruction: ifInstruction,
     __brand: "ThenNodeRef"
   }
 }
 
-export function ElseNodeRef(level: number, superNode: NodeRef, condition: Condition<unknown>): ElseNodeRef {
+export function ElseNodeRef(ifElseInstruction: IfElseInstruction): ElseNodeRef {
   return {
-    scopeLevel: level,
-    superNode: superNode,
-    condition: condition,
+    instruction: ifElseInstruction,
     __brand: "ElseNodeRef"
   }
 }

@@ -41,9 +41,10 @@ abstract class ScriptBuilderImpl<S = Task | Automation> implements ScriptBuilder
   }
 
   addIf<T>(ref: NodeRef, left: ConstantRef, right: ConstantRef, operator: ConditionOperator<T>, negate: boolean): [ScriptBuilder<S>, NodeRef] {
-    const thenNodeRef = ThenNodeRef(ref.scopeLevel + 1, ref, Condition(left.constantInstruction, right.constantInstruction, operator, negate))
+    const instruction = IfInstruction([], Condition(left.constantInstruction, right.constantInstruction, operator, negate))
+    const thenNodeRef = ThenNodeRef(instruction)
     return [
-      this.copy(this.nodeRefs),
+      this.createCopy(ref, instruction),
       thenNodeRef
     ]
   }
@@ -87,77 +88,17 @@ abstract class ScriptBuilderImpl<S = Task | Automation> implements ScriptBuilder
 
   protected buildInstructions() {
     const instructions: Array<Instruction> = [];
-    const nestedInstructions: Map<NodeRef, Array<Instruction>> = new Map();
-    let previousNode: ThenNodeRef;
-    let i: number = 0;
-
     this.nodeRefs.forEach(([ref, instruction]) => {
-      i++;
       switch (ref.__brand) {
         case "RootNodeRef":
-          if (previousNode) {
-            // If previousNode is set, it means that I have just quitted an If, so I can create it and add it to the instructions
-            this.addOuterIfToInstructions(instructions, nestedInstructions, previousNode);
-          }
           instructions.push(instruction);
           break;
         case "ThenNodeRef":
-          if (previousNode && ref == previousNode.superNode) {
-            // If I'm the super node of the previous instruction I can create the If that comes before me
-            this.createIfsUntilStartingNodeIsReached(nestedInstructions, previousNode, ref.scopeLevel);
-          }
-          this.updateNestedInstructions(nestedInstructions, ref, instruction);
-
-          if (this.nodeRefs.length == i) {
-            // If I'm the last instruction, then I can create all the Ifs until the root is reached, and then add the outer If to the instructions
-            this.addOuterIfToInstructions(instructions, nestedInstructions, ref)
-          }
-          
-          previousNode = ref
+          ref.instruction.then.push(instruction)
           break;
       }
     });
     return instructions;
-  }
-
-  private addOuterIfToInstructions(
-    instructions: Instruction[], 
-    nestedInstructions: Map<NodeRef, Instruction[]>, 
-    previousNode: ThenNodeRef
-  ) {
-    // Get the node of the last If inside the root, create that if and add it to the instructions
-    const lastNode = this.createIfsUntilStartingNodeIsReached(nestedInstructions, previousNode)
-    instructions.push(IfInstruction(nestedInstructions.get(lastNode)!, lastNode.condition));
-  }
-
-  private createIfsUntilStartingNodeIsReached(
-    nestedInstructions: Map<NodeRef, Instruction[]>, 
-    previousNode: ThenNodeRef, 
-    scopeLevel: number = 0
-  ): ThenNodeRef {
-    //Add the If of the previousNode to add it to the nestedInstructions of its superNode, until the starting node has been reached
-    const superNode = previousNode.superNode
-    this.updateNestedInstructions(nestedInstructions, superNode, IfInstruction(nestedInstructions.get(previousNode)!, previousNode.condition))
-    if (superNode.scopeLevel != scopeLevel && superNode.__brand == "ThenNodeRef") {
-      return this.createIfsUntilStartingNodeIsReached(nestedInstructions, superNode, scopeLevel)
-    }
-
-    return previousNode
-  }
-
-  private updateNestedInstructions(
-    nestedInstructions: Map<NodeRef, Instruction[]>, 
-    actualNode: NodeRef, 
-    instruction: Instruction
-  ) {
-    let tempInstructions = nestedInstructions.get(actualNode);
-
-    if (tempInstructions) {
-      tempInstructions.push(instruction);
-    } else {
-      tempInstructions = [instruction];
-    }
-    nestedInstructions.set(actualNode, tempInstructions);
   }
 
   abstract build(): Effect<S, InvalidScriptError>

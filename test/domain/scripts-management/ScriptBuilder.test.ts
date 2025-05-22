@@ -228,7 +228,7 @@ test("Another big test with the if instruction", async () => {
   expect(notificationService.getMessages()).toStrictEqual(["firstMessage", "secondMessage", "thirdMessage"])
 })
 
-test("Another big test with the if instruction", async () => {
+test("If as last instruction", async () => {
   const notificationService = NotificationsServiceSpy(user.email)
   const builderAndConstant1 = taskBuilder.addCreateConstant(root, "number1 Constant", Type.IntType, 10)
   const newTaskBuilder1 = builderAndConstant1[0]
@@ -252,4 +252,89 @@ test("Another big test with the if instruction", async () => {
 
   expect(notificationService.call()).toBe(2)
   expect(notificationService.getMessages()).toStrictEqual(["firstMessage", "secondMessage"])
+})
+
+test("Consecutive ifs on same scope", async () => {
+  const notificationService = NotificationsServiceSpy(user.email)
+  const builderAndConstant1 = taskBuilder.addCreateConstant(root, "number1 Constant", Type.IntType, 10)
+  const newTaskBuilder1 = builderAndConstant1[0]
+  const builderAndConstant2 = newTaskBuilder1.addCreateConstant(root, "number2 Constant", Type.IntType, 15)
+  const newTaskBuilder2 = builderAndConstant2[0]
+
+  const builderAndRef1 = newTaskBuilder2.addIf(root, builderAndConstant1[1], builderAndConstant2[1], NumberLOperator(), false)
+  const newTaskBuilder3 = builderAndRef1[0]
+  const thenNode1 = builderAndRef1[1]
+
+  const builderAndRef2 = newTaskBuilder3.addSendNotification(thenNode1, user.email, "firstMessage").addIf(thenNode1, builderAndConstant1[1], builderAndConstant2[1], NumberLOperator(), false)
+  const newTaskBuilder4 = builderAndRef2[0]
+  const thenNode2 = builderAndRef2[1]
+
+  const builderAndRef3 = newTaskBuilder4.addSendNotification(thenNode2, user.email, "secondMessage").addIf(thenNode1, builderAndConstant1[1], builderAndConstant2[1], NumberLOperator(), false)
+  const completeBuilder = builderAndRef3[0].addSendNotification(builderAndRef3[1], user.email, "thirdMessage")
+  // [C1 = 10, C2 = 15, If 10 < 15 then [Send, If 10 < 15 then [Send], If 10 < 15 then[Send]]]
+
+  const task = await runPromise(completeBuilder.build())
+
+  await runPromise(task.execute(notificationService.get(), scriptsService, permissionsService, devicesService, token))
+
+  expect(notificationService.call()).toBe(3)
+  expect(notificationService.getMessages()).toStrictEqual(["firstMessage", "secondMessage", "thirdMessage"])
+})
+
+test("Consecutive ifs on root scope, with the second if just after a inner if of another scope", async () => {
+  const notificationService = NotificationsServiceSpy(user.email)
+  const builderAndConstant1 = taskBuilder.addCreateConstant(root, "number1 Constant", Type.IntType, 10)
+  const newTaskBuilder1 = builderAndConstant1[0]
+  const builderAndConstant2 = newTaskBuilder1.addCreateConstant(root, "number2 Constant", Type.IntType, 15)
+  const newTaskBuilder2 = builderAndConstant2[0]
+
+  const builderAndRef1 = newTaskBuilder2.addIf(root, builderAndConstant1[1], builderAndConstant2[1], NumberLOperator(), false)
+  const newTaskBuilder3 = builderAndRef1[0]
+  const thenNode1 = builderAndRef1[1]
+
+  const builderAndRef2 = newTaskBuilder3.addSendNotification(thenNode1, user.email, "firstMessage").addIf(thenNode1, builderAndConstant1[1], builderAndConstant2[1], NumberLOperator(), false)
+  const newTaskBuilder4 = builderAndRef2[0]
+  const thenNode2 = builderAndRef2[1]
+
+  const builderAndRef3 = newTaskBuilder4.addSendNotification(thenNode2, user.email, "secondMessage").addIf(root, builderAndConstant1[1], builderAndConstant2[1], NumberLOperator(), false)
+  const completeBuilder = builderAndRef3[0].addSendNotification(builderAndRef3[1], user.email, "thirdMessage")
+  // [C1 = 10, C2 = 15, If 10 < 15 then [Send, If 10 < 15 then [Send]], If 10 < 15 then[Send]]
+
+  const task = await runPromise(completeBuilder.build())
+
+  await runPromise(task.execute(notificationService.get(), scriptsService, permissionsService, devicesService, token))
+
+  expect(notificationService.getMessages()).toStrictEqual(["firstMessage", "secondMessage", "thirdMessage"])
+  expect(notificationService.call()).toBe(3)
+})
+
+test("Consecutive ifs on inner scope", async () => {
+  const notificationService = NotificationsServiceSpy(user.email)
+  const builderAndConstant1 = taskBuilder.addCreateConstant(root, "number1 Constant", Type.IntType, 10)
+  const newTaskBuilder1 = builderAndConstant1[0]
+  const builderAndConstant2 = newTaskBuilder1.addCreateConstant(root, "number2 Constant", Type.IntType, 15)
+  const newTaskBuilder2 = builderAndConstant2[0]
+
+  const builderAndRef1 = newTaskBuilder2.addIf(root, builderAndConstant1[1], builderAndConstant2[1], NumberLOperator(), false)
+  const newTaskBuilder3 = builderAndRef1[0]
+  const thenNode1 = builderAndRef1[1]
+
+  const builderAndRef2 = newTaskBuilder3.addSendNotification(thenNode1, user.email, "firstMessage").addIf(thenNode1, builderAndConstant1[1], builderAndConstant2[1], NumberLOperator(), false)
+  const newTaskBuilder4 = builderAndRef2[0]
+  const thenNode2 = builderAndRef2[1]
+
+  const builderAndRef3 = newTaskBuilder4.addIf(thenNode2, builderAndConstant1[1], builderAndConstant2[1], NumberLOperator(), false)
+  const newTaskBuilder5 = builderAndRef3[0]
+  const thenNode3 = builderAndRef3[1]
+
+  const builderAndRef4 = newTaskBuilder5.addSendNotification(thenNode3, user.email, "secondMessage").addIf(thenNode1, builderAndConstant1[1], builderAndConstant2[1], NumberLOperator(), false)
+  const completeBuilder = builderAndRef4[0].addSendNotification(builderAndRef4[1], user.email, "thirdMessage")
+  // [ C1 = 10, C2 = 15, If 10 < 15 then [ Send, If 10 < 15 then [ If 10 < 15 Then [Send] ], If 10 < 15 then[ Send ] ] ]
+
+  const task = await runPromise(completeBuilder.build())
+
+  await runPromise(task.execute(notificationService.get(), scriptsService, permissionsService, devicesService, token))
+
+  expect(notificationService.getMessages()).toStrictEqual(["firstMessage", "secondMessage", "thirdMessage"])
+  expect(notificationService.call()).toBe(3)
 })
