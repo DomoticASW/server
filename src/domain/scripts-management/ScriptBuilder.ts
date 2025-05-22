@@ -88,34 +88,32 @@ abstract class ScriptBuilderImpl<S = Task | Automation> implements ScriptBuilder
   protected buildInstructions() {
     const instructions: Array<Instruction> = [];
     const nestedInstructions: Map<NodeRef, Array<Instruction>> = new Map();
-    let actualNode: ThenNodeRef;
     let previousNode: ThenNodeRef;
     let i: number = 0;
 
     this.nodeRefs.forEach(([ref, instruction]) => {
-      previousNode = actualNode;
       i++;
       switch (ref.__brand) {
         case "RootNodeRef":
           if (previousNode) {
+            // If previousNode is set, it means that I have just quitted an If, so I can create it and add it to the instructions
             this.addOuterIfToInstructions(instructions, nestedInstructions, previousNode);
           }
           instructions.push(instruction);
           break;
         case "ThenNodeRef":
-          actualNode = ref;
-
-          if (previousNode && actualNode == previousNode.superNode) {
+          if (previousNode && ref == previousNode.superNode) {
             // If I'm the super node of the previous instruction I can create the If that comes before me
-            this.createIfsUntilStartingNodeIsReached(nestedInstructions, previousNode, actualNode.scopeLevel);
+            this.createIfsUntilStartingNodeIsReached(nestedInstructions, previousNode, ref.scopeLevel);
           }
-          this.updateNestedInstructions(nestedInstructions, actualNode, instruction);
+          this.updateNestedInstructions(nestedInstructions, ref, instruction);
 
           if (this.nodeRefs.length == i) {
-            //If I'm the last instruction of the script than I add myself to the If instructions and then can create the If on my superNode, then create all the Ifs that I am inside, if there are some
-            this.createIfAsLastInstruction(actualNode, actualNode.superNode, nestedInstructions, instructions);
+            // If I'm the last instruction, then I can create all the Ifs until the root is reached, and then add the outer If to the instructions
+            this.addOuterIfToInstructions(instructions, nestedInstructions, ref)
           }
-
+          
+          previousNode = ref
           break;
       }
     });
@@ -160,20 +158,6 @@ abstract class ScriptBuilderImpl<S = Task | Automation> implements ScriptBuilder
       tempInstructions = [instruction];
     }
     nestedInstructions.set(actualNode, tempInstructions);
-  }
-
-  private createIfAsLastInstruction(
-    actualNode: ThenNodeRef,
-    superNode: NodeRef,
-    nestedInstructions: Map<NodeRef, Instruction[]>,
-    instructions: Array<Instruction>
-  ) {
-    if (superNode.__brand == "ThenNodeRef") {
-      this.updateNestedInstructions(nestedInstructions, superNode, IfInstruction(nestedInstructions.get(actualNode)!, actualNode.condition));
-      this.createIfAsLastInstruction(superNode, superNode.superNode, nestedInstructions, instructions)
-    } else {
-      this.addOuterIfToInstructions(instructions, nestedInstructions, actualNode)
-    }
   }
 
   abstract build(): Effect<S, InvalidScriptError>
