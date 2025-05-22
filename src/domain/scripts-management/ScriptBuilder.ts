@@ -1,6 +1,6 @@
 import { Effect, succeed, fail } from "effect/Effect";
 import { DeviceActionId, DeviceId, DevicePropertyId } from "../devices-management/Device.js";
-import { Condition, ConditionOperator, Instruction } from "./Instruction.js";
+import { Condition, ConditionOperator, ConstantInstruction, Instruction } from "./Instruction.js";
 import { ConstantRef, ElseNodeRef, NodeRef, RootNodeRef, ThenNodeRef } from "./Refs.js";
 import { Automation, Task, TaskId } from "./Script.js";
 import { Email } from "../users-management/User.js";
@@ -54,52 +54,35 @@ abstract class ScriptBuilderImpl<S = Task | Automation> implements ScriptBuilder
   private addOutsideScopeOfConstantError(constant: ConstantRef) {
     this.errors.push(InvalidScriptError("The constant " + constant.constantInstruction.name + " was not defined inside of the if's scope"))
   }
+  
+  private createIfOnBuilder(ref: NodeRef, left: ConstantRef, right: ConstantRef, instruction: Instruction): ScriptBuilder<S> {
+    const newBuilder = this.copy(this.nodeRefs, this.errors);
 
-  addIf<T>(ref: NodeRef, left: ConstantRef, right: ConstantRef, operator: ConditionOperator<T>, negate: boolean): [ScriptBuilder<S>, NodeRef] {
-    const newBuilder = this.copy(this.nodeRefs, this.errors)
-    
     if (!this.checkIfOnInnerScope(ref, left.scopeNode)) {
-      newBuilder.addOutsideScopeOfConstantError(left)
-    } 
-
-    if (!this.checkIfOnInnerScope(ref, right.scopeNode)) {
-      newBuilder.addOutsideScopeOfConstantError(right)
+      newBuilder.addOutsideScopeOfConstantError(left);
     }
 
-    const instruction = IfInstruction([], Condition(left.constantInstruction, right.constantInstruction, operator, negate))
-    const thenNodeRef = ThenNodeRef(instruction, ref, ref.scopeLevel + 1)
+    if (!this.checkIfOnInnerScope(ref, right.scopeNode)) {
+      newBuilder.addOutsideScopeOfConstantError(right);
+    }
 
-    newBuilder.nodeRefs.push([ref, instruction])
+    newBuilder.nodeRefs.push([ref, instruction]);
 
-    return [
-      newBuilder,
-      thenNodeRef
-    ]
+    return newBuilder;
   }
 
-  
+  addIf<T>(ref: NodeRef, left: ConstantRef, right: ConstantRef, operator: ConditionOperator<T>, negate: boolean): [ScriptBuilder<S>, NodeRef] {
+    const instruction = IfInstruction([], Condition(left.constantInstruction, right.constantInstruction, operator, negate));
+    const thenNodeRef = ThenNodeRef(instruction, ref, ref.scopeLevel + 1);
+    return [ this.createIfOnBuilder(ref, left, right, instruction), thenNodeRef ];
+  }
+
   addIfElse<T>(ref: NodeRef, left: ConstantRef, right: ConstantRef, operator: ConditionOperator<T>, negate: boolean): [ScriptBuilder<S>, NodeRef, NodeRef] {
-    const newBuilder = this.copy(this.nodeRefs, this.errors)
-    
-    if (!this.checkIfOnInnerScope(ref, left.scopeNode)) {
-      newBuilder.addOutsideScopeOfConstantError(left)
-    } 
-
-    if (!this.checkIfOnInnerScope(ref, right.scopeNode)) {
-      newBuilder.addOutsideScopeOfConstantError(right)
-    }
-
     const instruction = IfElseInstruction([], [], Condition(left.constantInstruction, right.constantInstruction, operator, negate))
     const thenNodeRef = ThenNodeRef(instruction, ref, ref.scopeLevel + 1)
     const elseNodeRef = ElseNodeRef(instruction, ref, ref.scopeLevel + 1)
 
-    newBuilder.nodeRefs.push([ref, instruction])
-
-    return [
-      newBuilder,
-      thenNodeRef,
-      elseNodeRef
-    ]
+    return [ this.createIfOnBuilder(ref, left, right, instruction), thenNodeRef, elseNodeRef ]
   }
 
   addWait(ref: NodeRef, seconds: number): ScriptBuilder<S> {
@@ -118,20 +101,20 @@ abstract class ScriptBuilderImpl<S = Task | Automation> implements ScriptBuilder
     return this.createCopy(ref, StartTaskInstruction(taskId))
   }
 
-  addCreateConstant<T>(ref: NodeRef, name: string, type: Type, value: T): [ScriptBuilder<S>, ConstantRef] {
-    const constantRef = ConstantRef(CreateConstantInstruction(name, type, value), ref)
+  private addConstantInstructionToBuilder(ref: NodeRef, instruction: ConstantInstruction<unknown>): [ScriptBuilder<S>, ConstantRef] {
+    const constantRef = ConstantRef(instruction, ref)
     return [
-      this.createCopy(ref, constantRef.constantInstruction),
+      this.createCopy(ref, instruction),
       constantRef
     ]
   }
 
+  addCreateConstant<T>(ref: NodeRef, name: string, type: Type, value: T): [ScriptBuilder<S>, ConstantRef] {
+    return this.addConstantInstructionToBuilder(ref, CreateConstantInstruction(name, type, value))
+  }
+
   addCreateDevicePropertyConstant(ref: NodeRef, name: string, type: Type, deviceId: DeviceId, propertyId: DevicePropertyId): [ScriptBuilder<S>, ConstantRef] {
-    const constantRef = ConstantRef(CreateDevicePropertyConstantInstruction(name, type, deviceId, propertyId), ref)
-    return [
-      this.createCopy(ref, constantRef.constantInstruction),
-      constantRef
-    ]
+    return this.addConstantInstructionToBuilder(ref, CreateDevicePropertyConstantInstruction(name, type, deviceId, propertyId))
   }
 
   protected buildInstructions() {
