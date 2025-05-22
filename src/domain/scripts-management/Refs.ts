@@ -8,17 +8,22 @@ interface Constant {
 
 export type ConstantRef = Brand<Constant, "ConstantRef">
 
-interface IfRef {
+interface Ref {
+  superNode: NodeRef,
+  scopeLevel: number
+}
+
+interface IfRef extends Ref {
   instruction: IfInstruction
 }
 
-interface IfElseRef {
+interface IfElseRef extends Ref {
   instruction: IfElseInstruction
 }
 
 export type NodeRef = RootNodeRef | ThenNodeRef | ElseNodeRef
 
-export type RootNodeRef = Brand<unknown, "RootNodeRef">
+export type RootNodeRef = Brand<Ref, "RootNodeRef">
 export type ThenNodeRef = Brand<IfRef, "ThenNodeRef">
 export type ElseNodeRef = Brand<IfElseRef, "ElseNodeRef">
 
@@ -32,8 +37,8 @@ export function ConstantRef(constantInstruction: ConstantInstruction<unknown>, s
 }
 
 class RootNodeRefImpl implements RootNodeRef {
-  scopeLevel: number = 0
   superNode: NodeRef = this
+  scopeLevel: number = 0
   __brand = "RootNodeRef" as const;
 }
 
@@ -41,15 +46,19 @@ export function RootNodeRef(): RootNodeRef {
   return new RootNodeRefImpl()
 }
 
-export function ThenNodeRef(ifInstruction: IfInstruction): ThenNodeRef {
+export function ThenNodeRef(ifInstruction: IfInstruction, superNode: NodeRef, scopeLevel: number): ThenNodeRef {
   return {
+    scopeLevel: scopeLevel,
+    superNode: superNode,
     instruction: ifInstruction,
     __brand: "ThenNodeRef"
   }
 }
 
-export function ElseNodeRef(ifElseInstruction: IfElseInstruction): ElseNodeRef {
+export function ElseNodeRef(ifElseInstruction: IfElseInstruction, superNode: NodeRef, scopeLevel: number): ElseNodeRef {
   return {
+    scopeLevel: scopeLevel,
+    superNode: superNode,
     instruction: ifElseInstruction,
     __brand: "ElseNodeRef"
   }

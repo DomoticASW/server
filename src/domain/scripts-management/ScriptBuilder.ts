@@ -1,4 +1,4 @@
-import { Effect, succeed } from "effect/Effect";
+import { Effect, succeed, fail } from "effect/Effect";
 import { DeviceActionId, DeviceId, DevicePropertyId } from "../devices-management/Device.js";
 import { Condition, ConditionOperator, Instruction } from "./Instruction.js";
 import { ConstantRef, NodeRef, RootNodeRef, ThenNodeRef } from "./Refs.js";
@@ -20,7 +20,7 @@ interface ScriptBuilder<S = Task | Automation> {
   addCreateConstant<T>(ref: NodeRef, name: string, type: Type, value: T): [ScriptBuilder<S>, ConstantRef];
   addCreateDevicePropertyConstant(ref: NodeRef, name: string, type: Type, deviceId: DeviceId, propertyId: DevicePropertyId): [ScriptBuilder<S>, ConstantRef];
 
-  build(): Effect<S, InvalidScriptError>
+  build(): Effect<S, Array<InvalidScriptError>>
 }
 
 export type AutomationBuilder = ScriptBuilder<Automation>
@@ -29,22 +29,51 @@ export type TaskBuilder = ScriptBuilder<Task>
 abstract class ScriptBuilderImpl<S = Task | Automation> implements ScriptBuilder<S> {
   constructor(
     protected name: string,
-    protected nodeRefs: Array<[NodeRef, Instruction]>
+    protected nodeRefs: Array<[NodeRef, Instruction]>,
+    protected errors: Array<InvalidScriptError>
   ) {}
 
   private createCopy(ref: NodeRef, instruction: Instruction): ScriptBuilderImpl<S> {
-    const newBuilder = this.copy(this.nodeRefs)
+    const newBuilder = this.copy(this.nodeRefs, this.errors)
 
     newBuilder.nodeRefs.push([ref, instruction])
   
     return newBuilder
   }
 
+  private checkIfOnInnerScope(innerScope: NodeRef, outerScope: NodeRef): boolean {
+    if (innerScope == outerScope) {
+      return true
+    } else if (innerScope.scopeLevel == 0) {
+      return false
+    } else {
+      return this.checkIfOnInnerScope(innerScope.superNode, outerScope)
+    }
+  }
+
+  private addOutsideScopeOfConstantError(constant: ConstantRef) {
+    this.errors.push(InvalidScriptError("The constant " + constant.constantInstruction.name + " was not defined inside of the if's scope"))
+  }
+
   addIf<T>(ref: NodeRef, left: ConstantRef, right: ConstantRef, operator: ConditionOperator<T>, negate: boolean): [ScriptBuilder<S>, NodeRef] {
+    const newBuilder = this.copy(this.nodeRefs, this.errors)
+    
+    if (!this.checkIfOnInnerScope(ref, left.scopeNode)) {
+      newBuilder.addOutsideScopeOfConstantError(left)
+    } 
+
+    if (!this.checkIfOnInnerScope(ref, right.scopeNode)) {
+      newBuilder.addOutsideScopeOfConstantError(right)
+    }
+
     const instruction = IfInstruction([], Condition(left.constantInstruction, right.constantInstruction, operator, negate))
-    const thenNodeRef = ThenNodeRef(instruction)
+    const thenNodeRef = ThenNodeRef(instruction, ref, ref.scopeLevel + 1)
+
+
+    newBuilder.nodeRefs.push([ref, instruction])
+
     return [
-      this.createCopy(ref, instruction),
+      newBuilder,
       thenNodeRef
     ]
   }
@@ -101,23 +130,25 @@ abstract class ScriptBuilderImpl<S = Task | Automation> implements ScriptBuilder
     return instructions;
   }
 
-  abstract build(): Effect<S, InvalidScriptError>
+  abstract build(): Effect<S, Array<InvalidScriptError>>
   protected abstract copy(
-    nodeRefs: Array<[NodeRef, Instruction]>
+    nodeRefs: Array<[NodeRef, Instruction]>,
+    errors: Array<InvalidScriptError>
   ): ScriptBuilderImpl<S>
 }
 
 class TaskBuilderImpl extends ScriptBuilderImpl<Task> {
-  build(): Effect<Task, InvalidScriptError> {
+  build(): Effect<Task, Array<InvalidScriptError>> {
     const instructions: Array<Instruction> = this.buildInstructions();
     
-    return succeed(Task(TaskId(uuid.v4()), this.name, instructions))
+    return this.errors.length == 0 ? succeed(Task(TaskId(uuid.v4()), this.name, instructions)) : fail(this.errors)
   }
 
   protected copy(
-    nodeRefs: Array<[NodeRef, Instruction]>
+    nodeRefs: Array<[NodeRef, Instruction]>,
+    errors: Array<InvalidScriptError>
   ): TaskBuilderImpl {
-    return new TaskBuilderImpl(this.name, Array.from(nodeRefs))
+    return new TaskBuilderImpl(this.name, Array.from(nodeRefs), Array.from(errors))
   }
 }
 
@@ -126,22 +157,24 @@ class AutomationBuilderImpl extends ScriptBuilderImpl<Automation> {
   constructor(
     name: string,
     private trigger: Trigger,
-    nodeRefs: Array<[NodeRef, Instruction]>
+    nodeRefs: Array<[NodeRef, Instruction]>,
+    errors: Array<InvalidScriptError>
   ) {
-    super(name, nodeRefs)
+    super(name, nodeRefs, errors)
   }
 
-  build(): Effect<Automation, InvalidScriptError> {
+  build(): Effect<Automation, Array<InvalidScriptError>> {
     throw new Error("Method not implemented.");
   }
 
   protected copy(
-    nodeRefs: Array<[NodeRef, Instruction]>
+    nodeRefs: Array<[NodeRef, Instruction]>,
+    errors: Array<InvalidScriptError>
   ): AutomationBuilderImpl {
-    return new AutomationBuilderImpl(this.name, this.trigger, Array.from(nodeRefs))
+    return new AutomationBuilderImpl(this.name, this.trigger, Array.from(nodeRefs), Array.from(errors))
   }
 }
 
 export function TaskBuilder(name: string): [TaskBuilder, NodeRef] {
-  return [new TaskBuilderImpl(name, []), RootNodeRef()]
+  return [new TaskBuilderImpl(name, [], []), RootNodeRef()]
 }

@@ -3,9 +3,10 @@ import { TaskBuilder } from "../../../src/domain/scripts-management/ScriptBuilde
 import { DeviceMock, DevicesServiceSpy, NotificationsServiceSpy, PermissionsServiceSpy, ScriptsServiceSpy, SpyTaskMock, TokenMock, UserMock } from "../../utils/mocks.js"
 import { Type } from "../../../src/ports/devices-management/Types.js"
 import { ConstantInstruction } from "../../../src/domain/scripts-management/Instruction.js"
-import { NumberEOperator, NumberLOperator } from "../../../src/domain/scripts-management/Operators.js"
+import { NumberEOperator, NumberLOperator, StringEOperator } from "../../../src/domain/scripts-management/Operators.js"
 import { NodeRef } from "../../../src/domain/scripts-management/Refs.js"
 import { InvalidScriptError } from "../../../src/ports/scripts-management/Errors.js"
+import { Effect, pipe } from "effect"
 
 const builderAndRoot = TaskBuilder("taskName")
 const taskBuilder: TaskBuilder = builderAndRoot[0]
@@ -337,4 +338,33 @@ test("Consecutive ifs on inner scope", async () => {
 
   expect(notificationService.getMessages()).toStrictEqual(["firstMessage", "secondMessage", "thirdMessage"])
   expect(notificationService.call()).toBe(3)
+})
+
+test("An InvalidScriptError is returned if using a constant not defined ", async () => {
+  const builderAndConstant = taskBuilder.addCreateConstant(root, "constantName", Type.IntType, 10)
+  const taskBuilderOneConstant = builderAndConstant[0]
+
+  const builderAndConstant2 = taskBuilderOneConstant.addCreateDevicePropertyConstant(root, "constantName2", Type.IntType, deviceId, device.properties.at(0)!.id)
+  const taskBuilderTwoConstants = builderAndConstant2[0]
+
+  const builderAndRef = taskBuilderTwoConstants.addIf(root, builderAndConstant[1], builderAndConstant2[1], NumberEOperator(), false)
+  const taskBuilderIf = builderAndRef[0]
+  const ifRef = builderAndRef[1]
+
+  const builderAndConstant3 = taskBuilderIf.addSendNotification(ifRef, user.email, "firstMessage").addCreateConstant(ifRef, "constantName3", Type.StringType, "string")
+  const builderAndConstant4 = builderAndConstant3[0].addCreateConstant(ifRef, "constantName4", Type.StringType, "anotherString")
+  const builderandRef2 = builderAndConstant4[0].addIf(root, builderAndConstant3[1], builderAndConstant4[1], StringEOperator(), true)
+  const taskBuilderComplete = builderandRef2[0].addSendNotification(builderandRef2[1], user.email, "secondMessage")
+  
+  // [C1 = 10, C2 = 10, If C1 == C2 then [ Send, C3 = "string", C4 = "anotherString" ], If C3 != C4 then [ Send ] ]
+  await runPromise(pipe(
+    taskBuilderComplete.build(),
+    Effect.match({
+      onSuccess() { throw Error("Should not be here") },
+      onFailure(error) {
+        expect(error.length).toBe(2)
+        expect(error.map(error => error.cause)).toStrictEqual(["The constant constantName3 was not defined inside of the if's scope", "The constant constantName4 was not defined inside of the if's scope"])
+      },
+    })
+  ))
 })
