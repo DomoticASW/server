@@ -9,8 +9,7 @@ interface Constant {
 export type ConstantRef = Brand<Constant, "ConstantRef">
 
 interface Ref {
-  superNode: NodeRef,
-  scopeLevel: number
+  superNode: NodeRef
 }
 
 interface IfRef extends Ref {
@@ -38,7 +37,6 @@ export function ConstantRef(constantInstruction: ConstantInstruction<unknown>, s
 
 class RootNodeRefImpl implements RootNodeRef {
   superNode: NodeRef = this
-  scopeLevel: number = 0
   __brand = "RootNodeRef" as const;
 }
 
@@ -46,18 +44,16 @@ export function RootNodeRef(): RootNodeRef {
   return new RootNodeRefImpl()
 }
 
-export function ThenNodeRef(ifInstruction: IfInstruction, superNode: NodeRef, scopeLevel: number): ThenNodeRef {
+export function ThenNodeRef(ifInstruction: IfInstruction, superNode: NodeRef): ThenNodeRef {
   return {
-    scopeLevel: scopeLevel,
     superNode: superNode,
     instruction: ifInstruction,
     __brand: "ThenNodeRef"
   }
 }
 
-export function ElseNodeRef(ifElseInstruction: IfElseInstruction, superNode: NodeRef, scopeLevel: number): ElseNodeRef {
+export function ElseNodeRef(ifElseInstruction: IfElseInstruction, superNode: NodeRef): ElseNodeRef {
   return {
-    scopeLevel: scopeLevel,
     superNode: superNode,
     instruction: ifElseInstruction,
     __brand: "ElseNodeRef"

@@ -44,7 +44,7 @@ abstract class ScriptBuilderImpl<S = Task | Automation> implements ScriptBuilder
   private checkIfOnInnerScope(innerScope: NodeRef, outerScope: NodeRef): boolean {
     if (innerScope == outerScope) {
       return true
-    } else if (innerScope.scopeLevel == 0) {
+    } else if (innerScope.__brand == "RootNodeRef") {
       return false
     } else {
       return this.checkIfOnInnerScope(innerScope.superNode, outerScope)
@@ -73,14 +73,14 @@ abstract class ScriptBuilderImpl<S = Task | Automation> implements ScriptBuilder
 
   addIf<T>(ref: NodeRef, left: ConstantRef, right: ConstantRef, operator: ConditionOperator<T>, negate: boolean): [ScriptBuilder<S>, NodeRef] {
     const instruction = IfInstruction([], Condition(left.constantInstruction, right.constantInstruction, operator, negate));
-    const thenNodeRef = ThenNodeRef(instruction, ref, ref.scopeLevel + 1);
+    const thenNodeRef = ThenNodeRef(instruction, ref);
     return [ this.createIfOnBuilder(ref, left, right, instruction), thenNodeRef ];
   }
 
   addIfElse<T>(ref: NodeRef, left: ConstantRef, right: ConstantRef, operator: ConditionOperator<T>, negate: boolean): [ScriptBuilder<S>, NodeRef, NodeRef] {
     const instruction = IfElseInstruction([], [], Condition(left.constantInstruction, right.constantInstruction, operator, negate))
-    const thenNodeRef = ThenNodeRef(instruction, ref, ref.scopeLevel + 1)
-    const elseNodeRef = ElseNodeRef(instruction, ref, ref.scopeLevel + 1)
+    const thenNodeRef = ThenNodeRef(instruction, ref)
+    const elseNodeRef = ElseNodeRef(instruction, ref)
 
     return [ this.createIfOnBuilder(ref, left, right, instruction), thenNodeRef, elseNodeRef ]
   }
