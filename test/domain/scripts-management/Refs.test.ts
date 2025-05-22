@@ -5,27 +5,39 @@ import { ConstantRef, ElseNodeRef, RootNodeRef, ThenNodeRef } from "../../../src
 import { Type } from "../../../src/ports/devices-management/Types.js"
 
 test("A ConstantRef can be created", () => {
-  const ref: ConstantRef = ConstantRef("constantName", Type.IntType)
+  const instruction = CreateConstantInstruction("constantName1", Type.IntType, 15)
+  const ref: ConstantRef = ConstantRef(instruction)
   expect(ref.__brand).toBe("ConstantRef")
-  expect(ref.name).toBe("constantName")
-  expect(ref.type).toBe(Type.IntType)
+  expect(ref.constantInstruction).toBe(instruction)
 })
 
 test("A RootNodeRef can be created", () => {
   const ref: RootNodeRef = RootNodeRef()
   expect(ref.__brand).toBe("RootNodeRef")
+  expect(ref.scopeLevel).toBe(0)
+  expect(ref.superNode).toBe(ref)
 })
 
 test("A ThenNodeRef can be created", () => {
   const left = CreateConstantInstruction("constantName1", Type.IntType, 15)
   const right = CreateConstantInstruction("constantName2", Type.IntType, 10)
-  const ref: ThenNodeRef = ThenNodeRef(1, RootNodeRef(), Condition(left, right, NumberEOperator()))
+  const condition = Condition(left, right, NumberEOperator())
+  const superNode = RootNodeRef()
+  const ref: ThenNodeRef = ThenNodeRef(1, superNode, condition)
   expect(ref.__brand).toBe("ThenNodeRef")
+  expect(ref.scopeLevel).toBe(1)
+  expect(ref.superNode).toBe(superNode)
+  expect(ref.condition).toBe(condition)
 })
 
 test("A ElseNodeRef can be created", () => {
   const left = CreateConstantInstruction("constantName1", Type.IntType, 15)
   const right = CreateConstantInstruction("constantName2", Type.IntType, 10)
-  const ref: ElseNodeRef = ElseNodeRef(1, RootNodeRef(), Condition(left, right, NumberEOperator()))
+  const condition = Condition(left, right, NumberEOperator())
+  const superNode = RootNodeRef()
+  const ref: ElseNodeRef = ElseNodeRef(1, superNode, condition)
   expect(ref.__brand).toBe("ElseNodeRef")
+  expect(ref.scopeLevel).toBe(1)
+  expect(ref.superNode).toBe(superNode)
+  expect(ref.condition).toBe(condition)
 })

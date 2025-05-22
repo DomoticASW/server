@@ -1,6 +1,6 @@
 import { Effect, succeed } from "effect/Effect";
 import { DeviceActionId, DeviceId, DevicePropertyId } from "../devices-management/Device.js";
-import { Condition, ConditionOperator, ConstantInstruction, Instruction } from "./Instruction.js";
+import { Condition, ConditionOperator, Instruction } from "./Instruction.js";
 import { ConstantRef, NodeRef, RootNodeRef, ThenNodeRef } from "./Refs.js";
 import { Automation, Task, TaskId } from "./Script.js";
 import { Email } from "../users-management/User.js";
@@ -29,30 +29,21 @@ export type TaskBuilder = ScriptBuilder<Task>
 abstract class ScriptBuilderImpl<S = Task | Automation> implements ScriptBuilder<S> {
   constructor(
     protected name: string,
-    protected nodeRefs: Array<[NodeRef, Instruction]>,
-    protected constantRefs: Map<ConstantRef, ConstantInstruction<unknown>>
+    protected nodeRefs: Array<[NodeRef, Instruction]>
   ) {}
 
   private createCopy(ref: NodeRef, instruction: Instruction): ScriptBuilderImpl<S> {
-    const newBuilder = this.copy(this.nodeRefs, this.constantRefs)
+    const newBuilder = this.copy(this.nodeRefs)
 
     newBuilder.nodeRefs.push([ref, instruction])
   
     return newBuilder
   }
 
-  private createCopyWithConstant(ref: NodeRef, constRef: ConstantRef, instruction: ConstantInstruction<unknown>): ScriptBuilderImpl<S> {
-    const newBuilder = this.createCopy(ref, instruction)
-
-    newBuilder.constantRefs.set(constRef, instruction)
-
-    return newBuilder
-  }
-
   addIf<T>(ref: NodeRef, left: ConstantRef, right: ConstantRef, operator: ConditionOperator<T>, negate: boolean): [ScriptBuilder<S>, NodeRef] {
-    const thenNodeRef = ThenNodeRef(ref.scopeLevel + 1, ref, Condition(this.constantRefs.get(left)!, this.constantRefs.get(right)!, operator, negate))
+    const thenNodeRef = ThenNodeRef(ref.scopeLevel + 1, ref, Condition(left.constantInstruction, right.constantInstruction, operator, negate))
     return [
-      this.copy(this.nodeRefs, this.constantRefs),
+      this.copy(this.nodeRefs),
       thenNodeRef
     ]
   }
@@ -79,17 +70,17 @@ abstract class ScriptBuilderImpl<S = Task | Automation> implements ScriptBuilder
   }
 
   addCreateConstant<T>(ref: NodeRef, name: string, type: Type, value: T): [ScriptBuilder<S>, ConstantRef] {
-    const constantRef = ConstantRef(name, type)
+    const constantRef = ConstantRef(CreateConstantInstruction(name, type, value))
     return [
-      this.createCopyWithConstant(ref, constantRef, CreateConstantInstruction(name, type, value)),
+      this.createCopy(ref, constantRef.constantInstruction),
       constantRef
     ]
   }
 
   addCreateDevicePropertyConstant(ref: NodeRef, name: string, type: Type, deviceId: DeviceId, propertyId: DevicePropertyId): [ScriptBuilder<S>, ConstantRef] {
-    const constantRef = ConstantRef(name, type)
+    const constantRef = ConstantRef(CreateDevicePropertyConstantInstruction(name, type, deviceId, propertyId))
     return [
-      this.createCopyWithConstant(ref, constantRef, CreateDevicePropertyConstantInstruction(name, type, deviceId, propertyId)),
+      this.createCopy(ref, constantRef.constantInstruction),
       constantRef
     ]
   }
@@ -187,8 +178,7 @@ abstract class ScriptBuilderImpl<S = Task | Automation> implements ScriptBuilder
 
   abstract build(): Effect<S, InvalidScriptError>
   protected abstract copy(
-    nodeRefs: Array<[NodeRef, Instruction]>, 
-    constantRefs: Map<ConstantRef, ConstantInstruction<unknown>>
+    nodeRefs: Array<[NodeRef, Instruction]>
   ): ScriptBuilderImpl<S>
 }
 
@@ -200,22 +190,20 @@ class TaskBuilderImpl extends ScriptBuilderImpl<Task> {
   }
 
   protected copy(
-    nodeRefs: Array<[NodeRef, Instruction]>,
-    constantRefs: Map<ConstantRef, ConstantInstruction<unknown>>
+    nodeRefs: Array<[NodeRef, Instruction]>
   ): TaskBuilderImpl {
-    return new TaskBuilderImpl(this.name, Array.from(nodeRefs), new Map(constantRefs))
+    return new TaskBuilderImpl(this.name, Array.from(nodeRefs))
   }
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 class AutomationBuilderImpl extends ScriptBuilderImpl<Automation> {
   constructor(
-    name: string, 
+    name: string,
     private trigger: Trigger,
-    nodeRefs: Array<[NodeRef, Instruction]>,
-    constantRefs: Map<ConstantRef, ConstantInstruction<unknown>>
+    nodeRefs: Array<[NodeRef, Instruction]>
   ) {
-    super(name, nodeRefs, constantRefs)
+    super(name, nodeRefs)
   }
 
   build(): Effect<Automation, InvalidScriptError> {
@@ -223,13 +211,12 @@ class AutomationBuilderImpl extends ScriptBuilderImpl<Automation> {
   }
 
   protected copy(
-    nodeRefs: Array<[NodeRef, Instruction]>,
-    constantRefs: Map<ConstantRef, ConstantInstruction<unknown>>
+    nodeRefs: Array<[NodeRef, Instruction]>
   ): AutomationBuilderImpl {
-    return new AutomationBuilderImpl(this.name, this.trigger, Array.from(nodeRefs), new Map(constantRefs))
+    return new AutomationBuilderImpl(this.name, this.trigger, Array.from(nodeRefs))
   }
 }
 
 export function TaskBuilder(name: string): [TaskBuilder, NodeRef] {
-  return [new TaskBuilderImpl(name, [], new Map()), RootNodeRef()]
+  return [new TaskBuilderImpl(name, []), RootNodeRef()]
 }

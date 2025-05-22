@@ -102,8 +102,8 @@ test("A CreateConstantInstruction can be added", async () => {
   expect(constant).toBeDefined()
   expect(constant?.value).toBe<number>(10)
 
-  expect(ref.type).toBe(Type.IntType)
-  expect(ref.name).toBe("constantName")
+  expect(ref.constantInstruction.name).toBe("constantName")
+  expect(ref.constantInstruction.type).toBe(Type.IntType)
 })
 
 test("A CreateDevicePropertyConstantInstruction can be added", async () => {
@@ -125,8 +125,8 @@ test("A CreateDevicePropertyConstantInstruction can be added", async () => {
   expect(constant).toBeDefined();
   expect(constant?.value).toBe<number>(device.properties.at(0)!.value as number)
 
-  expect(ref.name).toBe("constantName")
-  expect(ref.type).toBe(Type.IntType)
+  expect(ref.constantInstruction.name).toBe("constantName")
+  expect(ref.constantInstruction.type).toBe(Type.IntType)
 })
 
 test("An IfInstruction can be added", async () => {
@@ -226,4 +226,30 @@ test("Another big test with the if instruction", async () => {
 
   expect(notificationService.call()).toBe(3)
   expect(notificationService.getMessages()).toStrictEqual(["firstMessage", "secondMessage", "thirdMessage"])
+})
+
+test("Another big test with the if instruction", async () => {
+  const notificationService = NotificationsServiceSpy(user.email)
+  const builderAndConstant1 = taskBuilder.addCreateConstant(root, "number1 Constant", Type.IntType, 10)
+  const newTaskBuilder1 = builderAndConstant1[0]
+  const builderAndConstant2 = newTaskBuilder1.addCreateConstant(root, "number2 Constant", Type.IntType, 15)
+  const newTaskBuilder2 = builderAndConstant2[0]
+
+  const builderAndRef1 = newTaskBuilder2.addIf(root, builderAndConstant1[1], builderAndConstant2[1], NumberLOperator(), false)
+  const newTaskBuilder3 = builderAndRef1[0]
+  const thenNode1 = builderAndRef1[1]
+
+  const builderAndRef2 = newTaskBuilder3.addSendNotification(thenNode1, user.email, "firstMessage").addIf(thenNode1, builderAndConstant1[1], builderAndConstant2[1], NumberLOperator(), false)
+  const newTaskBuilder4 = builderAndRef2[0]
+  const thenNode2 = builderAndRef2[1]
+
+  const completeBuilder = newTaskBuilder4.addSendNotification(thenNode2, user.email, "secondMessage")
+  // [C1 = 10, C2 = 15, If 10 < 15 then [Send, If 10 < 15 then [Send]]]
+
+  const task = await runPromise(completeBuilder.build())
+
+  await runPromise(task.execute(notificationService.get(), scriptsService, permissionsService, devicesService, token))
+
+  expect(notificationService.call()).toBe(2)
+  expect(notificationService.getMessages()).toStrictEqual(["firstMessage", "secondMessage"])
 })

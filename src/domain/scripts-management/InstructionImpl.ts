@@ -127,8 +127,6 @@ class CreateConstantInstructionImpl<T> implements CreateConstantInstruction<T> {
             return typeof this.value === "string"
           case "VoidType":
             return typeof this.value === "undefined"
-          default:
-            return false
         }
       }),
       flatMap(isValid =>
