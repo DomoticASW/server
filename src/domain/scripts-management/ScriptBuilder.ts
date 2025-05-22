@@ -2,11 +2,11 @@ import { Effect, succeed, fail } from "effect/Effect";
 import { DeviceActionId, DeviceId, DevicePropertyId } from "../devices-management/Device.js";
 import { Condition, ConditionOperator, ConstantInstruction, Instruction } from "./Instruction.js";
 import { ConstantRef, ElseNodeRef, NodeRef, RootNodeRef, ThenNodeRef } from "./Refs.js";
-import { Automation, Task, TaskId } from "./Script.js";
+import { Automation, AutomationId, Task, TaskId } from "./Script.js";
 import { Email } from "../users-management/User.js";
 import { Type } from "../../ports/devices-management/Types.js";
 import { InvalidScriptError } from "../../ports/scripts-management/Errors.js";
-import { Trigger } from "./Trigger.js";
+import { DeviceEventTrigger, PeriodTrigger, Trigger } from "./Trigger.js";
 import * as uuid from "uuid";
 import { CreateConstantInstruction, CreateDevicePropertyConstantInstruction, DeviceActionInstruction, IfElseInstruction, IfInstruction, SendNotificationInstruction, StartTaskInstruction, WaitInstruction } from "./InstructionImpl.js";
 
@@ -157,7 +157,6 @@ class TaskBuilderImpl extends ScriptBuilderImpl<Task> {
   }
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 class AutomationBuilderImpl extends ScriptBuilderImpl<Automation> {
   constructor(
     name: string,
@@ -169,7 +168,9 @@ class AutomationBuilderImpl extends ScriptBuilderImpl<Automation> {
   }
 
   build(): Effect<Automation, Array<InvalidScriptError>> {
-    throw new Error("Method not implemented.");
+    const instructions: Array<Instruction> = this.buildInstructions();
+    
+    return this.errors.length == 0 ? succeed(Automation(AutomationId(uuid.v4()), this.name, this.trigger, instructions)) : fail(this.errors)
   }
 
   protected copy(
@@ -182,4 +183,12 @@ class AutomationBuilderImpl extends ScriptBuilderImpl<Automation> {
 
 export function TaskBuilder(name: string): [TaskBuilder, NodeRef] {
   return [new TaskBuilderImpl(name, [], []), RootNodeRef()]
+}
+
+export function AutomationBuilderWithPeriodtrigger(name: string, start: Date, periodSeconds: number): [AutomationBuilder, NodeRef] {
+  return [ new AutomationBuilderImpl(name, PeriodTrigger(start, periodSeconds), [], []), RootNodeRef() ]
+}
+
+export function AutomationBuilderWithDeviceEventTrigger(name: string, deviceId: DeviceId, eventName: string): [AutomationBuilder, NodeRef] {
+  return [ new AutomationBuilderImpl(name, DeviceEventTrigger(deviceId, eventName), [], []), RootNodeRef() ]
 }
