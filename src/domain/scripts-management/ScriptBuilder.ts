@@ -31,13 +31,13 @@ abstract class ScriptBuilderImpl<S = Task | Automation> implements ScriptBuilder
     protected name: string,
     protected nodeRefs: Array<[NodeRef, Instruction]>,
     protected constantRefs: Map<ConstantRef, ConstantInstruction<unknown>>,
-    protected ifRefs: Map<ThenNodeRef, [NodeRef, Condition<unknown>]>
+    protected ifRefs: Map<ThenNodeRef, Condition<unknown>>
   ) {}
 
-  private addIfNode<T>(ref: NodeRef, thenNodeRef: ThenNodeRef, left: ConstantRef, right: ConstantRef, operator: ConditionOperator<T>, negate: boolean): ScriptBuilder<S> {
+  private addIfNode<T>(thenNodeRef: ThenNodeRef, left: ConstantRef, right: ConstantRef, operator: ConditionOperator<T>, negate: boolean): ScriptBuilder<S> {
     const newBuilder = this.copy(this.nodeRefs, this.constantRefs, this.ifRefs)
 
-    newBuilder.ifRefs.set(thenNodeRef, [ref, Condition(this.constantRefs.get(left)!, this.constantRefs.get(right)!, operator, negate)])
+    newBuilder.ifRefs.set(thenNodeRef, Condition(this.constantRefs.get(left)!, this.constantRefs.get(right)!, operator, negate))
 
     return newBuilder
   }
@@ -59,9 +59,9 @@ abstract class ScriptBuilderImpl<S = Task | Automation> implements ScriptBuilder
   }
 
   addIf<T>(ref: NodeRef, left: ConstantRef, right: ConstantRef, operator: ConditionOperator<T>, negate: boolean): [ScriptBuilder<S>, NodeRef] {
-    const thenNodeRef = ThenNodeRef()
+    const thenNodeRef = ThenNodeRef(ref.scopeLevel + 1, ref)
     return [
-      this.addIfNode(ref, thenNodeRef, left, right, operator, negate),
+      this.addIfNode(thenNodeRef, left, right, operator, negate),
       thenNodeRef
     ]
   }
@@ -108,8 +108,6 @@ abstract class ScriptBuilderImpl<S = Task | Automation> implements ScriptBuilder
     const nestedInstructions: Map<NodeRef, Array<Instruction>> = new Map();
     let actualNode: ThenNodeRef;
     let previousNode: ThenNodeRef;
-    let superNode: NodeRef;
-    let rootNode: NodeRef;
     let i: number = 0;
 
     this.nodeRefs.forEach(([ref, instruction]) => {
@@ -117,29 +115,23 @@ abstract class ScriptBuilderImpl<S = Task | Automation> implements ScriptBuilder
       i++;
       switch (ref.__brand) {
         case "RootNodeRef":
-          superNode = ref;
-          rootNode = ref;
           if (previousNode) {
-            this.addOuterIfToInstructions(instructions, nestedInstructions, previousNode, ref);
+            this.addOuterIfToInstructions(instructions, nestedInstructions, previousNode);
           }
           instructions.push(instruction);
           break;
         case "ThenNodeRef":
           actualNode = ref;
 
-          if (previousNode) {
-            superNode = this.ifRefs.get(previousNode)![0];
-          }
-
-          if (actualNode == superNode) {
+          if (previousNode && actualNode == previousNode.superNode) {
             // If I'm the super node of the previous instruction I can create the If that comes before me
-            this.createIfsUntilStartingNodeIsReached(nestedInstructions, previousNode, actualNode);
+            this.createIfsUntilStartingNodeIsReached(nestedInstructions, previousNode, actualNode.scopeLevel);
           }
           this.updateNestedInstructions(nestedInstructions, actualNode, instruction);
 
           if (this.nodeRefs.length == i) {
             //If I'm the last instruction of the script than I add myself to the If instructions and then can create the If on my superNode, then create all the Ifs that I am inside, if there are some
-            this.createIfAsLastInstruction(actualNode, superNode, nestedInstructions, instructions, rootNode);
+            this.createIfAsLastInstruction(actualNode, actualNode.superNode, nestedInstructions, instructions);
           }
 
           break;
@@ -151,24 +143,23 @@ abstract class ScriptBuilderImpl<S = Task | Automation> implements ScriptBuilder
   private addOuterIfToInstructions(
     instructions: Instruction[], 
     nestedInstructions: Map<NodeRef, Instruction[]>, 
-    previousNode: ThenNodeRef,
-    root: NodeRef
+    previousNode: ThenNodeRef
   ) {
     // Get the node of the last If inside the root, create that if and add it to the instructions
-    const lastNode = this.createIfsUntilStartingNodeIsReached(nestedInstructions, previousNode, root)
-    instructions.push(IfInstruction(nestedInstructions.get(lastNode)!, this.ifRefs.get(lastNode)![1]));
+    const lastNode = this.createIfsUntilStartingNodeIsReached(nestedInstructions, previousNode)
+    instructions.push(IfInstruction(nestedInstructions.get(lastNode)!, this.ifRefs.get(lastNode)!));
   }
 
   private createIfsUntilStartingNodeIsReached(
     nestedInstructions: Map<NodeRef, Instruction[]>, 
     previousNode: ThenNodeRef, 
-    startingNode: NodeRef
+    scopeLevel: number = 0
   ): ThenNodeRef {
-    //Add the If of the previousNode to add it to the nestedInstructions of its superNode, until the starting node has not been reached
-    const superNode = this.ifRefs.get(previousNode)![0]
-    this.updateNestedInstructions(nestedInstructions, superNode, IfInstruction(nestedInstructions.get(previousNode)!, this.ifRefs.get(previousNode)![1]))
-    if (superNode != startingNode && superNode.__brand == "ThenNodeRef") {
-      return this.createIfsUntilStartingNodeIsReached(nestedInstructions, superNode, startingNode)
+    //Add the If of the previousNode to add it to the nestedInstructions of its superNode, until the starting node has been reached
+    const superNode = previousNode.superNode
+    this.updateNestedInstructions(nestedInstructions, superNode, IfInstruction(nestedInstructions.get(previousNode)!, this.ifRefs.get(previousNode)!))
+    if (superNode.scopeLevel != scopeLevel && superNode.__brand == "ThenNodeRef") {
+      return this.createIfsUntilStartingNodeIsReached(nestedInstructions, superNode, scopeLevel)
     }
 
     return previousNode
@@ -193,14 +184,13 @@ abstract class ScriptBuilderImpl<S = Task | Automation> implements ScriptBuilder
     actualNode: ThenNodeRef,
     superNode: NodeRef,
     nestedInstructions: Map<NodeRef, Instruction[]>,
-    instructions: Array<Instruction>,
-    startingNode: NodeRef
+    instructions: Array<Instruction>
   ) {
     if (superNode.__brand == "ThenNodeRef") {
-      this.updateNestedInstructions(nestedInstructions, superNode, IfInstruction(nestedInstructions.get(actualNode)!, this.ifRefs.get(actualNode)![1]));
-      this.createIfAsLastInstruction(superNode, this.ifRefs.get(superNode)![0], nestedInstructions, instructions, startingNode)
+      this.updateNestedInstructions(nestedInstructions, superNode, IfInstruction(nestedInstructions.get(actualNode)!, this.ifRefs.get(actualNode)!));
+      this.createIfAsLastInstruction(superNode, superNode.superNode, nestedInstructions, instructions)
     } else {
-      this.addOuterIfToInstructions(instructions, nestedInstructions, actualNode, startingNode)
+      this.addOuterIfToInstructions(instructions, nestedInstructions, actualNode)
     }
   }
 
@@ -208,7 +198,7 @@ abstract class ScriptBuilderImpl<S = Task | Automation> implements ScriptBuilder
   protected abstract copy(
     nodeRefs: Array<[NodeRef, Instruction]>, 
     constantRefs: Map<ConstantRef, ConstantInstruction<unknown>>,
-    ifRefs: Map<NodeRef, [NodeRef, Condition<unknown>]>
+    ifRefs: Map<NodeRef, Condition<unknown>>
   ): ScriptBuilderImpl<S>
 }
 
@@ -222,7 +212,7 @@ class TaskBuilderImpl extends ScriptBuilderImpl<Task> {
   protected copy(
     nodeRefs: Array<[NodeRef, Instruction]>,
     constantRefs: Map<ConstantRef, ConstantInstruction<unknown>>,
-    ifRefs: Map<ThenNodeRef, [NodeRef, Condition<unknown>]>
+    ifRefs: Map<ThenNodeRef, Condition<unknown>>
   ): TaskBuilderImpl {
     return new TaskBuilderImpl(this.name, Array.from(nodeRefs), new Map(constantRefs), new Map(ifRefs))
   }
@@ -235,7 +225,7 @@ class AutomationBuilderImpl extends ScriptBuilderImpl<Automation> {
     private trigger: Trigger,
     nodeRefs: Array<[NodeRef, Instruction]>,
     constantRefs: Map<ConstantRef, ConstantInstruction<unknown>>,
-    ifRefs: Map<ThenNodeRef, [NodeRef, Condition<unknown>]>
+    ifRefs: Map<ThenNodeRef, Condition<unknown>>
   ) {
     super(name, nodeRefs, constantRefs, ifRefs)
   }
@@ -247,7 +237,7 @@ class AutomationBuilderImpl extends ScriptBuilderImpl<Automation> {
   protected copy(
     nodeRefs: Array<[NodeRef, Instruction]>,
     constantRefs: Map<ConstantRef, ConstantInstruction<unknown>>,
-    ifRefs: Map<ThenNodeRef, [NodeRef, Condition<unknown>]>
+    ifRefs: Map<ThenNodeRef, Condition<unknown>>
   ): AutomationBuilderImpl {
     return new AutomationBuilderImpl(this.name, this.trigger, Array.from(nodeRefs), new Map(constantRefs), new Map(ifRefs))
   }
