@@ -6,8 +6,10 @@ import { Type } from "../../../src/ports/devices-management/Types.js"
 
 test("A ConstantRef can be created", () => {
   const instruction = CreateConstantInstruction("constantName1", Type.IntType, 15)
-  const ref: ConstantRef = ConstantRef(instruction)
+  const scopeNode = RootNodeRef()
+  const ref: ConstantRef = ConstantRef(instruction, scopeNode)
   expect(ref.__brand).toBe("ConstantRef")
+  expect(ref.scopeNode).toBe(scopeNode)
   expect(ref.constantInstruction).toBe(instruction)
 })
 

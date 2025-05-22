@@ -70,7 +70,7 @@ abstract class ScriptBuilderImpl<S = Task | Automation> implements ScriptBuilder
   }
 
   addCreateConstant<T>(ref: NodeRef, name: string, type: Type, value: T): [ScriptBuilder<S>, ConstantRef] {
-    const constantRef = ConstantRef(CreateConstantInstruction(name, type, value))
+    const constantRef = ConstantRef(CreateConstantInstruction(name, type, value), ref)
     return [
       this.createCopy(ref, constantRef.constantInstruction),
       constantRef
@@ -78,7 +78,7 @@ abstract class ScriptBuilderImpl<S = Task | Automation> implements ScriptBuilder
   }
 
   addCreateDevicePropertyConstant(ref: NodeRef, name: string, type: Type, deviceId: DeviceId, propertyId: DevicePropertyId): [ScriptBuilder<S>, ConstantRef] {
-    const constantRef = ConstantRef(CreateDevicePropertyConstantInstruction(name, type, deviceId, propertyId))
+    const constantRef = ConstantRef(CreateDevicePropertyConstantInstruction(name, type, deviceId, propertyId), ref)
     return [
       this.createCopy(ref, constantRef.constantInstruction),
       constantRef

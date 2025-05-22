@@ -2,7 +2,8 @@ import { Brand } from "../../utils/Brand.js";
 import { Condition, ConstantInstruction } from "./Instruction.js";
 
 interface Constant {
-  constantInstruction: ConstantInstruction<unknown>
+  constantInstruction: ConstantInstruction<unknown>,
+  scopeNode: NodeRef
 }
 
 export type ConstantRef = Brand<Constant, "ConstantRef">
@@ -23,9 +24,10 @@ export type ThenNodeRef = Brand<Ref & IfRef, "ThenNodeRef">
 export type ElseNodeRef = Brand<Ref & IfRef, "ElseNodeRef">
 
 
-export function ConstantRef(constantInstruction: ConstantInstruction<unknown>): ConstantRef {
+export function ConstantRef(constantInstruction: ConstantInstruction<unknown>, scopeNode: NodeRef): ConstantRef {
   return {
     constantInstruction: constantInstruction,
+    scopeNode: scopeNode,
     __brand: "ConstantRef"
   }
 }
