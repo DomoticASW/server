@@ -1,14 +1,14 @@
 import { Effect, succeed, fail } from "effect/Effect";
 import { DeviceActionId, DeviceId, DevicePropertyId } from "../devices-management/Device.js";
 import { Condition, ConditionOperator, Instruction } from "./Instruction.js";
-import { ConstantRef, NodeRef, RootNodeRef, ThenNodeRef } from "./Refs.js";
+import { ConstantRef, ElseNodeRef, NodeRef, RootNodeRef, ThenNodeRef } from "./Refs.js";
 import { Automation, Task, TaskId } from "./Script.js";
 import { Email } from "../users-management/User.js";
 import { Type } from "../../ports/devices-management/Types.js";
 import { InvalidScriptError } from "../../ports/scripts-management/Errors.js";
 import { Trigger } from "./Trigger.js";
 import * as uuid from "uuid";
-import { CreateConstantInstruction, CreateDevicePropertyConstantInstruction, DeviceActionInstruction, IfInstruction, SendNotificationInstruction, StartTaskInstruction, WaitInstruction } from "./InstructionImpl.js";
+import { CreateConstantInstruction, CreateDevicePropertyConstantInstruction, DeviceActionInstruction, IfElseInstruction, IfInstruction, SendNotificationInstruction, StartTaskInstruction, WaitInstruction } from "./InstructionImpl.js";
 
 interface ScriptBuilder<S = Task | Automation> {
   addIf<T>(ref: NodeRef, left: ConstantRef, right: ConstantRef, operator: ConditionOperator<T>, negate: boolean): [ScriptBuilder<S>, NodeRef];
@@ -69,7 +69,6 @@ abstract class ScriptBuilderImpl<S = Task | Automation> implements ScriptBuilder
     const instruction = IfInstruction([], Condition(left.constantInstruction, right.constantInstruction, operator, negate))
     const thenNodeRef = ThenNodeRef(instruction, ref, ref.scopeLevel + 1)
 
-
     newBuilder.nodeRefs.push([ref, instruction])
 
     return [
@@ -78,9 +77,29 @@ abstract class ScriptBuilderImpl<S = Task | Automation> implements ScriptBuilder
     ]
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  
   addIfElse<T>(ref: NodeRef, left: ConstantRef, right: ConstantRef, operator: ConditionOperator<T>, negate: boolean): [ScriptBuilder<S>, NodeRef, NodeRef] {
-    throw new Error("Method not implemented.");
+    const newBuilder = this.copy(this.nodeRefs, this.errors)
+    
+    if (!this.checkIfOnInnerScope(ref, left.scopeNode)) {
+      newBuilder.addOutsideScopeOfConstantError(left)
+    } 
+
+    if (!this.checkIfOnInnerScope(ref, right.scopeNode)) {
+      newBuilder.addOutsideScopeOfConstantError(right)
+    }
+
+    const instruction = IfElseInstruction([], [], Condition(left.constantInstruction, right.constantInstruction, operator, negate))
+    const thenNodeRef = ThenNodeRef(instruction, ref, ref.scopeLevel + 1)
+    const elseNodeRef = ElseNodeRef(instruction, ref, ref.scopeLevel + 1)
+
+    newBuilder.nodeRefs.push([ref, instruction])
+
+    return [
+      newBuilder,
+      thenNodeRef,
+      elseNodeRef
+    ]
   }
 
   addWait(ref: NodeRef, seconds: number): ScriptBuilder<S> {
@@ -124,6 +143,9 @@ abstract class ScriptBuilderImpl<S = Task | Automation> implements ScriptBuilder
           break;
         case "ThenNodeRef":
           ref.instruction.then.push(instruction)
+          break;
+        case "ElseNodeRef":
+          ref.instruction.else.push(instruction)
           break;
       }
     });
