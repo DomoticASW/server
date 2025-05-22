@@ -1,3 +1,6 @@
+import { Condition } from "../../../src/domain/scripts-management/Instruction.js"
+import { CreateConstantInstruction } from "../../../src/domain/scripts-management/InstructionImpl.js"
+import { NumberEOperator } from "../../../src/domain/scripts-management/Operators.js"
 import { ConstantRef, ElseNodeRef, RootNodeRef, ThenNodeRef } from "../../../src/domain/scripts-management/Refs.js"
 import { Type } from "../../../src/ports/devices-management/Types.js"
 
@@ -14,11 +17,15 @@ test("A RootNodeRef can be created", () => {
 })
 
 test("A ThenNodeRef can be created", () => {
-  const ref: ThenNodeRef = ThenNodeRef()
+  const left = CreateConstantInstruction("constantName1", Type.IntType, 15)
+  const right = CreateConstantInstruction("constantName2", Type.IntType, 10)
+  const ref: ThenNodeRef = ThenNodeRef(1, RootNodeRef(), Condition(left, right, NumberEOperator()))
   expect(ref.__brand).toBe("ThenNodeRef")
 })
 
 test("A ElseNodeRef can be created", () => {
-  const ref: ElseNodeRef = ElseNodeRef()
+  const left = CreateConstantInstruction("constantName1", Type.IntType, 15)
+  const right = CreateConstantInstruction("constantName2", Type.IntType, 10)
+  const ref: ElseNodeRef = ElseNodeRef(1, RootNodeRef(), Condition(left, right, NumberEOperator()))
   expect(ref.__brand).toBe("ElseNodeRef")
 })

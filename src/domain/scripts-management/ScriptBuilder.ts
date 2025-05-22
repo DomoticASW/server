@@ -30,20 +30,11 @@ abstract class ScriptBuilderImpl<S = Task | Automation> implements ScriptBuilder
   constructor(
     protected name: string,
     protected nodeRefs: Array<[NodeRef, Instruction]>,
-    protected constantRefs: Map<ConstantRef, ConstantInstruction<unknown>>,
-    protected ifRefs: Map<ThenNodeRef, Condition<unknown>>
+    protected constantRefs: Map<ConstantRef, ConstantInstruction<unknown>>
   ) {}
 
-  private addIfNode<T>(thenNodeRef: ThenNodeRef, left: ConstantRef, right: ConstantRef, operator: ConditionOperator<T>, negate: boolean): ScriptBuilder<S> {
-    const newBuilder = this.copy(this.nodeRefs, this.constantRefs, this.ifRefs)
-
-    newBuilder.ifRefs.set(thenNodeRef, Condition(this.constantRefs.get(left)!, this.constantRefs.get(right)!, operator, negate))
-
-    return newBuilder
-  }
-
   private createCopy(ref: NodeRef, instruction: Instruction): ScriptBuilderImpl<S> {
-    const newBuilder = this.copy(this.nodeRefs, this.constantRefs, this.ifRefs)
+    const newBuilder = this.copy(this.nodeRefs, this.constantRefs)
 
     newBuilder.nodeRefs.push([ref, instruction])
   
@@ -59,9 +50,9 @@ abstract class ScriptBuilderImpl<S = Task | Automation> implements ScriptBuilder
   }
 
   addIf<T>(ref: NodeRef, left: ConstantRef, right: ConstantRef, operator: ConditionOperator<T>, negate: boolean): [ScriptBuilder<S>, NodeRef] {
-    const thenNodeRef = ThenNodeRef(ref.scopeLevel + 1, ref)
+    const thenNodeRef = ThenNodeRef(ref.scopeLevel + 1, ref, Condition(this.constantRefs.get(left)!, this.constantRefs.get(right)!, operator, negate))
     return [
-      this.addIfNode(thenNodeRef, left, right, operator, negate),
+      this.copy(this.nodeRefs, this.constantRefs),
       thenNodeRef
     ]
   }
@@ -147,7 +138,7 @@ abstract class ScriptBuilderImpl<S = Task | Automation> implements ScriptBuilder
   ) {
     // Get the node of the last If inside the root, create that if and add it to the instructions
     const lastNode = this.createIfsUntilStartingNodeIsReached(nestedInstructions, previousNode)
-    instructions.push(IfInstruction(nestedInstructions.get(lastNode)!, this.ifRefs.get(lastNode)!));
+    instructions.push(IfInstruction(nestedInstructions.get(lastNode)!, lastNode.condition));
   }
 
   private createIfsUntilStartingNodeIsReached(
@@ -157,7 +148,7 @@ abstract class ScriptBuilderImpl<S = Task | Automation> implements ScriptBuilder
   ): ThenNodeRef {
     //Add the If of the previousNode to add it to the nestedInstructions of its superNode, until the starting node has been reached
     const superNode = previousNode.superNode
-    this.updateNestedInstructions(nestedInstructions, superNode, IfInstruction(nestedInstructions.get(previousNode)!, this.ifRefs.get(previousNode)!))
+    this.updateNestedInstructions(nestedInstructions, superNode, IfInstruction(nestedInstructions.get(previousNode)!, previousNode.condition))
     if (superNode.scopeLevel != scopeLevel && superNode.__brand == "ThenNodeRef") {
       return this.createIfsUntilStartingNodeIsReached(nestedInstructions, superNode, scopeLevel)
     }
@@ -187,7 +178,7 @@ abstract class ScriptBuilderImpl<S = Task | Automation> implements ScriptBuilder
     instructions: Array<Instruction>
   ) {
     if (superNode.__brand == "ThenNodeRef") {
-      this.updateNestedInstructions(nestedInstructions, superNode, IfInstruction(nestedInstructions.get(actualNode)!, this.ifRefs.get(actualNode)!));
+      this.updateNestedInstructions(nestedInstructions, superNode, IfInstruction(nestedInstructions.get(actualNode)!, actualNode.condition));
       this.createIfAsLastInstruction(superNode, superNode.superNode, nestedInstructions, instructions)
     } else {
       this.addOuterIfToInstructions(instructions, nestedInstructions, actualNode)
@@ -197,8 +188,7 @@ abstract class ScriptBuilderImpl<S = Task | Automation> implements ScriptBuilder
   abstract build(): Effect<S, InvalidScriptError>
   protected abstract copy(
     nodeRefs: Array<[NodeRef, Instruction]>, 
-    constantRefs: Map<ConstantRef, ConstantInstruction<unknown>>,
-    ifRefs: Map<NodeRef, Condition<unknown>>
+    constantRefs: Map<ConstantRef, ConstantInstruction<unknown>>
   ): ScriptBuilderImpl<S>
 }
 
@@ -211,10 +201,9 @@ class TaskBuilderImpl extends ScriptBuilderImpl<Task> {
 
   protected copy(
     nodeRefs: Array<[NodeRef, Instruction]>,
-    constantRefs: Map<ConstantRef, ConstantInstruction<unknown>>,
-    ifRefs: Map<ThenNodeRef, Condition<unknown>>
+    constantRefs: Map<ConstantRef, ConstantInstruction<unknown>>
   ): TaskBuilderImpl {
-    return new TaskBuilderImpl(this.name, Array.from(nodeRefs), new Map(constantRefs), new Map(ifRefs))
+    return new TaskBuilderImpl(this.name, Array.from(nodeRefs), new Map(constantRefs))
   }
 }
 
@@ -224,10 +213,9 @@ class AutomationBuilderImpl extends ScriptBuilderImpl<Automation> {
     name: string, 
     private trigger: Trigger,
     nodeRefs: Array<[NodeRef, Instruction]>,
-    constantRefs: Map<ConstantRef, ConstantInstruction<unknown>>,
-    ifRefs: Map<ThenNodeRef, Condition<unknown>>
+    constantRefs: Map<ConstantRef, ConstantInstruction<unknown>>
   ) {
-    super(name, nodeRefs, constantRefs, ifRefs)
+    super(name, nodeRefs, constantRefs)
   }
 
   build(): Effect<Automation, InvalidScriptError> {
@@ -236,13 +224,12 @@ class AutomationBuilderImpl extends ScriptBuilderImpl<Automation> {
 
   protected copy(
     nodeRefs: Array<[NodeRef, Instruction]>,
-    constantRefs: Map<ConstantRef, ConstantInstruction<unknown>>,
-    ifRefs: Map<ThenNodeRef, Condition<unknown>>
+    constantRefs: Map<ConstantRef, ConstantInstruction<unknown>>
   ): AutomationBuilderImpl {
-    return new AutomationBuilderImpl(this.name, this.trigger, Array.from(nodeRefs), new Map(constantRefs), new Map(ifRefs))
+    return new AutomationBuilderImpl(this.name, this.trigger, Array.from(nodeRefs), new Map(constantRefs))
   }
 }
 
 export function TaskBuilder(name: string): [TaskBuilder, NodeRef] {
-  return [new TaskBuilderImpl(name, [], new Map(), new Map()), RootNodeRef()]
+  return [new TaskBuilderImpl(name, [], new Map()), RootNodeRef()]
 }

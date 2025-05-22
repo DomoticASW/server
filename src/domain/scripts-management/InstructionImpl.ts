@@ -211,14 +211,14 @@ class IfInstructionImpl implements IfInstruction {
   }
 }
 
-export function ElseInstruction(
+export function IfElseInstruction(
   thenInstructions: Array<Instruction>,
   elseInstructions: Array<Instruction>,
   condition: Condition<never>
 ): IfElseInstruction {
-  return new ElseInstructionImpl(thenInstructions, elseInstructions, condition)
+  return new IfElseInstructionImpl(thenInstructions, elseInstructions, condition)
 }
-class ElseInstructionImpl implements IfElseInstruction {
+class IfElseInstructionImpl implements IfElseInstruction {
   then: Array<Instruction>
   else: Array<Instruction>
   condition: Condition<never>
