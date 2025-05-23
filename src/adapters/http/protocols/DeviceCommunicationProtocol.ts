@@ -1,8 +1,8 @@
 import { Effect, succeed, fail, tryPromise, flatMap, catchAll } from "effect/Effect";
-import { DeviceCommunicationProtocol } from "../../ports/devices-management/DeviceCommunicationProtocol.js";
-import { DevicesService } from "../../ports/devices-management/DevicesService.js";
-import { CommunicationError, DeviceUnreachableError, DeviceActionError } from "../../ports/devices-management/Errors.js";
-import { Device, DeviceActionId, DeviceId, DeviceStatus } from "./Device.js";
+import { DeviceCommunicationProtocol } from "../../../ports/devices-management/DeviceCommunicationProtocol.js";
+import { DevicesService } from "../../../ports/devices-management/DevicesService.js";
+import { CommunicationError, DeviceUnreachableError, DeviceActionError } from "../../../ports/devices-management/Errors.js";
+import { Device, DeviceActionId, DeviceId, DeviceStatus } from "../../../domain/devices-management/Device.js";
 import { pipe } from "effect";
 
 export class DeviceCommunicationProtocolImpl implements DeviceCommunicationProtocol {
