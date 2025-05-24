@@ -10,7 +10,7 @@ import { DeviceActionError, DeviceUnreachableError, InvalidInputError } from "..
 import { DeviceRepository } from "../../../src/ports/devices-management/DeviceRepository.js"
 import { IntRange, NoneInt } from "../../../src/domain/devices-management/Types.js"
 import { InvalidTokenError } from "../../../src/ports/users-management/Errors.js"
-import { UsersService } from "../../../src/ports/users-management/UserService.js"
+import { UsersService } from "../../../src/ports/users-management/UsersService.js"
 import { PermissionsService } from "../../../src/ports/permissions-management/PermissionsService.js"
 import { PermissionError } from "../../../src/ports/permissions-management/Errors.js"
 

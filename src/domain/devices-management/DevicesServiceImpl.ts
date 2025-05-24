@@ -8,7 +8,7 @@ import { Role } from "../users-management/User.js";
 import { DeviceId, Device, DeviceActionId, DevicePropertyId } from "./Device.js";
 import { DeviceFactory } from "../../ports/devices-management/DeviceFactory.js";
 import { DeviceRepository } from "../../ports/devices-management/DeviceRepository.js";
-import { UsersService } from "../../ports/users-management/UserService.js";
+import { UsersService } from "../../ports/users-management/UsersService.js";
 import { PermissionsService } from "../../ports/permissions-management/PermissionsService.js";
 
 export class DevicesServiceImpl implements DevicesService {
