@@ -5,7 +5,7 @@ import { Effect } from "effect/Effect";
 import { Effect as Eff } from "effect";
 import { RegistrationRequest } from "./RegistrationRequest.js";
 import { User, Nickname, Email, PasswordHash, Role } from "./User.js";
-import { UsersService } from "../../ports/users-management/UserService.js";
+import { UsersService } from "../../ports/users-management/UsersService.js";
 import { UserRepositoryAdapter } from "../../adapters/users-management/UserRepositoryAdapter.js";
 import { RegistrationRequestRepositoryAdapter } from "../../adapters/users-management/RegistrationRequestRepositoryAdapter.js";
 import { EmailAlreadyInUseError, UserNotFoundError, TokenError, InvalidTokenError, InvalidCredentialsError, InvalidTokenFormatError, UnauthorizedError, } from "../../ports/users-management/Errors.js";

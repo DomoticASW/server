@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 import { HTTPServerAdapter } from "./adapters/http/HTTPServerAdapter.js";
 import { DeviceGroupRepositoryMongoAdapter } from "./adapters/devices-management/DeviceGroupRepositoryMongoAdapter.js";
-import { UsersService } from "./ports/users-management/UserService.js";
+import { UsersService } from "./ports/users-management/UsersService.js";
 import { Effect } from "effect";
 import { Email, Role } from "./domain/users-management/User.js";
 import { DeviceGroupsServiceImpl } from "./domain/devices-management/DeviceGroupsServiceImpl.js";

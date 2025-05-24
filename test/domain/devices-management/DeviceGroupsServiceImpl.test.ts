@@ -9,7 +9,7 @@ import * as uuid from "uuid";
 import { Device, DeviceId, DeviceStatus } from "../../../src/domain/devices-management/Device.js"
 import { DevicesService } from "../../../src/ports/devices-management/DevicesService.js"
 import { DeviceNotFoundError } from "../../../src/ports/devices-management/Errors.js"
-import { UsersService } from "../../../src/ports/users-management/UserService.js"
+import { UsersService } from "../../../src/ports/users-management/UsersService.js"
 import { InvalidTokenError, UnauthorizedError } from "../../../src/ports/users-management/Errors.js"
 
 let service: DeviceGroupsService

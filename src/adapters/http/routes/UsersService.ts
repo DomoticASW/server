@@ -1,7 +1,7 @@
 import express from "express";
 import { Effect } from "effect";
 import { StatusCodes } from "http-status-codes";
-import { UsersService } from "../../../ports/users-management/UserService.js";
+import { UsersService } from "../../../ports/users-management/UsersService.js";
 import { deserializeToken, BadRequest, handleCommonErrors, sendResponse, Response } from "./HttpUtils.js";
 import { Email, Nickname, PasswordHash } from "../../../domain/users-management/User.js";
 
