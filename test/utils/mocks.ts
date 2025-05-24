@@ -336,7 +336,7 @@ export function UsersServiceSpy(user: User = UserMock()): Spy<UsersService> {
         removeUser: function (token: Token, email: Email): Effect<void, UserNotFoundError | TokenError> {
           throw new Error("Function not implemented.");
         },
-        updateUserData: function (token: Token, nickname?: Nickname, email?: Email, password?: PasswordHash): Effect<void, UserNotFoundError | EmailAlreadyInUseError | TokenError> {
+        updateUserData: function (token: Token, nickname?: Nickname, password?: PasswordHash): Effect<void, UserNotFoundError | TokenError> {
           throw new Error("Function not implemented.");
         },
         getAllUsers: function (token: Token): Effect<Iterable<User>, InvalidTokenError> {

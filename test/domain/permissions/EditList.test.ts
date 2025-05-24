@@ -2,11 +2,9 @@ import { EditList } from "../../../src/domain/permissions-management/EditList.js
 import { ScriptId, TaskId } from "../../../src/domain/scripts-management/Script.js";
 import { Email } from "../../../src/domain/users-management/User.js"
  
- function makeEditList(id: string = "1") {
-    const scriptId: ScriptId = TaskId(id)
-    return EditList(scriptId, )
- }
- 
+function makeEditList(id: string = "1", users: Email[] = [Email("test@gmail.com")]): EditList {
+  return EditList(TaskId(id), users)
+}
  test("EditList testing field", () => {
     expect(makeEditList().id).toBe("1")
     expect(makeEditList().users).toHaveLength(1)
