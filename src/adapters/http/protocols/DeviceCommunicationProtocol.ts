@@ -52,8 +52,53 @@ export class DeviceCommunicationProtocolImpl implements DeviceCommunicationProto
   }
 
   executeDeviceAction(deviceAddress: URL, deviceActionId: DeviceActionId, input: unknown): Effect<void, DeviceUnreachableError | CommunicationError | DeviceActionError> {
-    throw new Error("Method not implemented.");
+    const promise = async () => {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+      const completeUrl = new URL(deviceAddress.toString() + `/${deviceActionId.toString()}`);
+
+      try {
+        const response = await fetch(completeUrl.toString(), {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          signal: controller.signal,
+          body: JSON.stringify(input)
+        });
+        clearTimeout(timeoutId);
+        return response;
+      } catch (e) {
+        clearTimeout(timeoutId);
+        return e;
+      }
+    }
+
+    return pipe(
+      tryPromise(promise),
+      flatMap(response => {
+        if (response instanceof Response) {
+          if (response.ok) {
+            return succeed(undefined);
+          } else {
+            return fail(CommunicationError());
+          }
+        }
+        return fail(CommunicationError());
+      }),
+       catchAll((e): Effect<void, DeviceActionError | DeviceUnreachableError | CommunicationError> => {
+        switch (e instanceof CommunicationError) {
+          case (e.cause === "404"): 
+            return fail(DeviceActionError());
+          case (e.cause === "500"):
+            return fail(DeviceUnreachableError());
+          default:
+            return fail(CommunicationError());
+        }
+      })
+    );
   }
+
   register(deviceAddress: URL): Effect<Device, DeviceUnreachableError | CommunicationError> {
     throw new Error("Method not implemented.");
   }
