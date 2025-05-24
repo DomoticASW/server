@@ -35,4 +35,3 @@ export function InvalidTokenFormatError(cause?: string): InvalidTokenFormatError
 export function invalidTokenFormatError(cause?: string): invalidTokenFormatError {
     return { message: "Invalid token format", cause: cause, __brand: "invalidTokenFormatError" }
 }
-

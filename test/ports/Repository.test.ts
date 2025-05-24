@@ -1,3 +1,5 @@
+import { DuplicateIdError, NotFoundError, UniquenessConstraintViolatedError } from "../../src/ports/Repository.js"
+
 test("DuplicateIdError cause add correcly", () => {
   const cause = "Device id already taken"
   const err = DuplicateIdError(cause)
