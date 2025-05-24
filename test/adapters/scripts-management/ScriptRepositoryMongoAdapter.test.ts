@@ -4,7 +4,7 @@ import { ScriptRepositoryMongoAdapter } from "../../../src/adapters/scripts-mana
 import { ScriptId, AutomationId, TaskId, Task, Automation } from "../../../src/domain/scripts-management/Script.js";
 import { DeviceEventTrigger, PeriodTrigger, Trigger } from "../../../src/domain/scripts-management/Trigger.js";
 import { DeviceActionId, DeviceId, DevicePropertyId } from "../../../src/domain/devices-management/Device.js";
-import { CreateConstantInstruction, CreateDevicePropertyConstantInstruction, DeviceActionInstruction, ElseInstruction, IfInstruction, SendNotificationInstruction, StartTaskInstruction, WaitInstruction } from "../../../src/domain/scripts-management/InstructionImpl.js";
+import { CreateConstantInstruction, CreateDevicePropertyConstantInstruction, DeviceActionInstruction, IfElseInstruction, IfInstruction, SendNotificationInstruction, StartTaskInstruction, WaitInstruction } from "../../../src/domain/scripts-management/InstructionImpl.js";
 import { Type } from "../../../src/ports/devices-management/Types.js";
 import { Email } from "../../../src/domain/users-management/User.js";
 import { BooleanEOperator, ColorEOperator, NumberEOperator, NumberGEOperator, NumberGOperator, NumberLEOperator, NumberLOperator, StringEOperator } from "../../../src/domain/scripts-management/Operators.js";
@@ -38,7 +38,7 @@ const instructions = [
     constantA,
     constantB,
     IfInstruction([instr1, instr2], Condition(constantA, constantB, NumberEOperator())),
-    ElseInstruction([instr1], [instr2], Condition(constantA, constantB, NumberGEOperator(), true)),
+    IfElseInstruction([instr1], [instr2], Condition(constantA, constantB, NumberGEOperator(), true)),
     // All other condition operators
     IfInstruction([], Condition(constantA, constantB, NumberLEOperator())),
     IfInstruction([], Condition(constantA, constantB, NumberLOperator())),
