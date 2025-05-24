@@ -35,10 +35,16 @@ export function TokenMock(email: string): Token {
   }
 }
 
-export function NotificationsServiceSpy(existingEmail: Email): Spy<NotificationsService> {
+interface MessageReader {
+  getMessages(): Array<string>
+}
+
+export function NotificationsServiceSpy(existingEmail: Email): Spy<NotificationsService> & MessageReader {
   let call = 0
+  const messages: Array<string> = []
   return {
     call: () => call,
+    getMessages: () => messages,
     get: () => {
       return {
         subscribeForDeviceOfflineNotifications: function (token: Token, deviceId: DeviceId): Effect<void, DeviceNotFoundError | UserNotFoundError | InvalidTokenError> {
@@ -49,6 +55,7 @@ export function NotificationsServiceSpy(existingEmail: Email): Spy<Notifications
         },
         sendNotification: function (email: Email, message: string): Effect<void, UserNotFoundError> {
           call++
+          messages.push(message)
           return email == existingEmail ? succeed(null) : fail(UserNotFoundErrorMock())
         },
         deviceStatusChanged: function (deviceId: DeviceId, status: DeviceStatus): Effect<void> {
@@ -143,7 +150,7 @@ export function PermissionsServiceSpy(userToken: Token = TokenMock("email")): Sp
         },
         canExecuteTask: function (token: Token, taskId: TaskId): Effect<void, PermissionError | InvalidTokenError> {
           call++
-          return token == userToken ? succeed(null) : fail(PermissionError())
+          return token == userToken ? succeed(true) : fail(PermissionError())
         },
         canEdit: function (token: Token, scriptId: ScriptId): Effect<void, PermissionError | InvalidTokenError> {
           throw new Error("Function not implemented.");
@@ -329,7 +336,7 @@ export function UsersServiceSpy(user: User = UserMock()): Spy<UsersService> {
         removeUser: function (token: Token, email: Email): Effect<void, UserNotFoundError | TokenError> {
           throw new Error("Function not implemented.");
         },
-        updateUserData: function (token: Token, nickname?: Nickname, password?: PasswordHash): Effect<void, UserNotFoundError | TokenError> {
+        updateUserData: function (token: Token, nickname?: Nickname, email?: Email, password?: PasswordHash): Effect<void, UserNotFoundError | EmailAlreadyInUseError | TokenError> {
           throw new Error("Function not implemented.");
         },
         getAllUsers: function (token: Token): Effect<Iterable<User>, InvalidTokenError> {

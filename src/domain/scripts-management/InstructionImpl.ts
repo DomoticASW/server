@@ -2,7 +2,7 @@ import { Duration, pipe } from "effect";
 import { Type } from "../../ports/devices-management/Types.js";
 import { DeviceActionId, DeviceId, DevicePropertyId } from "../devices-management/Device.js";
 import { Email } from "../users-management/User.js";
-import { Condition, ConstantValue, CreateConstantInstruction, CreateDevicePropertyConstantInstruction, DeviceActionInstruction, ElseInstruction, ExecutionEnvironment, ExecutionEnvironmentCopy, IfInstruction, Instruction, SendNotificationInstruction, StartTaskInstruction, WaitInstruction } from "./Instruction.js";
+import { Condition, ConstantValue, CreateConstantInstruction, CreateDevicePropertyConstantInstruction, DeviceActionInstruction, IfElseInstruction, ExecutionEnvironment, ExecutionEnvironmentCopy, IfInstruction, Instruction, SendNotificationInstruction, StartTaskInstruction, WaitInstruction } from "./Instruction.js";
 import { TaskId } from "./Script.js";
 import { andThen, map, mapError, sleep, succeed, orDie, flatMap, sync, reduce, fail, fromNullable, Effect, void as voidEffect } from "effect/Effect";
 import { InvalidConstantType, ScriptError } from "../../ports/scripts-management/Errors.js";
@@ -127,8 +127,6 @@ class CreateConstantInstructionImpl<T> implements CreateConstantInstruction<T> {
             return typeof this.value === "string"
           case "VoidType":
             return typeof this.value === "undefined"
-          default:
-            return false
         }
       }),
       flatMap(isValid =>
@@ -211,14 +209,14 @@ class IfInstructionImpl implements IfInstruction {
   }
 }
 
-export function ElseInstruction(
+export function IfElseInstruction(
   thenInstructions: Array<Instruction>,
   elseInstructions: Array<Instruction>,
   condition: Condition<never>
-): ElseInstruction {
-  return new ElseInstructionImpl(thenInstructions, elseInstructions, condition)
+): IfElseInstruction {
+  return new IfElseInstructionImpl(thenInstructions, elseInstructions, condition)
 }
-class ElseInstructionImpl implements ElseInstruction {
+class IfElseInstructionImpl implements IfElseInstruction {
   then: Array<Instruction>
   else: Array<Instruction>
   condition: Condition<never>
