@@ -177,21 +177,6 @@ export function registerUsersServiceRoutes(app: express.Application, service: Us
         sendResponse(res, response)
     });
 
-    // get one without token
-    app.get('/api/users/:id/unsafe', async (req, res) => {
-        const response = await Effect.Do.pipe(
-            Effect.bind("user", () => service.getUserDataUnsafe(Email(req.params.id))),
-            Effect.map(({ user }) => Response(StatusCodes.OK, user)),
-            Effect.catch("__brand", {
-                failure: "UserNotFoundError",
-                onFailure: (err) => Effect.succeed(Response(StatusCodes.NOT_FOUND, err))
-            }),
-            handleCommonErrors,
-            Effect.runPromise
-        )
-        sendResponse(res, response)
-    });
-
     // login
     app.post('/api/users/login', async (req, res) => {
         const key = "password"
