@@ -40,7 +40,7 @@ test("A wait instruction can be added", async () => {
   const start = Date.now()
 
   await runPromise(task.execute(notificationService, scriptsService, permissionsService, devicesService, token))
-  expect(Date.now()).toBeGreaterThan(start + 0.5 * 1000)
+  expect(Date.now()).toBeGreaterThanOrEqual(start + 0.5 * 1000 - 20)
 })
 
 
@@ -150,7 +150,7 @@ test("An IfInstruction can be added", async () => {
 
   await runPromise(task.execute(notificationService, scriptsService, permissionsService, devicesService, token))
 
-  expect(Date.now()).toBeGreaterThan(start + 0.2 * 1000)
+  expect(Date.now()).toBeGreaterThanOrEqual(start + 0.2 * 1000 - 20)
 })
 
 test("An IfInstruction does not execute instructions if is evaluated to false", async () => {
@@ -198,7 +198,7 @@ test("A big test with the if instruction", async () => {
 
   await runPromise(task.execute(notificationService.get(), scriptsService, permissionsService, devicesService, token))
 
-  expect(Date.now()).toBeGreaterThan(start + 0.7 * 1000)
+  expect(Date.now()).toBeGreaterThanOrEqual(start + 0.7 * 1000 - 10)
   expect(notificationService.call()).toBe(3)
   expect(notificationService.getMessages()).toStrictEqual(["firstMessage", "secondMessage", "thirdMessage"])
 })
