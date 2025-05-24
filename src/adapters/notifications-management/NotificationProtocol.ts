@@ -1,7 +1,7 @@
 import { Server } from 'node:http';
 import { Server as IO, Socket } from 'socket.io';
-import { NotificationProtocol } from '../../../ports/notifications-management/NotificationProtocol.js';
-import { Email } from '../../../domain/users-management/User.js';
+import { NotificationProtocol } from '../../ports/notifications-management/NotificationProtocol.js';
+import { Email } from '../../domain/users-management/User.js';
 
 export class NotificationProtocolImpl implements NotificationProtocol {
   private io: IO
@@ -20,8 +20,9 @@ export class NotificationProtocolImpl implements NotificationProtocol {
   }
 
   sendNotification(email: Email, message: string): void {
-    if (this.findSocketByEmail(email)) {
-      this.io.emit("notification", { message })
+    const socket = this.findSocketByEmail(email)
+    if (socket) {
+      socket.emit("notification", { message })
     }
   }
 
