@@ -123,6 +123,10 @@ export function registerDevicesServiceRoutes(app: express.Express, service: Perm
           failure: "ScriptNotFoundError",
           onFailure: (err) => Effect.succeed(Response(StatusCodes.NOT_FOUND, err))
         }),
+        Effect.catch("__brand", {
+          failure: "InvalidOperationError",
+          onFailure: (err) => Effect.succeed(Response(StatusCodes.CONFLICT, err))
+        }),
         handleCommonErrors,
         Effect.runPromise
     )
@@ -147,6 +151,10 @@ export function registerDevicesServiceRoutes(app: express.Express, service: Perm
         Effect.catch("__brand", {
           failure: "ScriptNotFoundError",
           onFailure: (err) => Effect.succeed(Response(StatusCodes.NOT_FOUND, err))
+        }),
+        Effect.catch("__brand", {
+          failure: "InvalidOperationError",
+          onFailure: (err) => Effect.succeed(Response(StatusCodes.CONFLICT, err))
         }),
         handleCommonErrors,
         Effect.runPromise
