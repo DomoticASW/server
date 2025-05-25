@@ -308,7 +308,7 @@ test("A wait instruction should stop the task for a given period of time", async
   const instruction = WaitInstruction(1)
   const start = Date.now()
   await Effect.runPromise(instruction.execute(ExecutionEnvironment(notificationServiceMock, scriptsServiceMock, permissionsServiceMock, devicesServiceMock, TokenMock("email"))))
-  expect(Date.now()).toBeGreaterThanOrEqual(start + 1 * 1000 - 20)
+  expect(Date.now()).toBeGreaterThanOrEqual(start + 1 * 1000)
 })
 
 test("A send notification instruction should use a notification service to send a notification", async () => {
