@@ -13,7 +13,9 @@ import { pipe } from "effect"
 import { TaskBuilder } from "../../../src/domain/scripts-management/ScriptBuilder.js"
 import { flatMap } from "effect/Effect"
 import { InvalidTokenError } from "../../../src/ports/users-management/Errors.js"
-import { TaskNameAlreadyInUse } from "../../../src/ports/scripts-management/Errors.js"
+import { InvalidScriptError, TaskNameAlreadyInUse } from "../../../src/ports/scripts-management/Errors.js"
+import { Type } from "../../../src/ports/devices-management/Types.js"
+import { NumberEOperator, StringEOperator } from "../../../src/domain/scripts-management/Operators.js"
 
 const user = UserMock()
 const email = user.email
@@ -27,7 +29,8 @@ let scriptsRepository: ScriptRepository
 let scriptsService: ScriptsService
 
 const taskBuilderAndRef = TaskBuilder("taskName")
-const taskBuilder = taskBuilderAndRef[0].addSendNotification(taskBuilderAndRef[1], email, "message")
+const root = taskBuilderAndRef[1]
+const taskBuilder = taskBuilderAndRef[0].addSendNotification(root, email, "message")
 
 beforeEach(() => {
   devicesServiceSpy = DevicesServiceSpy(device)
@@ -123,4 +126,34 @@ test("Cannot create two tasks with the same name", async () => {
   ))
 
   expect(usersServiceSpy.call()).toBe(2)
+})
+
+test("If trying to create a task with syntax errors, the errors are returned", async () => {
+  const builderAndConstant = taskBuilder.addCreateConstant(root, "constantName", Type.IntType, 10)
+  const automationBuilderOneConstant = builderAndConstant[0]
+
+  const builderAndConstant2 = automationBuilderOneConstant.addCreateConstant(root, "constantName2", Type.IntType, 10)
+  const automationBuilderTwoConstants = builderAndConstant2[0]
+
+  const builderAndRef = automationBuilderTwoConstants.addIf(root, builderAndConstant[1], builderAndConstant2[1], NumberEOperator(), false)
+  const automationBuilderIf = builderAndRef[0]
+  const ifRef = builderAndRef[1]
+
+  const builderAndConstant3 = automationBuilderIf.addSendNotification(ifRef, user.email, "firstMessage").addCreateConstant(ifRef, "constantName3", Type.StringType, "string")
+  const builderAndConstant4 = builderAndConstant3[0].addCreateConstant(ifRef, "constantName4", Type.StringType, "anotherString")
+  const builderAndRef2 = builderAndConstant4[0].addIf(root, builderAndConstant3[1], builderAndConstant4[1], StringEOperator(), true)
+  const taskBuilderComplete = builderAndRef2[0].addSendNotification(builderAndRef2[1], user.email, "secondMessage")
+
+  await runPromise(pipe(
+    scriptsService.createTask(token, taskBuilderComplete),
+    match({
+      onSuccess: () => { throw Error("should not be here") },
+      onFailure: err => {
+        expect(err).toStrictEqual([
+          InvalidScriptError("The constant constantName3 was not defined inside of the if's scope"), 
+          InvalidScriptError("The constant constantName4 was not defined inside of the if's scope")
+        ])
+      },
+    })
+  ))
 })
