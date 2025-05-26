@@ -16,6 +16,7 @@ import { InvalidTokenError } from "../../../src/ports/users-management/Errors.js
 import { InvalidScriptError, TaskNameAlreadyInUse } from "../../../src/ports/scripts-management/Errors.js"
 import { Type } from "../../../src/ports/devices-management/Types.js"
 import { NumberEOperator, StringEOperator } from "../../../src/domain/scripts-management/Operators.js"
+import { TaskId } from "../../../src/domain/scripts-management/Script.js"
 
 const user = UserMock()
 const email = user.email
@@ -166,6 +167,18 @@ test("Cannot find a task without a valid token using the safe findTask method", 
       onSuccess: () => { throw Error("Should not be here") },
       onFailure: err => {
         expect(err).toStrictEqual(InvalidTokenError())
+      }
+    })
+  ))
+})
+
+test("An error is returned if the task searched does not exists", async () => {
+  await runPromise(pipe(
+    scriptsService.findTask(token, TaskId("1")),
+    match({
+      onSuccess: () => { throw Error("Should not be here") },
+      onFailure: err => {
+        expect(err.__brand).toBe("ScriptNotFoundError")
       }
     })
   ))
