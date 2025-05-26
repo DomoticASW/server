@@ -14,7 +14,7 @@ import { NotificationProtocol } from "../../src/ports/notifications-management/N
 import { NotificationsService } from "../../src/ports/notifications-management/NotificationsService.js";
 import { PermissionError } from "../../src/ports/permissions-management/Errors.js";
 import { PermissionsService } from "../../src/ports/permissions-management/PermissionsService.js";
-import { ScriptError, ScriptNotFoundError, TaskNameAlreadyInUse, InvalidTaskError, AutomationNameAlreadyInUse, InvalidAutomationError } from "../../src/ports/scripts-management/Errors.js";
+import { ScriptError, ScriptNotFoundError, TaskNameAlreadyInUse, InvalidScriptError, AutomationNameAlreadyInUse } from "../../src/ports/scripts-management/Errors.js";
 import { ScriptsService } from "../../src/ports/scripts-management/ScriptsService.js";
 import { UserNotFoundError, InvalidTokenError, TokenError, EmailAlreadyInUseError, InvalidCredentialsError, InvalidTokenFormatError } from "../../src/ports/users-management/Errors.js";
 import { Spy } from "./spy.js";
@@ -103,10 +103,10 @@ export function ScriptsServiceSpy(task: Task = SpyTaskMock().get(), isTask: bool
         getAllTasks: function (token: Token): Effect<Iterable<Task>, InvalidTokenError> {
           throw new Error("Function not implemented.");
         },
-        createTask: function (token: Token, task: TaskBuilder): Effect<TaskId, InvalidTokenError | TaskNameAlreadyInUse | InvalidTaskError> {
+        createTask: function (token: Token, task: TaskBuilder): Effect<TaskId, InvalidTokenError | TaskNameAlreadyInUse | Array<InvalidScriptError>> {
           throw new Error("Function not implemented.");
         },
-        editTask: function (token: Token, taskId: TaskId, task: TaskBuilder): Effect<void, InvalidTokenError | PermissionError | ScriptNotFoundError | TaskNameAlreadyInUse | InvalidTaskError> {
+        editTask: function (token: Token, taskId: TaskId, task: TaskBuilder): Effect<void, InvalidTokenError | PermissionError | ScriptNotFoundError | TaskNameAlreadyInUse | Array<InvalidScriptError>> {
           throw new Error("Function not implemented.");
         },
         startTask: function (token: Token, taskId: TaskId): Effect<void, InvalidTokenError | ScriptNotFoundError | PermissionError> {
@@ -118,10 +118,10 @@ export function ScriptsServiceSpy(task: Task = SpyTaskMock().get(), isTask: bool
         getAllAutomations: function (token: Token): Effect<Iterable<Automation>, InvalidTokenError> {
           throw new Error("Function not implemented.");
         },
-        createAutomation: function (token: Token, automation: TaskBuilder): Effect<AutomationId, InvalidTokenError | ScriptNotFoundError | AutomationNameAlreadyInUse | InvalidAutomationError> {
+        createAutomation: function (token: Token, automation: TaskBuilder): Effect<AutomationId, InvalidTokenError | ScriptNotFoundError | AutomationNameAlreadyInUse | Array<InvalidScriptError>> {
           throw new Error("Function not implemented.");
         },
-        editAutomation: function (token: Token, automationId: AutomationId, automation: TaskBuilder): Effect<void, InvalidTokenError | PermissionError | ScriptNotFoundError | AutomationNameAlreadyInUse | InvalidAutomationError> {
+        editAutomation: function (token: Token, automationId: AutomationId, automation: TaskBuilder): Effect<void, InvalidTokenError | PermissionError | ScriptNotFoundError | AutomationNameAlreadyInUse | Array<InvalidScriptError>> {
           throw new Error("Function not implemented.");
         },
         setAutomationState: function (token: Token, automationId: AutomationId, enable: boolean): Effect<void, InvalidTokenError | ScriptNotFoundError> {

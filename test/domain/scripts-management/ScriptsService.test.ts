@@ -10,6 +10,8 @@ import { InMemoryRepositoryMock } from "../../InMemoryRepositoryMock.js"
 import { DeviceMock, DevicesServiceSpy, NotificationsServiceSpy, PermissionsServiceSpy, TokenMock, UserMock, UsersServiceSpy } from "../../utils/mocks.js"
 import { Spy } from "../../utils/spy.js"
 import { pipe } from "effect"
+import { TaskBuilder } from "../../../src/domain/scripts-management/ScriptBuilder.js"
+import { flatMap } from "effect/Effect"
 
 const user = UserMock()
 const email = user.email
@@ -21,6 +23,9 @@ let usersServiceSpy: Spy<UsersService>
 let permissionsService: Spy<PermissionsService>
 let scriptsRepository: ScriptRepository
 let scriptsService: ScriptsService
+
+const taskBuilderAndRef = TaskBuilder("taskName")
+const taskBuilder = taskBuilderAndRef[0].addSendNotification(taskBuilderAndRef[1], email, "message")
 
 beforeEach(() => {
   devicesServiceSpy = DevicesServiceSpy(device)
@@ -73,4 +78,18 @@ test("Cannot get automations with invalid token", async () => {
       }
     })
   ))
+})
+
+test("Creating a task adds it to the service and the repository", async () => {
+  const task = await runPromise(pipe(
+    scriptsService.createTask(token, taskBuilder),
+    flatMap(id => scriptsService.findTask(token, id))
+  ))
+
+  const tasks = await runPromise(scriptsService.getAllTasks(token))
+  const repoTasks = await runPromise(scriptsRepository.getAll())
+
+  expect(tasks).toContain(task)
+  expect(repoTasks).toContain(task)
+  expect(usersServiceSpy.call()).toBe(3)
 })

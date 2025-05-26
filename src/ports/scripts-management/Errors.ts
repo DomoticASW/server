@@ -4,9 +4,7 @@ import { Error } from "../Error.js"
 export type ScriptNotFoundError = Brand<Error, "ScriptNotFoundError">
 export type InvalidScriptError = Brand<Error, "InvalidScriptError">
 export type TaskNameAlreadyInUse = Brand<Error, "TaskNameAlreadyInUse">
-export type InvalidTaskError = Brand<Error, "InvalidTaskError">
 export type AutomationNameAlreadyInUse = Brand<Error, "AutomationNameAlreadyInUse">
-export type InvalidAutomationError = Brand<Error, "InvalidAutomationError">
 export type ScriptError = Brand<Error, "ScriptError">
 export type InvalidConstantType = Brand<Error, "InvalidConstantType">
 
@@ -24,4 +22,8 @@ export function InvalidConstantType(cause?: string): InvalidConstantType {
 
 export function InvalidScriptError(cause?: string): InvalidScriptError {
   return { message: "There is an error in the script syntax", cause: cause, __brand: "InvalidScriptError" }
+}
+
+export function TaskNameAlreadyInUse(cause?: string): TaskNameAlreadyInUse {
+  return { message: "A task with this name already exists", cause: cause, __brand: "TaskNameAlreadyInUse" }
 }

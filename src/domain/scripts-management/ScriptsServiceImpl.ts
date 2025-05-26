@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { Effect, flatMap, if as if_, mapError, succeed } from "effect/Effect";
+import { Effect, flatMap, catch as catch_, succeed, fail, mapError } from "effect/Effect";
 import { PermissionError } from "../../ports/permissions-management/Errors.js";
-import { ScriptNotFoundError, TaskNameAlreadyInUse, InvalidTaskError, AutomationNameAlreadyInUse, InvalidAutomationError } from "../../ports/scripts-management/Errors.js";
+import { ScriptNotFoundError, TaskNameAlreadyInUse, AutomationNameAlreadyInUse, InvalidScriptError } from "../../ports/scripts-management/Errors.js";
 import { ScriptsService } from "../../ports/scripts-management/ScriptsService.js";
 import { InvalidTokenError } from "../../ports/users-management/Errors.js";
 import { Token } from "../users-management/Token.js";
@@ -26,7 +26,15 @@ export class ScriptsServiceImpl implements ScriptsService {
   }
 
   findTask(token: Token, taskId: TaskId): Effect<Task, InvalidTokenError | ScriptNotFoundError> {
-    throw new Error("Method not implemented.");
+    return pipe(
+      this.usersService.verifyToken(token),
+      flatMap(() => this.scriptRepository.find(taskId)),
+      flatMap(script => succeed(script as Task)),
+      catch_("__brand", {
+        failure: "NotFoundError",
+        onFailure: err => fail(ScriptNotFoundError(err.cause))
+      })
+    )
   }
 
   findTaskUnsafe(taskId: TaskId): Effect<Task, ScriptNotFoundError> {
@@ -40,11 +48,30 @@ export class ScriptsServiceImpl implements ScriptsService {
     )
   }
 
-  createTask(token: Token, task: TaskBuilder): Effect<TaskId, InvalidTokenError | TaskNameAlreadyInUse | InvalidTaskError> {
-    throw new Error("Method not implemented.");
+  createTask(token: Token, task: TaskBuilder): Effect<TaskId, InvalidTokenError | TaskNameAlreadyInUse | Array<InvalidScriptError>> {
+    return pipe(
+      this.usersService.verifyToken(token),
+      flatMap(() => task.build()),
+      flatMap(task => 
+        pipe(
+          this.scriptRepository.add(task),
+          flatMap(() => succeed(task.id))
+        )
+      ),
+      mapError(err => {
+        if ("__brand" in err) {
+          switch (err.__brand) {
+            case "DuplicateIdError":
+            case "UniquenessConstraintViolatedError":
+              return TaskNameAlreadyInUse(err.cause)
+          }
+        }
+        return err
+      })
+    )
   }
 
-  editTask(token: Token, taskId: TaskId, task: TaskBuilder): Effect<void, InvalidTokenError | PermissionError | ScriptNotFoundError | TaskNameAlreadyInUse | InvalidTaskError> {
+  editTask(token: Token, taskId: TaskId, task: TaskBuilder): Effect<void, InvalidTokenError | PermissionError | ScriptNotFoundError | TaskNameAlreadyInUse | Array<InvalidScriptError>> {
     throw new Error("Method not implemented.");
   }
 
@@ -63,11 +90,11 @@ export class ScriptsServiceImpl implements ScriptsService {
     )
   }
 
-  createAutomation(token: Token, automation: TaskBuilder): Effect<AutomationId, InvalidTokenError | ScriptNotFoundError | AutomationNameAlreadyInUse | InvalidAutomationError> {
+  createAutomation(token: Token, automation: TaskBuilder): Effect<AutomationId, InvalidTokenError | ScriptNotFoundError | AutomationNameAlreadyInUse | Array<InvalidScriptError>> {
     throw new Error("Method not implemented.");
   }
 
-  editAutomation(token: Token, automationId: AutomationId, automation: TaskBuilder): Effect<void, InvalidTokenError | PermissionError | ScriptNotFoundError | AutomationNameAlreadyInUse | InvalidAutomationError> {
+  editAutomation(token: Token, automationId: AutomationId, automation: TaskBuilder): Effect<void, InvalidTokenError | PermissionError | ScriptNotFoundError | AutomationNameAlreadyInUse | Array<InvalidScriptError>> {
     throw new Error("Method not implemented.");
   }
 
