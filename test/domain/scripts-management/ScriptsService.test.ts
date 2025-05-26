@@ -12,6 +12,7 @@ import { Spy } from "../../utils/spy.js"
 import { pipe } from "effect"
 import { TaskBuilder } from "../../../src/domain/scripts-management/ScriptBuilder.js"
 import { flatMap } from "effect/Effect"
+import { InvalidTokenError } from "../../../src/ports/users-management/Errors.js"
 
 const user = UserMock()
 const email = user.email
@@ -92,4 +93,18 @@ test("Creating a task adds it to the service and the repository", async () => {
   expect(tasks).toContain(task)
   expect(repoTasks).toContain(task)
   expect(usersServiceSpy.call()).toBe(3)
+})
+
+test("Cannot create a task if the token is not valid", async () => {
+  await runPromise(pipe(
+    scriptsService.createTask(TokenMock("otherEmail"), taskBuilder),
+    match({
+      onSuccess: () => { throw Error("should not be here") },
+      onFailure: err => {
+        expect(err).toStrictEqual(InvalidTokenError())
+      },
+    })
+  ))
+
+  expect(usersServiceSpy.call()).toBe(1)
 })
