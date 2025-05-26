@@ -53,4 +53,24 @@ test("Cannot get tasks with invalid token", async () => {
   ))
 })
 
+test("Initially does not have automations", async () => {
+  const automations = await runPromise(scriptsService.getAllAutomations(token))
+  expect(automations).toHaveLength(0)
+  expect(usersServiceSpy.call()).toBe(1)
+})
 
+test("Cannot get automations with invalid token", async () => {
+  const token = TokenMock("otherEmail")
+  await runPromise(pipe(
+    scriptsService.getAllAutomations(token),
+    match({
+      onSuccess: () => {
+        throw Error("should not be here")
+      },
+      onFailure: err => {
+        expect(err.__brand).toBe("InvalidTokenError")
+        expect(usersServiceSpy.call()).toBe(1)
+      }
+    })
+  ))
+})

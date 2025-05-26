@@ -5,7 +5,7 @@ import { ScriptNotFoundError, TaskNameAlreadyInUse, InvalidTaskError, Automation
 import { ScriptsService } from "../../ports/scripts-management/ScriptsService.js";
 import { InvalidTokenError } from "../../ports/users-management/Errors.js";
 import { Token } from "../users-management/Token.js";
-import { TaskId, Task, AutomationId, Automation, TaskImpl } from "./Script.js";
+import { TaskId, Task, AutomationId, Automation, TaskImpl, AutomationImpl, Script, ScriptId } from "./Script.js";
 import { TaskBuilder } from "./ScriptBuilder.js";
 import { ScriptRepository } from "../../ports/scripts-management/ScriptRepository.js";
 import { DevicesService } from "../../ports/devices-management/DevicesService.js";
@@ -35,8 +35,7 @@ export class ScriptsServiceImpl implements ScriptsService {
 
   getAllTasks(token: Token): Effect<Iterable<Task>, InvalidTokenError> {
     return pipe(
-      this.usersService.verifyToken(token),
-      flatMap(() => this.scriptRepository.getAll()),
+      this.getAllScripts(token),
       flatMap(scripts => succeed(Array.from(scripts).filter(e => e instanceof TaskImpl)))
     )
   }
@@ -58,7 +57,10 @@ export class ScriptsServiceImpl implements ScriptsService {
   }
 
   getAllAutomations(token: Token): Effect<Iterable<Automation>, InvalidTokenError> {
-    throw new Error("Method not implemented.");
+    return pipe(
+      this.getAllScripts(token),
+      flatMap(scripts => succeed(Array.from(scripts).filter(e => e instanceof AutomationImpl)))
+    )
   }
 
   createAutomation(token: Token, automation: TaskBuilder): Effect<AutomationId, InvalidTokenError | ScriptNotFoundError | AutomationNameAlreadyInUse | InvalidAutomationError> {
@@ -71,5 +73,12 @@ export class ScriptsServiceImpl implements ScriptsService {
 
   setAutomationState(token: Token, automationId: AutomationId, enable: boolean): Effect<void, InvalidTokenError | ScriptNotFoundError> {
     throw new Error("Method not implemented.");
+  }
+
+  private getAllScripts(token: Token): Effect<Iterable<Script<ScriptId>>, InvalidTokenError> {
+    return pipe(
+      this.usersService.verifyToken(token),
+      flatMap(() => this.scriptRepository.getAll())
+    )
   }
 }
