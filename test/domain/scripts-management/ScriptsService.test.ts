@@ -6,13 +6,14 @@ import { PermissionsService } from "../../../src/ports/permissions-management/Pe
 import { ScriptRepository } from "../../../src/ports/scripts-management/ScriptRepository.js"
 import { ScriptsService } from "../../../src/ports/scripts-management/ScriptsService.js"
 import { UsersService } from "../../../src/ports/users-management/UserService.js"
-import { InMemoryRepositoryMock } from "../../InMemoryRepositoryMock.js"
+import { InMemoryRepositoryMockCheckingUniqueness } from "../../InMemoryRepositoryMock.js"
 import { DeviceMock, DevicesServiceSpy, NotificationsServiceSpy, PermissionsServiceSpy, TokenMock, UserMock, UsersServiceSpy } from "../../utils/mocks.js"
 import { Spy } from "../../utils/spy.js"
 import { pipe } from "effect"
 import { TaskBuilder } from "../../../src/domain/scripts-management/ScriptBuilder.js"
 import { flatMap } from "effect/Effect"
 import { InvalidTokenError } from "../../../src/ports/users-management/Errors.js"
+import { TaskNameAlreadyInUse } from "../../../src/ports/scripts-management/Errors.js"
 
 const user = UserMock()
 const email = user.email
@@ -33,7 +34,7 @@ beforeEach(() => {
   notificationsServiceSpy = NotificationsServiceSpy(email)
   usersServiceSpy = UsersServiceSpy(user, token)
   permissionsService = PermissionsServiceSpy(token)
-  scriptsRepository = new InMemoryRepositoryMock((script) => script.id, (id) => id)
+  scriptsRepository = new InMemoryRepositoryMockCheckingUniqueness((script) => script.id, (id) => id, (script1, script2) => script1.name != script2.name)
   scriptsService = new ScriptsServiceImpl(scriptsRepository, devicesServiceSpy.get(), notificationsServiceSpy.get(), usersServiceSpy.get(), permissionsService.get())
 })
 
@@ -107,4 +108,19 @@ test("Cannot create a task if the token is not valid", async () => {
   ))
 
   expect(usersServiceSpy.call()).toBe(1)
+})
+
+test("Cannot create two tasks with the same name", async () => {
+  await runPromise(pipe(
+    scriptsService.createTask(token, taskBuilder),
+    flatMap(() => scriptsService.createTask(token, taskBuilder)),
+    match({
+      onSuccess: () => { throw Error("should not be here") },
+      onFailure: err => {
+        expect(err).toStrictEqual(TaskNameAlreadyInUse())
+      },
+    })
+  ))
+
+  expect(usersServiceSpy.call()).toBe(2)
 })
