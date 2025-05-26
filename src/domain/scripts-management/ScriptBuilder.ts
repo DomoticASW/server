@@ -10,7 +10,7 @@ import { DeviceEventTrigger, PeriodTrigger, Trigger } from "./Trigger.js";
 import * as uuid from "uuid";
 import { CreateConstantInstruction, CreateDevicePropertyConstantInstruction, DeviceActionInstruction, IfElseInstruction, IfInstruction, SendNotificationInstruction, StartTaskInstruction, WaitInstruction } from "./InstructionImpl.js";
 
-interface ScriptBuilder<S = Task | Automation> {
+export interface ScriptBuilder<S = Task | Automation> {
   addIf<T>(ref: NodeRef, left: ConstantRef, right: ConstantRef, operator: ConditionOperator<T>, negate: boolean): [ScriptBuilder<S>, NodeRef];
   addIfElse<T>(ref: NodeRef, left: ConstantRef, right: ConstantRef, operator: ConditionOperator<T>, negate: boolean): [ScriptBuilder<S>, NodeRef, NodeRef];
   addWait(ref: NodeRef, seconds: number): ScriptBuilder<S>;

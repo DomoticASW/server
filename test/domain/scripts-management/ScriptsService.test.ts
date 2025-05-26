@@ -10,7 +10,7 @@ import { InMemoryRepositoryMockCheckingUniqueness } from "../../InMemoryReposito
 import { DeviceMock, DevicesServiceSpy, NotificationsServiceSpy, PermissionsServiceSpy, TokenMock, UserMock, UsersServiceSpy } from "../../utils/mocks.js"
 import { Spy } from "../../utils/spy.js"
 import { pipe } from "effect"
-import { TaskBuilder } from "../../../src/domain/scripts-management/ScriptBuilder.js"
+import { AutomationBuilderWithDeviceEventTrigger, TaskBuilder } from "../../../src/domain/scripts-management/ScriptBuilder.js"
 import { flatMap } from "effect/Effect"
 import { InvalidTokenError } from "../../../src/ports/users-management/Errors.js"
 import { InvalidScriptError, TaskNameAlreadyInUse } from "../../../src/ports/scripts-management/Errors.js"
@@ -21,7 +21,9 @@ import { TaskId } from "../../../src/domain/scripts-management/Script.js"
 const user = UserMock()
 const email = user.email
 const token = TokenMock(email)
-const device = DeviceMock("eventName")
+const eventName = "eventName"
+const device = DeviceMock(eventName)
+const deviceId = device.id
 let devicesServiceSpy: Spy<DevicesService>
 let notificationsServiceSpy: Spy<NotificationsService>
 let usersServiceSpy: Spy<UsersService>
@@ -32,6 +34,8 @@ let scriptsService: ScriptsService
 const taskBuilderAndRef = TaskBuilder("taskName")
 const root = taskBuilderAndRef[1]
 const taskBuilder = taskBuilderAndRef[0].addSendNotification(root, email, "message")
+
+const automationBuilder = AutomationBuilderWithDeviceEventTrigger("automationName", deviceId, eventName)[0]
 
 beforeEach(() => {
   devicesServiceSpy = DevicesServiceSpy(device)
@@ -182,4 +186,18 @@ test("An error is returned if the task searched does not exists", async () => {
       }
     })
   ))
+})
+
+test("Creating an automation adds it to the service and the repository", async () => {
+  const automation = await runPromise(pipe(
+    scriptsService.createAutomation(token, automationBuilder),
+    flatMap(id => scriptsService.findAutomation(token, id))
+  ))
+
+  const automations = await runPromise(scriptsService.getAllAutomations(token))
+  const repoAutomations = await runPromise(scriptsRepository.getAll())
+
+  expect(automations).toContain(automation)
+  expect(repoAutomations).toContain(automation)
+  expect(usersServiceSpy.call()).toBe(3)
 })

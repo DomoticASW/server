@@ -27,3 +27,7 @@ export function InvalidScriptError(cause?: string): InvalidScriptError {
 export function TaskNameAlreadyInUse(cause?: string): TaskNameAlreadyInUse {
   return { message: "A task with this name already exists", cause: cause, __brand: "TaskNameAlreadyInUse" }
 }
+
+export function AutomationNameAlreadyInUse(cause?: string): AutomationNameAlreadyInUse {
+  return { message: "An automation with this name already exists", cause: cause, __brand: "AutomationNameAlreadyInUse" }
+}

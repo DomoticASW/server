@@ -3,7 +3,7 @@ import { Automation, AutomationId, Task, TaskId } from "../../domain/scripts-man
 import { Token } from "../../domain/users-management/Token.js";
 import { InvalidTokenError } from "../users-management/Errors.js";
 import { AutomationNameAlreadyInUse, InvalidScriptError, ScriptNotFoundError, TaskNameAlreadyInUse } from "./Errors.js";
-import { TaskBuilder } from "../../domain/scripts-management/ScriptBuilder.js";
+import { AutomationBuilder, TaskBuilder } from "../../domain/scripts-management/ScriptBuilder.js";
 import { PermissionError } from "../permissions-management/Errors.js";
 
 export interface ScriptsService {
@@ -17,7 +17,7 @@ export interface ScriptsService {
 
   findAutomation(token: Token, automationId: AutomationId): Effect<Automation, InvalidTokenError | ScriptNotFoundError>
   getAllAutomations(token: Token): Effect<Iterable<Automation>, InvalidTokenError>
-  createAutomation(token: Token, automation: TaskBuilder): Effect<AutomationId, InvalidTokenError | ScriptNotFoundError | AutomationNameAlreadyInUse | Array<InvalidScriptError>>
-  editAutomation(token: Token, automationId: AutomationId, automation: TaskBuilder): Effect<void, InvalidTokenError | PermissionError | ScriptNotFoundError | AutomationNameAlreadyInUse | Array<InvalidScriptError>>
+  createAutomation(token: Token, automation: AutomationBuilder): Effect<AutomationId, InvalidTokenError | ScriptNotFoundError | AutomationNameAlreadyInUse | Array<InvalidScriptError>>
+  editAutomation(token: Token, automationId: AutomationId, automation: AutomationBuilder): Effect<void, InvalidTokenError | PermissionError | ScriptNotFoundError | AutomationNameAlreadyInUse | Array<InvalidScriptError>>
   setAutomationState(token: Token, automationId: AutomationId, enable: boolean): Effect<void, InvalidTokenError | ScriptNotFoundError>
 }

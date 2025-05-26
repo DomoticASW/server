@@ -4,7 +4,7 @@ import { DeviceId, DeviceStatus, Device, DeviceProperty, DevicePropertyId, Devic
 import { NoneInt } from "../../src/domain/devices-management/Types.js";
 import { ExecutionEnvironment, Instruction } from "../../src/domain/scripts-management/Instruction.js";
 import { TaskId, AutomationId, Automation, ScriptId, Task } from "../../src/domain/scripts-management/Script.js";
-import { TaskBuilder } from "../../src/domain/scripts-management/ScriptBuilder.js";
+import { AutomationBuilder, TaskBuilder } from "../../src/domain/scripts-management/ScriptBuilder.js";
 import { Token, UserRole } from "../../src/domain/users-management/Token.js";
 import { Email, Nickname, PasswordHash, Role, User } from "../../src/domain/users-management/User.js";
 import { DevicesService, DevicePropertyUpdatesSubscriber } from "../../src/ports/devices-management/DevicesService.js";
@@ -118,10 +118,10 @@ export function ScriptsServiceSpy(task: Task = SpyTaskMock().get(), isTask: bool
         getAllAutomations: function (token: Token): Effect<Iterable<Automation>, InvalidTokenError> {
           throw new Error("Function not implemented.");
         },
-        createAutomation: function (token: Token, automation: TaskBuilder): Effect<AutomationId, InvalidTokenError | ScriptNotFoundError | AutomationNameAlreadyInUse | Array<InvalidScriptError>> {
+        createAutomation: function (token: Token, automation: AutomationBuilder): Effect<AutomationId, InvalidTokenError | ScriptNotFoundError | AutomationNameAlreadyInUse | Array<InvalidScriptError>> {
           throw new Error("Function not implemented.");
         },
-        editAutomation: function (token: Token, automationId: AutomationId, automation: TaskBuilder): Effect<void, InvalidTokenError | PermissionError | ScriptNotFoundError | AutomationNameAlreadyInUse | Array<InvalidScriptError>> {
+        editAutomation: function (token: Token, automationId: AutomationId, automation: AutomationBuilder): Effect<void, InvalidTokenError | PermissionError | ScriptNotFoundError | AutomationNameAlreadyInUse | Array<InvalidScriptError>> {
           throw new Error("Function not implemented.");
         },
         setAutomationState: function (token: Token, automationId: AutomationId, enable: boolean): Effect<void, InvalidTokenError | ScriptNotFoundError> {
