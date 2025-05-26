@@ -317,7 +317,7 @@ export function UserMock(email: Email = Email("test")): User {
   } as unknown as User
 }
 
-export function UsersServiceSpy(user: User = UserMock()): Spy<UsersService> {
+export function UsersServiceSpy(user: User = UserMock(), usedToken: Token = TokenMock(user.email)): Spy<UsersService> {
   let call = 0
   return {
     call: () => call,
@@ -353,7 +353,7 @@ export function UsersServiceSpy(user: User = UserMock()): Spy<UsersService> {
         },
         verifyToken: function (token: Token): Effect<void, InvalidTokenError> {
           call++
-          return succeed(null)
+          return usedToken == token ? succeed(null) : fail(InvalidTokenError())
         },
         makeToken: function (value: string): Effect<Token, InvalidTokenFormatError> {
           throw new Error("Function not implemented.");

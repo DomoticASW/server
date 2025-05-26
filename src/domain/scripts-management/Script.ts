@@ -43,7 +43,7 @@ export function Task(id: TaskId, name: string, instructions: Array<Instruction>)
   return new TaskImpl(id, name, instructions)
 }
 
-class TaskImpl implements Task {
+export class TaskImpl implements Task {
   id: TaskId
   name: string
   instructions: Array<Instruction>
@@ -59,7 +59,7 @@ class TaskImpl implements Task {
   }
 }
 
-class AutomationImpl implements Automation {
+export class AutomationImpl implements Automation {
   enabled: boolean = false
   trigger: Trigger
   id: AutomationId
