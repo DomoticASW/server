@@ -157,3 +157,16 @@ test("If trying to create a task with syntax errors, the errors are returned", a
     })
   ))
 })
+
+test("Cannot find a task without a valid token using the safe findTask method", async () => {
+  await runPromise(pipe(
+    scriptsService.createTask(token, taskBuilder),
+    flatMap(taskId => scriptsService.findTask(TokenMock("otherEmail"), taskId)),
+    match({
+      onSuccess: () => { throw Error("Should not be here") },
+      onFailure: err => {
+        expect(err).toStrictEqual(InvalidTokenError())
+      }
+    })
+  ))
+})
