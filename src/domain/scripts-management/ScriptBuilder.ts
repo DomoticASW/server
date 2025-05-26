@@ -54,7 +54,7 @@ abstract class ScriptBuilderImpl<S = Task | Automation> implements ScriptBuilder
   private addOutsideScopeOfConstantError(constant: ConstantRef) {
     this.errors.push(InvalidScriptError("The constant " + constant.constantInstruction.name + " was not defined inside of the if's scope"))
   }
-  
+
   private createIfOnBuilder(ref: NodeRef, left: ConstantRef, right: ConstantRef, instruction: Instruction): ScriptBuilder<S> {
     const newBuilder = this.copy(this.nodeRefs, this.errors);
 
@@ -145,7 +145,7 @@ abstract class ScriptBuilderImpl<S = Task | Automation> implements ScriptBuilder
 class TaskBuilderImpl extends ScriptBuilderImpl<Task> {
   build(): Effect<Task, Array<InvalidScriptError>> {
     const instructions: Array<Instruction> = this.buildInstructions();
-    
+
     return this.errors.length == 0 ? succeed(Task(TaskId(uuid.v4()), this.name, instructions)) : fail(this.errors)
   }
 
