@@ -10,17 +10,13 @@ import { TaskLists } from "../../../src/domain/permissions-management/TaskLists.
 import { EditList } from "../../../src/domain/permissions-management/EditList.js"
 import { PermissionsServiceImpl } from "../../../src/domain/permissions-management/PermissionsServiceImpl.js"
 import { PermissionsService } from "../../../src/ports/permissions-management/PermissionsService.js"
-import mongoose from "mongoose"
-import { UserDevicePermissionRepositoryMongoAdapter } from "../../../src/adapters/permissions-management/UserDevicePermissionRepositoryMongoAdapter.js"
-import { UserDevicePermissionRepository } from "../../../src/ports/permissions-management/UserDevicePermissionRepository.js"
 import { ScriptId, TaskId } from "../../../src/domain/scripts-management/Script.js"
+import { UserDevicePermission } from "../../../src/domain/permissions-management/UserDevicePermission.js"
 
 
-const dbName: string = "UserDevicePermissionRepositoryTests"
-let dbConnection: mongoose.Connection
 let service: PermissionsService
 let devicesService: DevicesService
-let userDevicePermissionRepo: UserDevicePermissionRepository
+let userDevicePermissionRepo: InMemoryRepositoryMock<[Email, DeviceId], UserDevicePermission>
 let taskListsRepo: InMemoryRepositoryMock<TaskId, TaskLists>
 let editListRepo: InMemoryRepositoryMock<ScriptId, EditList>
 let userRepo: InMemoryRepositoryMockCheckingUniqueness<Email, User>
@@ -49,15 +45,13 @@ function makeTokenWithUnknownUser(role: Role = Role.Admin): Token {
     }
 }
 
-beforeAll(async () => {
-    dbConnection = await mongoose.createConnection(`mongodb://localhost:27018/${dbName}`).asPromise();
-})
-
 beforeEach(async () => {
     editListRepo = new InMemoryRepositoryMock((s) => s.id, (id) => id.toString())
     taskListsRepo = new InMemoryRepositoryMock((t) => t.id, (id) => id.toString())
-    // userDevicePermissionRepo = new InMemoryRepositoryMock((p) => [p.email, p.deviceId])
-    userDevicePermissionRepo = new UserDevicePermissionRepositoryMongoAdapter(dbConnection);
+    userDevicePermissionRepo = new InMemoryRepositoryMock(
+        (p) => [p.email, p.deviceId],
+        (id) => id[0].toString() + id[1].toString(),
+    );
     userRepo = new InMemoryRepositoryMockCheckingUniqueness(
         (u) => u.email,
         (id) => id.toString(),
@@ -500,7 +494,3 @@ test("removeFromBlackList, expect UserNotFoundError", async () => {
         )
     ).rejects.toThrow("UserNotFoundError");
 })
-
-afterAll(async () => {
-  await dbConnection.close()
-});
