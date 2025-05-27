@@ -24,9 +24,9 @@ export class RegistrationRequestRepositoryAdapter implements RegistrationRequest
     
     constructor(connection: mongoose.Connection) {
         this.registrationRequest =
-        connection.models.RegistarationRequest ||
+        connection.models.RegistrationRequest ||
         connection.model<RegistrationRequestSchema>(
-            "RegistarationRequest",
+            "RegistrationRequest",
             this.registrationRequestSchema
         );
     }
