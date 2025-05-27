@@ -13,7 +13,7 @@ import { pipe } from "effect"
 import { AutomationBuilderWithDeviceEventTrigger, TaskBuilder } from "../../../src/domain/scripts-management/ScriptBuilder.js"
 import { flatMap } from "effect/Effect"
 import { InvalidTokenError } from "../../../src/ports/users-management/Errors.js"
-import { InvalidScriptError, ScriptNotFoundError, TaskNameAlreadyInUse } from "../../../src/ports/scripts-management/Errors.js"
+import { InvalidScriptError, ScriptNotFoundError, TaskNameAlreadyInUseError } from "../../../src/ports/scripts-management/Errors.js"
 import { Type } from "../../../src/ports/devices-management/Types.js"
 import { NumberEOperator, StringEOperator } from "../../../src/domain/scripts-management/Operators.js"
 import { TaskId } from "../../../src/domain/scripts-management/Script.js"
@@ -126,7 +126,7 @@ test("Cannot create two tasks with the same name", async () => {
     match({
       onSuccess: () => { throw Error("should not be here") },
       onFailure: err => {
-        expect(err).toStrictEqual(TaskNameAlreadyInUse())
+        expect(err).toStrictEqual(TaskNameAlreadyInUseError())
       },
     })
   ))
@@ -289,6 +289,24 @@ test("The task must exists in order to edit it", async () => {
       onSuccess: () => { throw Error("Should not be here") },
       onFailure: err => {
         expect(err).toStrictEqual(ScriptNotFoundError())
+      }
+    })
+  ))
+})
+
+test("The edited task cannot have the same name of another task", async () => {
+  const otherBuilder = TaskBuilder("otherTaskName")[0]
+  const taskId = await runPromise(pipe(
+    scriptsService.createTask(token, taskBuilder),
+    flatMap(() => scriptsService.createTask(token, otherBuilder))
+  ))
+
+  await runPromise(pipe(
+    scriptsService.editTask(token, taskId, taskBuilder),
+    match({
+      onSuccess: () => { throw Error("Should not be here") },
+      onFailure: err => {
+        expect(err).toStrictEqual(TaskNameAlreadyInUseError())
       }
     })
   ))

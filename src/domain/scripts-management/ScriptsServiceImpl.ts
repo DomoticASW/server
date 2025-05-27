@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { Effect, flatMap, catch as catch_, succeed, fail, mapError, map } from "effect/Effect";
 import { PermissionError } from "../../ports/permissions-management/Errors.js";
-import { ScriptNotFoundError, TaskNameAlreadyInUse, AutomationNameAlreadyInUse, InvalidScriptError } from "../../ports/scripts-management/Errors.js";
+import { ScriptNotFoundError, TaskNameAlreadyInUseError, AutomationNameAlreadyInUseError, InvalidScriptError } from "../../ports/scripts-management/Errors.js";
 import { ScriptsService } from "../../ports/scripts-management/ScriptsService.js";
 import { InvalidTokenError } from "../../ports/users-management/Errors.js";
 import { Token } from "../users-management/Token.js";
@@ -48,7 +48,7 @@ export class ScriptsServiceImpl implements ScriptsService {
     )
   }
 
-  createTask(token: Token, task: TaskBuilder): Effect<TaskId, InvalidTokenError | TaskNameAlreadyInUse | Array<InvalidScriptError>> {
+  createTask(token: Token, task: TaskBuilder): Effect<TaskId, InvalidTokenError | TaskNameAlreadyInUseError | Array<InvalidScriptError>> {
     return pipe(
       this.createScript(token, task),
       map(id => id as TaskId),
@@ -57,7 +57,7 @@ export class ScriptsServiceImpl implements ScriptsService {
           switch (err.__brand) {
             case "DuplicateIdError":
             case "UniquenessConstraintViolatedError":
-              return TaskNameAlreadyInUse(err.cause)
+              return TaskNameAlreadyInUseError(err.cause)
           }
         }
         return err
@@ -65,7 +65,7 @@ export class ScriptsServiceImpl implements ScriptsService {
     )
   }
 
-  editTask(token: Token, taskId: TaskId, task: TaskBuilder): Effect<void, InvalidTokenError | PermissionError | ScriptNotFoundError | TaskNameAlreadyInUse | Array<InvalidScriptError>> {
+  editTask(token: Token, taskId: TaskId, task: TaskBuilder): Effect<void, InvalidTokenError | PermissionError | ScriptNotFoundError | TaskNameAlreadyInUseError | Array<InvalidScriptError>> {
     return pipe(
       this.usersService.verifyToken(token),
       flatMap(() => this.permissionsService.canEdit(token, taskId)),
@@ -77,7 +77,7 @@ export class ScriptsServiceImpl implements ScriptsService {
             case "NotFoundError":
               return ScriptNotFoundError(err.cause)
             case "UniquenessConstraintViolatedError":
-              return TaskNameAlreadyInUse(err.cause)
+              return TaskNameAlreadyInUseError(err.cause)
           }
         }
         return err
@@ -103,7 +103,7 @@ export class ScriptsServiceImpl implements ScriptsService {
     )
   }
 
-  createAutomation(token: Token, automation: AutomationBuilder): Effect<AutomationId, InvalidTokenError | AutomationNameAlreadyInUse | Array<InvalidScriptError>> {
+  createAutomation(token: Token, automation: AutomationBuilder): Effect<AutomationId, InvalidTokenError | AutomationNameAlreadyInUseError | Array<InvalidScriptError>> {
     return pipe(
       this.createScript(token, automation),
       map(id => id as AutomationId),
@@ -112,7 +112,7 @@ export class ScriptsServiceImpl implements ScriptsService {
           switch (err.__brand) {
             case "DuplicateIdError":
             case "UniquenessConstraintViolatedError":
-              return AutomationNameAlreadyInUse(err.cause)
+              return AutomationNameAlreadyInUseError(err.cause)
           }
         }
         return err
@@ -120,7 +120,7 @@ export class ScriptsServiceImpl implements ScriptsService {
     )
   }
 
-  editAutomation(token: Token, automationId: AutomationId, automation: AutomationBuilder): Effect<void, InvalidTokenError | PermissionError | ScriptNotFoundError | AutomationNameAlreadyInUse | Array<InvalidScriptError>> {
+  editAutomation(token: Token, automationId: AutomationId, automation: AutomationBuilder): Effect<void, InvalidTokenError | PermissionError | ScriptNotFoundError | AutomationNameAlreadyInUseError | Array<InvalidScriptError>> {
     throw new Error("Method not implemented.");
   }
 
