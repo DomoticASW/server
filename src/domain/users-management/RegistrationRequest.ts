@@ -17,7 +17,5 @@ class RegistrationRequestImpl implements RegistrationRequest {
         public readonly passwordHash: PasswordHash
     ) {}
     
-    newRegistrationRequest(nickname: Nickname, email: Email, passwordHash: PasswordHash): RegistrationRequest {
-        return new RegistrationRequestImpl(nickname, email, passwordHash);
-    }
+// Removed redundant newRegistrationRequest method.
 }
