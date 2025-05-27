@@ -57,7 +57,7 @@ test("A task can be executed", async () => {
   expect(env.constants.get(instruction2)).toBeDefined()
 })
 
-test("A task cannot execute another task id token has not the permissions", async () => {
+test("A task cannot execute another task if token has not the permissions", async () => {
   const spyTask = SpyTaskMock().get()
   const scriptsService = ScriptsServiceSpy(spyTask, true).get()
   const requiredToken = TokenMock("email")
