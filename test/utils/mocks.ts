@@ -132,7 +132,7 @@ export function ScriptsServiceSpy(task: Task = SpyTaskMock().get(), isTask: bool
   }
 }
 
-export function PermissionsServiceSpy(userToken: Token = TokenMock("email")): Spy<PermissionsService> {
+export function PermissionsServiceSpy(userToken: Token = TokenMock("email"), testEdit: boolean = false): Spy<PermissionsService> {
   let call = 0
   return {
     call: () => call,
@@ -148,11 +148,12 @@ export function PermissionsServiceSpy(userToken: Token = TokenMock("email")): Sp
           throw new Error("Function not implemented.");
         },
         canExecuteTask: function (token: Token, taskId: TaskId): Effect<void, PermissionError | InvalidTokenError> {
-          call++
+          if (!testEdit) call++
           return token == userToken ? succeed(true) : fail(PermissionError())
         },
         canEdit: function (token: Token, scriptId: ScriptId): Effect<void, PermissionError | InvalidTokenError> {
-          throw new Error("Function not implemented.");
+          if (testEdit) call++
+          return token == userToken ? succeed(true) : fail(PermissionError())
         },
         addToEditlist: function (token: Token, email: Email, scriptId: ScriptId): Effect<void, TokenError | UserNotFoundError | ScriptNotFoundError> {
           throw new Error("Function not implemented.");

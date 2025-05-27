@@ -66,7 +66,22 @@ export class ScriptsServiceImpl implements ScriptsService {
   }
 
   editTask(token: Token, taskId: TaskId, task: TaskBuilder): Effect<void, InvalidTokenError | PermissionError | ScriptNotFoundError | TaskNameAlreadyInUse | Array<InvalidScriptError>> {
-    throw new Error("Method not implemented.");
+    return pipe(
+      this.usersService.verifyToken(token),
+      flatMap(() => this.permissionsService.canEdit(token, taskId)),
+      flatMap(() => task.buildWithId(taskId)),
+      flatMap(task => this.scriptRepository.update(task)),
+      mapError(err => {
+        if ("__brand" in err) {
+          switch (err.__brand) {
+            case "NotFoundError":
+            case "UniquenessConstraintViolatedError":
+              return TaskNameAlreadyInUse(err.cause)
+          }
+        }
+        return err
+      })
+    )
   }
 
   startTask(token: Token, taskId: TaskId): Effect<void, InvalidTokenError | ScriptNotFoundError | PermissionError> {

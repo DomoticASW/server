@@ -27,7 +27,7 @@ const deviceId = device.id
 let devicesServiceSpy: Spy<DevicesService>
 let notificationsServiceSpy: Spy<NotificationsService>
 let usersServiceSpy: Spy<UsersService>
-let permissionsService: Spy<PermissionsService>
+let permissionsServiceSpy: Spy<PermissionsService>
 let scriptsRepository: ScriptRepository
 let scriptsService: ScriptsService
 
@@ -41,9 +41,9 @@ beforeEach(() => {
   devicesServiceSpy = DevicesServiceSpy(device)
   notificationsServiceSpy = NotificationsServiceSpy(email)
   usersServiceSpy = UsersServiceSpy(user, token)
-  permissionsService = PermissionsServiceSpy(token)
+  permissionsServiceSpy = PermissionsServiceSpy(token, true)
   scriptsRepository = new InMemoryRepositoryMockCheckingUniqueness((script) => script.id, (id) => id, (script1, script2) => script1.name != script2.name)
-  scriptsService = new ScriptsServiceImpl(scriptsRepository, devicesServiceSpy.get(), notificationsServiceSpy.get(), usersServiceSpy.get(), permissionsService.get())
+  scriptsService = new ScriptsServiceImpl(scriptsRepository, devicesServiceSpy.get(), notificationsServiceSpy.get(), usersServiceSpy.get(), permissionsServiceSpy.get())
 })
 
 test("Initially does not have tasks", async () => {
@@ -224,4 +224,26 @@ test("An error is returned if the task searched does not exists also with the un
       }
     })
   ))
+})
+
+test("A task can be edited", async () => {
+  const taskId = await runPromise(scriptsService.createTask(token, taskBuilder))
+  const editedTaskBuilder = taskBuilder.addSendNotification(root, email, "newMessage")
+
+  await runPromise(pipe(
+    scriptsService.findTask(token, taskId),
+    flatMap(task => task.execute(notificationsServiceSpy.get(), scriptsService, permissionsServiceSpy.get(), devicesServiceSpy.get(), token))
+  ))
+
+  expect(notificationsServiceSpy.call()).toBe(1)
+
+  await runPromise(scriptsService.editTask(token, taskId, editedTaskBuilder))
+
+  await runPromise(pipe(
+    scriptsService.findTask(token, taskId),
+    flatMap(task => task.execute(notificationsServiceSpy.get(), scriptsService, permissionsServiceSpy.get(), devicesServiceSpy.get(), token))
+  ))
+
+  expect(notificationsServiceSpy.call()).toBe(3)
+  expect(permissionsServiceSpy.call()).toBe(1)
 })

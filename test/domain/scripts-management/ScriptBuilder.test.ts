@@ -7,6 +7,7 @@ import { NumberEOperator, NumberLOperator, StringEOperator } from "../../../src/
 import { NodeRef } from "../../../src/domain/scripts-management/Refs.js"
 import { InvalidScriptError } from "../../../src/ports/scripts-management/Errors.js"
 import { Effect, pipe } from "effect"
+import { TaskId } from "../../../src/domain/scripts-management/Script.js"
 
 const builderAndRoot = TaskBuilder("taskName")
 const taskBuilder: TaskBuilder = builderAndRoot[0]
@@ -29,7 +30,7 @@ test("An InvalidScriptError can be created", async () => {
   expect(error.cause).toBe("cause")
 })
 
-test("A TaskBuilder can be created", async () => {
+test("A TaskBuilder can create a Task", async () => {
   const task = await runPromise(taskBuilder.build())
   expect(task.name).toBe("taskName")
 })
@@ -523,4 +524,10 @@ test("An InvalidScriptError is returned if using a constant not defined also wit
       },
     })
   ))
+})
+
+test("A TaskBuilder can create a Task from an Id", async () => {
+  const task = await runPromise(taskBuilder.buildWithId(TaskId("1")))
+  expect(task.name).toBe("taskName")
+  expect(task.id).toBe("1")
 })
