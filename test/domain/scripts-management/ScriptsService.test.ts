@@ -7,7 +7,7 @@ import { ScriptRepository } from "../../../src/ports/scripts-management/ScriptRe
 import { ScriptsService } from "../../../src/ports/scripts-management/ScriptsService.js"
 import { UsersService } from "../../../src/ports/users-management/UserService.js"
 import { InMemoryRepositoryMockCheckingUniqueness } from "../../InMemoryRepositoryMock.js"
-import { DeviceMock, DevicesServiceSpy, NotificationsServiceSpy, PermissionsServiceSpy, TokenMock, UserMock, UsersServiceSpy } from "../../utils/mocks.js"
+import { DeviceMock, DevicesServiceSpy, MessageReader, NotificationsServiceSpy, PermissionsServiceSpy, TokenMock, UserMock, UsersServiceSpy } from "../../utils/mocks.js"
 import { Spy } from "../../utils/spy.js"
 import { pipe } from "effect"
 import { AutomationBuilderWithDeviceEventTrigger, TaskBuilder } from "../../../src/domain/scripts-management/ScriptBuilder.js"
@@ -25,7 +25,7 @@ const eventName = "eventName"
 const device = DeviceMock(eventName)
 const deviceId = device.id
 let devicesServiceSpy: Spy<DevicesService>
-let notificationsServiceSpy: Spy<NotificationsService>
+let notificationsServiceSpy: Spy<NotificationsService> & MessageReader
 let usersServiceSpy: Spy<UsersService>
 let permissionsServiceSpy: Spy<PermissionsService>
 let scriptsRepository: ScriptRepository
@@ -236,14 +236,30 @@ test("A task can be edited", async () => {
   ))
 
   expect(notificationsServiceSpy.call()).toBe(1)
+  notificationsServiceSpy = NotificationsServiceSpy(email)
 
   await runPromise(scriptsService.editTask(token, taskId, editedTaskBuilder))
-
   await runPromise(pipe(
     scriptsService.findTask(token, taskId),
     flatMap(task => task.execute(notificationsServiceSpy.get(), scriptsService, permissionsServiceSpy.get(), devicesServiceSpy.get(), token))
   ))
 
-  expect(notificationsServiceSpy.call()).toBe(3)
+  expect(notificationsServiceSpy.call()).toBe(2)
+  expect(notificationsServiceSpy.getMessages()).toStrictEqual(["message", "newMessage"])
   expect(permissionsServiceSpy.call()).toBe(1)
+})
+
+test("Cannot edit a task if the token is invalid", async () => {
+  const taskId = await runPromise(scriptsService.createTask(token, taskBuilder))
+  const editedTaskBuilder = taskBuilder.addSendNotification(root, email, "newMessage")
+
+  await runPromise(pipe(
+    scriptsService.editTask(TokenMock("otherEmail"), taskId, editedTaskBuilder),
+    match({
+      onSuccess: () => { throw Error("Should not be here") },
+      onFailure: err => {
+        expect(err).toStrictEqual(InvalidTokenError())
+      }
+    })
+  ))
 })

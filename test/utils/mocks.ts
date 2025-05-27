@@ -34,7 +34,7 @@ export function TokenMock(email: string): Token {
   }
 }
 
-interface MessageReader {
+export interface MessageReader {
   getMessages(): Array<string>
 }
 
