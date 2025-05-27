@@ -17,6 +17,7 @@ import { InvalidScriptError, TaskNameAlreadyInUse } from "../../../src/ports/scr
 import { Type } from "../../../src/ports/devices-management/Types.js"
 import { NumberEOperator, StringEOperator } from "../../../src/domain/scripts-management/Operators.js"
 import { TaskId } from "../../../src/domain/scripts-management/Script.js"
+import { PermissionError } from "../../../src/ports/permissions-management/Errors.js"
 
 const user = UserMock()
 const email = user.email
@@ -259,6 +260,23 @@ test("Cannot edit a task if the token is invalid", async () => {
       onSuccess: () => { throw Error("Should not be here") },
       onFailure: err => {
         expect(err).toStrictEqual(InvalidTokenError())
+      }
+    })
+  ))
+})
+
+test("Cannot edit a task if the user has not the right permissions", async () => {
+  permissionsServiceSpy = PermissionsServiceSpy(TokenMock("otherEmail"))
+  scriptsService = new ScriptsServiceImpl(scriptsRepository, devicesServiceSpy.get(), notificationsServiceSpy.get(), usersServiceSpy.get(), permissionsServiceSpy.get())
+  const taskId = await runPromise(scriptsService.createTask(token, taskBuilder))
+  const editedTaskBuilder = taskBuilder.addSendNotification(root, email, "newMessage")
+
+  await runPromise(pipe(
+    scriptsService.editTask(token, taskId, editedTaskBuilder),
+    match({
+      onSuccess: () => { throw Error("Should not be here") },
+      onFailure: err => {
+        expect(err).toStrictEqual(PermissionError())
       }
     })
   ))
