@@ -8,7 +8,7 @@ import { Email, Nickname, PasswordHash } from "../../../domain/users-management/
 export function registerUsersServiceRoutes(app: express.Application, service: UsersService) {
 
     // create registration request
-    app.post('api/users', async (req, res) => {
+    app.post('/api/users', async (req, res) => {
         const response = await Effect.Do.pipe(
             Effect.bind("nicknameVal", () => {
                 if (req.body && "nickname" in req.body) { return Effect.succeed(req.body["nickname"]) }
