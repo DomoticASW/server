@@ -67,15 +67,10 @@ export class ScriptsServiceImpl implements ScriptsService {
 
   editTask(token: Token, taskId: TaskId, task: TaskBuilder): Effect<void, InvalidTokenError | PermissionError | ScriptNotFoundError | TaskNameAlreadyInUseError | Array<InvalidScriptError>> {
     return pipe(
-      this.usersService.verifyToken(token),
-      flatMap(() => this.permissionsService.canEdit(token, taskId)),
-      flatMap(() => task.buildWithId(taskId)),
-      flatMap(task => this.scriptRepository.update(task)),
+      this.editScript(token, taskId, task),
       mapError(err => {
         if ("__brand" in err) {
           switch (err.__brand) {
-            case "NotFoundError":
-              return ScriptNotFoundError(err.cause)
             case "UniquenessConstraintViolatedError":
               return TaskNameAlreadyInUseError(err.cause)
           }
@@ -121,7 +116,18 @@ export class ScriptsServiceImpl implements ScriptsService {
   }
 
   editAutomation(token: Token, automationId: AutomationId, automation: AutomationBuilder): Effect<void, InvalidTokenError | PermissionError | ScriptNotFoundError | AutomationNameAlreadyInUseError | Array<InvalidScriptError>> {
-    throw new Error("Method not implemented.");
+    return pipe(
+      this.editScript(token, automationId, automation),
+      mapError(err => {
+        if ("__brand" in err) {
+          switch (err.__brand) {
+            case "UniquenessConstraintViolatedError":
+              return AutomationNameAlreadyInUseError(err.cause)
+          }
+        }
+        return err
+      })
+    )
   }
 
   setAutomationState(token: Token, automationId: AutomationId, enable: boolean): Effect<void, InvalidTokenError | ScriptNotFoundError> {
@@ -156,6 +162,24 @@ export class ScriptsServiceImpl implements ScriptsService {
         failure: "NotFoundError",
         onFailure: err => fail(ScriptNotFoundError(err.cause))
       }),
+    )
+  }
+
+  private editScript(token: Token, scriptId: ScriptId, scriptBuilder: ScriptBuilder): Effect<void, InvalidTokenError | PermissionError | ScriptNotFoundError | UniquenessConstraintViolatedError | Array<InvalidScriptError>> {
+    return pipe(
+      this.usersService.verifyToken(token),
+      flatMap(() => this.permissionsService.canEdit(token, scriptId)),
+      flatMap(() => scriptBuilder.buildWithId(scriptId)),
+      flatMap(script => this.scriptRepository.update(script)),
+      mapError(err => {
+        if ("__brand" in err) {
+          switch (err.__brand) {
+            case "NotFoundError":
+              return ScriptNotFoundError(err.cause)
+          }
+        }
+        return err
+      })
     )
   }
 }

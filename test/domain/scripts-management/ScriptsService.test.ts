@@ -13,10 +13,10 @@ import { pipe } from "effect"
 import { AutomationBuilderWithDeviceEventTrigger, TaskBuilder } from "../../../src/domain/scripts-management/ScriptBuilder.js"
 import { flatMap } from "effect/Effect"
 import { InvalidTokenError } from "../../../src/ports/users-management/Errors.js"
-import { InvalidScriptError, ScriptNotFoundError, TaskNameAlreadyInUseError } from "../../../src/ports/scripts-management/Errors.js"
+import { AutomationNameAlreadyInUseError, InvalidScriptError, ScriptNotFoundError, TaskNameAlreadyInUseError } from "../../../src/ports/scripts-management/Errors.js"
 import { Type } from "../../../src/ports/devices-management/Types.js"
 import { NumberEOperator, StringEOperator } from "../../../src/domain/scripts-management/Operators.js"
-import { TaskId } from "../../../src/domain/scripts-management/Script.js"
+import { AutomationId, TaskId } from "../../../src/domain/scripts-management/Script.js"
 import { PermissionError } from "../../../src/ports/permissions-management/Errors.js"
 
 const user = UserMock()
@@ -36,7 +36,7 @@ const taskBuilderAndRef = TaskBuilder("taskName")
 const root = taskBuilderAndRef[1]
 const taskBuilder = taskBuilderAndRef[0].addSendNotification(root, email, "message")
 
-const automationBuilder = AutomationBuilderWithDeviceEventTrigger("automationName", deviceId, eventName)[0]
+const automationBuilder = AutomationBuilderWithDeviceEventTrigger("automationName", deviceId, eventName)[0].addSendNotification(root, email, "message")
 
 beforeEach(() => {
   devicesServiceSpy = DevicesServiceSpy(device)
@@ -314,6 +314,123 @@ test("The edited task cannot have the same name of another task", async () => {
 
 test("If trying to edit a task with syntax errors, the errors are returned", async () => {
   const builderAndConstant = taskBuilder.addCreateConstant(root, "constantName", Type.IntType, 10)
+  const taskBuilderOneConstant = builderAndConstant[0]
+
+  const builderAndConstant2 = taskBuilderOneConstant.addCreateConstant(root, "constantName2", Type.IntType, 10)
+  const taskBuilderTwoConstants = builderAndConstant2[0]
+
+  const builderAndRef = taskBuilderTwoConstants.addIf(root, builderAndConstant[1], builderAndConstant2[1], NumberEOperator(), false)
+  const taskBuilderIf = builderAndRef[0]
+  const ifRef = builderAndRef[1]
+
+  const builderAndConstant3 = taskBuilderIf.addSendNotification(ifRef, user.email, "firstMessage").addCreateConstant(ifRef, "constantName3", Type.StringType, "string")
+  const builderAndConstant4 = builderAndConstant3[0].addCreateConstant(ifRef, "constantName4", Type.StringType, "anotherString")
+  const builderAndRef2 = builderAndConstant4[0].addIf(root, builderAndConstant3[1], builderAndConstant4[1], StringEOperator(), true)
+  const taskBuilderComplete = builderAndRef2[0].addSendNotification(builderAndRef2[1], user.email, "secondMessage")
+
+  const taskId = await runPromise(scriptsService.createTask(token, taskBuilder))
+
+  await runPromise(pipe(
+    scriptsService.editTask(token, taskId, taskBuilderComplete),
+    match({
+      onSuccess: () => { throw Error("should not be here") },
+      onFailure: err => {
+        expect(err).toStrictEqual([
+          InvalidScriptError("The constant constantName3 was not defined inside of the if's scope"), 
+          InvalidScriptError("The constant constantName4 was not defined inside of the if's scope")
+        ])
+      },
+    })
+  ))
+})
+
+test("An automation can be edited", async () => {
+  const automationId = await runPromise(scriptsService.createAutomation(token, automationBuilder))
+  const editedAutomationBuilder = automationBuilder.addSendNotification(root, email, "newMessage")
+
+  await runPromise(pipe(
+    scriptsService.findAutomation(token, automationId),
+    flatMap(automation => automation.execute(notificationsServiceSpy.get(), scriptsService, permissionsServiceSpy.get(), devicesServiceSpy.get(), token))
+  ))
+
+  expect(notificationsServiceSpy.call()).toBe(1)
+  notificationsServiceSpy = NotificationsServiceSpy(email)
+
+  await runPromise(scriptsService.editAutomation(token, automationId, editedAutomationBuilder))
+  await runPromise(pipe(
+    scriptsService.findAutomation(token, automationId),
+    flatMap(task => task.execute(notificationsServiceSpy.get(), scriptsService, permissionsServiceSpy.get(), devicesServiceSpy.get(), token))
+  ))
+
+  expect(notificationsServiceSpy.call()).toBe(2)
+  expect(notificationsServiceSpy.getMessages()).toStrictEqual(["message", "newMessage"])
+  expect(permissionsServiceSpy.call()).toBe(1)
+})
+
+test("Cannot edit an automation if the token is invalid", async () => {
+  const taskId = await runPromise(scriptsService.createAutomation(token, automationBuilder))
+
+  await runPromise(pipe(
+    scriptsService.editAutomation(TokenMock("otherEmail"), taskId, automationBuilder),
+    match({
+      onSuccess: () => { throw Error("Should not be here") },
+      onFailure: err => {
+        expect(err).toStrictEqual(InvalidTokenError())
+      }
+    })
+  ))
+})
+
+test("Cannot edit an automation if the user has not the right permissions", async () => {
+  permissionsServiceSpy = PermissionsServiceSpy(TokenMock("otherEmail"))
+  scriptsService = new ScriptsServiceImpl(scriptsRepository, devicesServiceSpy.get(), notificationsServiceSpy.get(), usersServiceSpy.get(), permissionsServiceSpy.get())
+  const automationId = await runPromise(scriptsService.createAutomation(token, automationBuilder))
+
+  await runPromise(pipe(
+    scriptsService.editAutomation(token, automationId, automationBuilder),
+    match({
+      onSuccess: () => { throw Error("Should not be here") },
+      onFailure: err => {
+        expect(err).toStrictEqual(PermissionError())
+      }
+    })
+  ))
+})
+
+test("The automation must exists in order to edit it", async () => {
+  const automationId = AutomationId("1")
+
+  await runPromise(pipe(
+    scriptsService.editAutomation(token, automationId, automationBuilder),
+    match({
+      onSuccess: () => { throw Error("Should not be here") },
+      onFailure: err => {
+        expect(err).toStrictEqual(ScriptNotFoundError())
+      }
+    })
+  ))
+})
+
+test("The edited automation cannot have the same name of another task", async () => {
+  const otherBuilder = AutomationBuilderWithDeviceEventTrigger("otherTaskName", deviceId, eventName)[0]
+  const automationId = await runPromise(pipe(
+    scriptsService.createAutomation(token, automationBuilder),
+    flatMap(() => scriptsService.createAutomation(token, otherBuilder))
+  ))
+
+  await runPromise(pipe(
+    scriptsService.editAutomation(token, automationId, automationBuilder),
+    match({
+      onSuccess: () => { throw Error("Should not be here") },
+      onFailure: err => {
+        expect(err).toStrictEqual(AutomationNameAlreadyInUseError())
+      }
+    })
+  ))
+})
+
+test("If trying to edit an automation with syntax errors, the errors are returned", async () => {
+  const builderAndConstant = automationBuilder.addCreateConstant(root, "constantName", Type.IntType, 10)
   const automationBuilderOneConstant = builderAndConstant[0]
 
   const builderAndConstant2 = automationBuilderOneConstant.addCreateConstant(root, "constantName2", Type.IntType, 10)
@@ -326,12 +443,12 @@ test("If trying to edit a task with syntax errors, the errors are returned", asy
   const builderAndConstant3 = automationBuilderIf.addSendNotification(ifRef, user.email, "firstMessage").addCreateConstant(ifRef, "constantName3", Type.StringType, "string")
   const builderAndConstant4 = builderAndConstant3[0].addCreateConstant(ifRef, "constantName4", Type.StringType, "anotherString")
   const builderAndRef2 = builderAndConstant4[0].addIf(root, builderAndConstant3[1], builderAndConstant4[1], StringEOperator(), true)
-  const taskBuilderComplete = builderAndRef2[0].addSendNotification(builderAndRef2[1], user.email, "secondMessage")
+  const automationBuilderComplete = builderAndRef2[0].addSendNotification(builderAndRef2[1], user.email, "secondMessage")
 
-  const taskId = await runPromise(scriptsService.createTask(token, taskBuilder))
+  const taskId = await runPromise(scriptsService.createAutomation(token, automationBuilder))
 
   await runPromise(pipe(
-    scriptsService.editTask(token, taskId, taskBuilderComplete),
+    scriptsService.editAutomation(token, taskId, automationBuilderComplete),
     match({
       onSuccess: () => { throw Error("should not be here") },
       onFailure: err => {
