@@ -32,7 +32,13 @@ export class ScriptsServiceImpl implements ScriptsService {
   }
 
   findTaskUnsafe(taskId: TaskId): Effect<Task, ScriptNotFoundError> {
-    throw new Error("Method not implemented.");
+    return pipe(
+      this.scriptRepository.find(taskId),
+      flatMap(script => succeed(script as Task)),
+      mapError(err => {
+        return ScriptNotFoundError(err.cause)
+      })
+    )
   }
 
   getAllTasks(token: Token): Effect<Iterable<Task>, InvalidTokenError> {

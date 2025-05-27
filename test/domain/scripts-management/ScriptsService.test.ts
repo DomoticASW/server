@@ -201,3 +201,27 @@ test("Creating an automation adds it to the service and the repository", async (
   expect(repoAutomations).toContain(automation)
   expect(usersServiceSpy.call()).toBe(3)
 })
+
+test("It is possible to get a task without a token", async () => {
+  const task = await runPromise(pipe(
+    scriptsService.createTask(token, taskBuilder),
+    flatMap(id => scriptsService.findTaskUnsafe(id))
+  ))
+
+  const tasks = await runPromise(scriptsService.getAllTasks(token))
+
+  expect(tasks).toContain(task)
+  expect(usersServiceSpy.call()).toBe(2)
+})
+
+test("An error is returned if the task searched does not exists also with the unsafe method", async () => {
+  await runPromise(pipe(
+    scriptsService.findTaskUnsafe(TaskId("1")),
+    match({
+      onSuccess: () => { throw Error("Should not be here") },
+      onFailure: err => {
+        expect(err.__brand).toBe("ScriptNotFoundError")
+      }
+    })
+  ))
+})
