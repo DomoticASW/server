@@ -148,12 +148,12 @@ test("canExecuteTask with an existing task and user has permissions ", async () 
     ).not.toThrow();
 })
 
-test("canExecuteTask, expect a TaskNotFoundError ", async () => {
+test("canExecuteTask, expect a ScriptNotFoundError ", async () => {
     await expect(
         Effect.runPromise(
           service.canExecuteTask(makeToken(), TaskId("2"))
         )
-    ).rejects.toThrow("TaskNotFoundError");
+    ).rejects.toThrow("ScriptNotFoundError");
 })
 
 test("canExecuteTask, expect a PermissionError ", async () => {

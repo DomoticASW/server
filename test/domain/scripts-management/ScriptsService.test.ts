@@ -251,10 +251,12 @@ test("A task can be edited", async () => {
 })
 
 test("Cannot edit a task if the token is invalid", async () => {
+  permissionsServiceSpy = PermissionsServiceSpy(TokenMock("otherEmail"), true, true)
+  scriptsService = new ScriptsServiceImpl(scriptsRepository, devicesServiceSpy.get(), notificationsServiceSpy.get(), usersServiceSpy.get(), permissionsServiceSpy.get())
   const taskId = await runPromise(scriptsService.createTask(token, taskBuilder))
 
   await runPromise(pipe(
-    scriptsService.editTask(TokenMock("otherEmail"), taskId, taskBuilder),
+    scriptsService.editTask(token, taskId, taskBuilder),
     match({
       onSuccess: () => { throw Error("Should not be here") },
       onFailure: err => {
@@ -368,10 +370,12 @@ test("An automation can be edited", async () => {
 })
 
 test("Cannot edit an automation if the token is invalid", async () => {
+  permissionsServiceSpy = PermissionsServiceSpy(TokenMock("otherEmail"), true, true)
+  scriptsService = new ScriptsServiceImpl(scriptsRepository, devicesServiceSpy.get(), notificationsServiceSpy.get(), usersServiceSpy.get(), permissionsServiceSpy.get())
   const taskId = await runPromise(scriptsService.createAutomation(token, automationBuilder))
 
   await runPromise(pipe(
-    scriptsService.editAutomation(TokenMock("otherEmail"), taskId, automationBuilder),
+    scriptsService.editAutomation(token, taskId, automationBuilder),
     match({
       onSuccess: () => { throw Error("Should not be here") },
       onFailure: err => {
@@ -459,4 +463,49 @@ test("If trying to edit an automation with syntax errors, the errors are returne
       },
     })
   ))
+})
+
+test("Cannot start a task that does not exists", async () => {
+  await runPromise(pipe(
+    scriptsService.startTask(token, TaskId("1")),
+    match({
+      onSuccess: () => { throw Error("Should not be here") },
+      onFailure: err => {
+        expect(err.__brand).toBe("ScriptNotFoundError")
+      }
+    })
+  ))
+})
+
+test("Cannot start a task if the token is not valid", async () => {
+  permissionsServiceSpy = PermissionsServiceSpy(TokenMock("otherEmail"), false, true)
+  scriptsService = new ScriptsServiceImpl(scriptsRepository, devicesServiceSpy.get(), notificationsServiceSpy.get(), usersServiceSpy.get(), permissionsServiceSpy.get())
+  const taskId = await runPromise(scriptsService.createTask(token, taskBuilder))
+  await runPromise(pipe(
+    scriptsService.startTask(token, taskId),
+    match({
+      onSuccess: () => { throw Error("Should not be here") },
+      onFailure: err => {
+        expect(err.__brand).toBe("InvalidTokenError")
+      }
+    })
+  ))
+  expect(permissionsServiceSpy.call()).toBe(1)
+})
+
+test("Cannot start a task if the user has not the right permissions", async () => {
+  permissionsServiceSpy = PermissionsServiceSpy(TokenMock("otherEmail"))
+  scriptsService = new ScriptsServiceImpl(scriptsRepository, devicesServiceSpy.get(), notificationsServiceSpy.get(), usersServiceSpy.get(), permissionsServiceSpy.get())
+  const taskId = await runPromise(scriptsService.createTask(token, taskBuilder))
+  await runPromise(pipe(
+    scriptsService.startTask(token, taskId),
+    match({
+      onSuccess: () => { throw Error("Should not be here") },
+      onFailure: err => {
+        expect(err.__brand).toBe("PermissionError")
+      }
+    })
+  ))
+
+  expect(permissionsServiceSpy.call()).toBe(1)
 })

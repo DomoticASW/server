@@ -1,5 +1,5 @@
 import { DeviceNotFoundError } from "../../ports/devices-management/Errors.js";
-import { InvalidOperationError, PermissionError, TaskNotFoundError } from "../../ports/permissions-management/Errors.js";
+import { InvalidOperationError, PermissionError } from "../../ports/permissions-management/Errors.js";
 import { PermissionsService } from "../../ports/permissions-management/PermissionsService.js";
 import { DeviceId } from "../devices-management/Device.js";
 import { Token, UserRole } from "../users-management/Token.js";
@@ -95,7 +95,7 @@ export class PermissionsServiceImpl implements PermissionsService {
       })
     )
   }
-  canExecuteTask(token: Token, taskId: TaskId): Effect.Effect<void, PermissionError | InvalidTokenError | TaskNotFoundError> {
+  canExecuteTask(token: Token, taskId: TaskId): Effect.Effect<void, PermissionError | InvalidTokenError | ScriptNotFoundError> {
     return pipe(
       this.usersService.verifyToken(token),
       Effect.flatMap(() => this.taskListsRepo.find(taskId)),
@@ -108,7 +108,7 @@ export class PermissionsServiceImpl implements PermissionsService {
       Effect.mapError(e => {
         switch (e.__brand) {
           case "NotFoundError":
-            return TaskNotFoundError(e.cause)
+            return ScriptNotFoundError(e.cause)
           default:
             return e
         }

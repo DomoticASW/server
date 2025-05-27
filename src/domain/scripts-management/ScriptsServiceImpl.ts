@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { Effect, flatMap, catch as catch_, succeed, fail, mapError, map } from "effect/Effect";
+import { Effect, flatMap, catch as catch_, succeed, fail, mapError, map, forkDaemon } from "effect/Effect";
 import { PermissionError } from "../../ports/permissions-management/Errors.js";
 import { ScriptNotFoundError, TaskNameAlreadyInUseError, AutomationNameAlreadyInUseError, InvalidScriptError } from "../../ports/scripts-management/Errors.js";
 import { ScriptsService } from "../../ports/scripts-management/ScriptsService.js";
@@ -81,7 +81,11 @@ export class ScriptsServiceImpl implements ScriptsService {
   }
 
   startTask(token: Token, taskId: TaskId): Effect<void, InvalidTokenError | ScriptNotFoundError | PermissionError> {
-    throw new Error("Method not implemented.");
+    return pipe(
+      this.permissionsService.canExecuteTask(token, taskId),
+      flatMap(() => this.findTask(token, taskId)),
+      flatMap(task => forkDaemon(task.execute(this.notificationsService, this, this.permissionsService, this.devicesService, token)))
+    )
   }
 
   findAutomation(token: Token, automationId: AutomationId): Effect<Automation, InvalidTokenError | ScriptNotFoundError> {
@@ -167,8 +171,7 @@ export class ScriptsServiceImpl implements ScriptsService {
 
   private editScript(token: Token, scriptId: ScriptId, scriptBuilder: ScriptBuilder): Effect<void, InvalidTokenError | PermissionError | ScriptNotFoundError | UniquenessConstraintViolatedError | Array<InvalidScriptError>> {
     return pipe(
-      this.usersService.verifyToken(token),
-      flatMap(() => this.permissionsService.canEdit(token, scriptId)),
+      this.permissionsService.canEdit(token, scriptId),
       flatMap(() => scriptBuilder.buildWithId(scriptId)),
       flatMap(script => this.scriptRepository.update(script)),
       mapError(err => {
