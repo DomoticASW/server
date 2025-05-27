@@ -311,3 +311,35 @@ test("The edited task cannot have the same name of another task", async () => {
     })
   ))
 })
+
+test("If trying to edit a task with syntax errors, the errors are returned", async () => {
+  const builderAndConstant = taskBuilder.addCreateConstant(root, "constantName", Type.IntType, 10)
+  const automationBuilderOneConstant = builderAndConstant[0]
+
+  const builderAndConstant2 = automationBuilderOneConstant.addCreateConstant(root, "constantName2", Type.IntType, 10)
+  const automationBuilderTwoConstants = builderAndConstant2[0]
+
+  const builderAndRef = automationBuilderTwoConstants.addIf(root, builderAndConstant[1], builderAndConstant2[1], NumberEOperator(), false)
+  const automationBuilderIf = builderAndRef[0]
+  const ifRef = builderAndRef[1]
+
+  const builderAndConstant3 = automationBuilderIf.addSendNotification(ifRef, user.email, "firstMessage").addCreateConstant(ifRef, "constantName3", Type.StringType, "string")
+  const builderAndConstant4 = builderAndConstant3[0].addCreateConstant(ifRef, "constantName4", Type.StringType, "anotherString")
+  const builderAndRef2 = builderAndConstant4[0].addIf(root, builderAndConstant3[1], builderAndConstant4[1], StringEOperator(), true)
+  const taskBuilderComplete = builderAndRef2[0].addSendNotification(builderAndRef2[1], user.email, "secondMessage")
+
+  const taskId = await runPromise(scriptsService.createTask(token, taskBuilder))
+
+  await runPromise(pipe(
+    scriptsService.editTask(token, taskId, taskBuilderComplete),
+    match({
+      onSuccess: () => { throw Error("should not be here") },
+      onFailure: err => {
+        expect(err).toStrictEqual([
+          InvalidScriptError("The constant constantName3 was not defined inside of the if's scope"), 
+          InvalidScriptError("The constant constantName4 was not defined inside of the if's scope")
+        ])
+      },
+    })
+  ))
+})
