@@ -13,7 +13,7 @@ import { pipe } from "effect"
 import { AutomationBuilderWithDeviceEventTrigger, TaskBuilder } from "../../../src/domain/scripts-management/ScriptBuilder.js"
 import { flatMap } from "effect/Effect"
 import { InvalidTokenError } from "../../../src/ports/users-management/Errors.js"
-import { InvalidScriptError, TaskNameAlreadyInUse } from "../../../src/ports/scripts-management/Errors.js"
+import { InvalidScriptError, ScriptNotFoundError, TaskNameAlreadyInUse } from "../../../src/ports/scripts-management/Errors.js"
 import { Type } from "../../../src/ports/devices-management/Types.js"
 import { NumberEOperator, StringEOperator } from "../../../src/domain/scripts-management/Operators.js"
 import { TaskId } from "../../../src/domain/scripts-management/Script.js"
@@ -252,10 +252,9 @@ test("A task can be edited", async () => {
 
 test("Cannot edit a task if the token is invalid", async () => {
   const taskId = await runPromise(scriptsService.createTask(token, taskBuilder))
-  const editedTaskBuilder = taskBuilder.addSendNotification(root, email, "newMessage")
 
   await runPromise(pipe(
-    scriptsService.editTask(TokenMock("otherEmail"), taskId, editedTaskBuilder),
+    scriptsService.editTask(TokenMock("otherEmail"), taskId, taskBuilder),
     match({
       onSuccess: () => { throw Error("Should not be here") },
       onFailure: err => {
@@ -269,14 +268,27 @@ test("Cannot edit a task if the user has not the right permissions", async () =>
   permissionsServiceSpy = PermissionsServiceSpy(TokenMock("otherEmail"))
   scriptsService = new ScriptsServiceImpl(scriptsRepository, devicesServiceSpy.get(), notificationsServiceSpy.get(), usersServiceSpy.get(), permissionsServiceSpy.get())
   const taskId = await runPromise(scriptsService.createTask(token, taskBuilder))
-  const editedTaskBuilder = taskBuilder.addSendNotification(root, email, "newMessage")
 
   await runPromise(pipe(
-    scriptsService.editTask(token, taskId, editedTaskBuilder),
+    scriptsService.editTask(token, taskId, taskBuilder),
     match({
       onSuccess: () => { throw Error("Should not be here") },
       onFailure: err => {
         expect(err).toStrictEqual(PermissionError())
+      }
+    })
+  ))
+})
+
+test("The task must exists in order to edit it", async () => {
+  const taskId = TaskId("1")
+
+  await runPromise(pipe(
+    scriptsService.editTask(token, taskId, taskBuilder),
+    match({
+      onSuccess: () => { throw Error("Should not be here") },
+      onFailure: err => {
+        expect(err).toStrictEqual(ScriptNotFoundError())
       }
     })
   ))

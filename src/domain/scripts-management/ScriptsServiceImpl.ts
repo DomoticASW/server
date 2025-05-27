@@ -75,6 +75,7 @@ export class ScriptsServiceImpl implements ScriptsService {
         if ("__brand" in err) {
           switch (err.__brand) {
             case "NotFoundError":
+              return ScriptNotFoundError(err.cause)
             case "UniquenessConstraintViolatedError":
               return TaskNameAlreadyInUse(err.cause)
           }
@@ -154,7 +155,7 @@ export class ScriptsServiceImpl implements ScriptsService {
       catch_("__brand", {
         failure: "NotFoundError",
         onFailure: err => fail(ScriptNotFoundError(err.cause))
-      })
+      }),
     )
   }
 }
