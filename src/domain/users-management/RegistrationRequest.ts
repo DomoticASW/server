@@ -16,6 +16,4 @@ class RegistrationRequestImpl implements RegistrationRequest {
         public readonly email: Email,
         public readonly passwordHash: PasswordHash
     ) {}
-    
-// Removed redundant newRegistrationRequest method.
 }
