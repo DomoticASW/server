@@ -51,7 +51,7 @@ export function registerUsersServiceRoutes(app: express.Application, service: Us
     });
 
     // approve registration request
-    app.post('api/users/approve', async (req, res) => {
+    app.post('/api/users/approve', async (req, res) => {
         const key = "email"
         const response = await Effect.Do.pipe(
             Effect.bind("token", () => deserializeToken(req, service)),
