@@ -5,7 +5,7 @@ import { DeviceId } from "../devices-management/Device.js";
 import { Token } from "../users-management/Token.js";
 import { Email, Role } from "../users-management/User.js";
 import { UserDevicePermissionRepository } from "../../ports/permissions-management/UserDevicePermissionRepository.js";
-import { UsersService } from "../../ports/users-management/UserService.js";
+import { UsersService } from "../../ports/users-management/UsersService.js";
 import { Effect, pipe } from "effect";
 import { DevicesService } from "../../ports/devices-management/DevicesService.js";
 import { InvalidTokenError, TokenError, UnauthorizedError, UserNotFoundError } from "../../ports/users-management/Errors.js";

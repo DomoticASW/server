@@ -1,5 +1,5 @@
 import { Effect, pipe } from "effect"
-import { UsersServiceImpl } from "../../../src/domain/users-management/UserServiceImpl.js";
+import { UsersServiceImpl } from "../../../src/domain/users-management/UsersServiceImpl.js";
 import { UserRepositoryAdapter } from "../../../src/adapters/users-management/UserRepositoryAdapter.js";
 import { RegistrationRequestRepositoryAdapter } from "../../../src/adapters/users-management/RegistrationRequestRepositoryAdapter.js"
 import { Nickname, Email, PasswordHash, Role, User } from "../../../src/domain/users-management/User.js";
@@ -7,7 +7,7 @@ import { Token } from "../../../src/domain/users-management/Token.js";
 import mongoose from "mongoose";
 import jwt from "jsonwebtoken";
 
-const dbName: string = "userServiceTests"
+const dbName: string = "usersServiceTests"
 let dbConnection: mongoose.Connection;
 let usersRepo: UserRepositoryAdapter;
 let regReqRepo: RegistrationRequestRepositoryAdapter;

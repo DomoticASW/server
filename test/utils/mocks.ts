@@ -18,7 +18,7 @@ import { ScriptError, ScriptNotFoundError, TaskNameAlreadyInUse, InvalidTaskErro
 import { ScriptsService } from "../../src/ports/scripts-management/ScriptsService.js";
 import { UserNotFoundError, InvalidTokenError, TokenError, EmailAlreadyInUseError, InvalidCredentialsError, InvalidTokenFormatError } from "../../src/ports/users-management/Errors.js";
 import { Spy } from "./spy.js";
-import { UsersService } from "../../src/ports/users-management/UserService.js";
+import { UsersService } from "../../src/ports/users-management/UsersService.js";
 import { DeviceOfflineNotificationSubscriptionRepository } from "../../src/ports/notifications-management/DeviceOfflineNotificationSubscriptionRepository.js";
 import { DeviceOfflineNotificationSubscription } from "../../src/domain/notifications-management/DeviceOfflineNotificationSubscription.js";
 import { DuplicateIdError, NotFoundError } from "../../src/ports/Repository.js";

@@ -1,7 +1,7 @@
 import express from 'express';
 import { registerDeviceGroupsServiceRoutes } from './routes/DeviceGroupsService.js';
 import { DeviceGroupsService } from '../../ports/devices-management/DeviceGroupsService.js';
-import { UsersService } from '../../ports/users-management/UserService.js';
+import { UsersService } from '../../ports/users-management/UsersService.js';
 import bodyParser from 'body-parser';
 import { registerDevicesServiceRoutes } from './routes/DevicesService.js';
 import { DevicesService } from '../../ports/devices-management/DevicesService.js';

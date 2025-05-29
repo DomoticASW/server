@@ -1,14 +1,14 @@
 import express from "express";
 import { Effect } from "effect";
 import { StatusCodes } from "http-status-codes";
-import { UsersService } from "../../../ports/users-management/UserService.js";
+import { UsersService } from "../../../ports/users-management/UsersService.js";
 import { deserializeToken, BadRequest, handleCommonErrors, sendResponse, Response } from "./HttpUtils.js";
 import { Email, Nickname, PasswordHash } from "../../../domain/users-management/User.js";
 
 export function registerUsersServiceRoutes(app: express.Application, service: UsersService) {
 
     // create registration request
-    app.post('api/users', async (req, res) => {
+    app.post('/api/users', async (req, res) => {
         const response = await Effect.Do.pipe(
             Effect.bind("nicknameVal", () => {
                 if (req.body && "nickname" in req.body) { return Effect.succeed(req.body["nickname"]) }
@@ -171,21 +171,6 @@ export function registerUsersServiceRoutes(app: express.Application, service: Us
             Effect.bind("user", ({ token }) => service.getUserData(token)),
             Effect.map(({ user }) => Response(StatusCodes.OK, user)),
             
-            handleCommonErrors,
-            Effect.runPromise
-        )
-        sendResponse(res, response)
-    });
-
-    // get one without token
-    app.get('/api/users/:id/unsafe', async (req, res) => {
-        const response = await Effect.Do.pipe(
-            Effect.bind("user", () => service.getUserDataUnsafe(Email(req.params.id))),
-            Effect.map(({ user }) => Response(StatusCodes.OK, user)),
-            Effect.catch("__brand", {
-                failure: "UserNotFoundError",
-                onFailure: (err) => Effect.succeed(Response(StatusCodes.NOT_FOUND, err))
-            }),
             handleCommonErrors,
             Effect.runPromise
         )

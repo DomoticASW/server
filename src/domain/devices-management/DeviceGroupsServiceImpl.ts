@@ -3,7 +3,7 @@ import { DevicesService } from "../../ports/devices-management/DevicesService.js
 import { DeviceGroupNameAlreadyInUseError, DeviceGroupNotFoundError, DeviceNotFoundError } from "../../ports/devices-management/Errors.js";
 import { Repository } from "../../ports/Repository.js";
 import { TokenError, InvalidTokenError, UnauthorizedError } from "../../ports/users-management/Errors.js";
-import { UsersService } from "../../ports/users-management/UserService.js";
+import { UsersService } from "../../ports/users-management/UsersService.js";
 import { Token } from "../users-management/Token.js";
 import { Role } from "../users-management/User.js";
 import { DeviceId } from "./Device.js";

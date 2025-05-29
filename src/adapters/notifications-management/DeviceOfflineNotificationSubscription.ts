@@ -4,11 +4,9 @@ import { DeviceId } from "../../domain/devices-management/Device.js";
 import { DeviceOfflineNotificationSubscription } from "../../domain/notifications-management/DeviceOfflineNotificationSubscription.js";
 import { Email } from "../../domain/users-management/User.js";
 import { DeviceOfflineNotificationSubscriptionRepository } from "../../ports/notifications-management/DeviceOfflineNotificationSubscriptionRepository.js";
-import { NotFoundError } from "../../ports/users-management/Errors.js";
-import { DuplicateIdError } from "../../ports/Repository.js";
 import mongoose from "mongoose";
 import { pipe } from "effect";
-
+import { DuplicateIdError, NotFoundError } from "../../ports/Repository.js";
 interface DeviceOfflineNotificationSubscriptionSchema {
   _id: {
     email: string,
