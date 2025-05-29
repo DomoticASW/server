@@ -3,7 +3,8 @@ import { Effect, pipe } from "effect";
 import { flatMap, orDie, succeed, tryPromise, fail } from "effect/Effect";
 import { UserRepository } from "../../ports/users-management/UserRepository.js";
 import { Email, Nickname, PasswordHash, User } from "../../domain/users-management/User.js";
-import { NotFoundError, DuplicateIdError } from "../../ports/users-management/Errors.js";
+import { NotFoundError } from "../../ports/users-management/Errors.js";
+import { DuplicateIdError } from "../../ports/Repository.js";
 
 export interface UserRequestSchema {
     _id: string;

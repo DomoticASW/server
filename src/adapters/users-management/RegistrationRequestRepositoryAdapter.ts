@@ -4,7 +4,8 @@ import { flatMap, orDie, succeed, tryPromise, fail } from "effect/Effect";
 import { RegistrationRequestRepository } from "../../../src/ports/users-management/RegistrationRequestRepository.js";
 import { Email, Nickname, PasswordHash } from "../../domain/users-management/User.js";
 import { RegistrationRequest } from "../../domain/users-management/RegistrationRequest.js";
-import { DuplicateIdError, NotFoundError } from "../../ports/users-management/Errors.js";
+import { NotFoundError } from "../../ports/users-management/Errors.js";
+import { DuplicateIdError } from "../../ports/Repository.js";
 
 export interface RegistrationRequestSchema {
     _id: string,

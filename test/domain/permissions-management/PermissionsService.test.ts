@@ -1,7 +1,7 @@
 import { Effect, pipe } from "effect"
 import { InMemoryRepositoryMock, InMemoryRepositoryMockCheckingUniqueness } from "../../InMemoryRepositoryMock.js"
 import { Email, Nickname, PasswordHash, Role, User } from "../../../src/domain/users-management/User.js"
-import { Token, UserRole } from "../../../src/domain/users-management/Token.js"
+import { Token } from "../../../src/domain/users-management/Token.js"
 import { DevicesService } from "../../../src/ports/devices-management/DevicesService.js"
 import { DeviceNotFoundError } from "../../../src/ports/devices-management/Errors.js"
 import { UsersService } from "../../../src/ports/users-management/UserService.js"
@@ -21,24 +21,27 @@ let taskListsRepo: InMemoryRepositoryMock<TaskId, TaskLists>
 let editListRepo: InMemoryRepositoryMock<ScriptId, EditList>
 let userRepo: InMemoryRepositoryMockCheckingUniqueness<Email, User>
 
-function makeToken(role: UserRole = UserRole.Admin): Token {
+function makeToken(role: Role = Role.Admin): Token {
     return {
         userEmail: Email("test@test.com"),
-        role: role
+        role: role,
+        source: ""
     }
 }
 
-function makeTokenUserRole(role: UserRole = UserRole.User): Token {
+function makeTokenUserRole(role: Role = Role.User): Token {
     return {
         userEmail: Email("test@test.com"),
-        role: role
+        role: role,
+        source: ""
     }
 }
 
-function makeTokenWithUnknownUser(role: UserRole = UserRole.Admin): Token {
+function makeTokenWithUnknownUser(role: Role = Role.Admin): Token {
     return {
         userEmail: Email("unkown@user.com"),
-        role: role
+        role: role,
+        source: ""
     }
 }
 
