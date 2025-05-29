@@ -1,18 +1,18 @@
-import { Effect } from "effect";
+import { Effect, pipe } from "effect";
 import { DeviceId } from "../../domain/devices-management/Device.js";
 import { UserDevicePermission } from "../../domain/permissions-management/UserDevicePermission.js";
 import { Email } from "../../domain/users-management/User.js";
 import { UserDevicePermissionRepository } from "../../ports/permissions-management/UserDevicePermissionRepository.js";
 import { DuplicateIdError, NotFoundError } from "../../ports/Repository.js";
 import mongoose from "mongoose";
-import { orDie, tryPromise } from "effect/Effect";
+import { flatMap, orDie, succeed, fail, tryPromise } from "effect/Effect";
 
 export interface UserDevicePermissionSchema {
   email: string
   deviceId: string,
 }
 
-export class UserDevicePermissionMongoAdapter implements UserDevicePermissionRepository {
+export class UserDevicePermissionRepositoryMongoAdapter implements UserDevicePermissionRepository {
 
   private userDevicePermissionSchema = new mongoose.Schema<UserDevicePermissionSchema>({
     email: { type: String, required: true },
@@ -48,15 +48,18 @@ export class UserDevicePermissionMongoAdapter implements UserDevicePermissionRep
   }
 
   remove(id: [Email, DeviceId]): Effect.Effect<void, NotFoundError> {
-    return tryPromise({
-      try: async () => {
-        const permission = await this.permissions.findOneAndDelete({ email: id[0], deviceId: id[1] });
-        if (!permission) {
-          throw NotFoundError();
+    const promise = async () => await this.permissions.findOneAndDelete({email: id[0], deviceId: id[1]})
+    return pipe(
+      tryPromise(promise),
+      orDie,
+      flatMap(permission => {
+        if (permission) {
+          return succeed(null);
+        } else {
+          return fail(NotFoundError());
         }
-      },
-      catch: () => NotFoundError(),
-    }).pipe(orDie);
+      })
+    )
   }
   getAll(): Effect.Effect<Iterable<UserDevicePermission>, never> {
     return tryPromise(async () => {
@@ -64,18 +67,20 @@ export class UserDevicePermissionMongoAdapter implements UserDevicePermissionRep
       return permissions.map(permission => this.toEntity(permission))
     }).pipe(orDie);
   }
-  find(id: [Email, DeviceId]): Effect.Effect<UserDevicePermission, NotFoundError> {
-    const promise = this.permissions.findOne({email: id[0], deviceId: id[1]});
-    return tryPromise({
-      try: async () => {
-        const permission = await promise;
-        if (!permission) {
-          throw NotFoundError();
+
+  find(id: [Email, DeviceId]): Effect.Effect<UserDevicePermission, NotFoundError, never> {
+    const promise = async () => this.permissions.findOne({email: id[0], deviceId: id[1]});
+    return pipe(
+      tryPromise(promise),
+      orDie,
+      flatMap(permission => {
+        if (permission) {
+          return succeed(this.toEntity(permission));
+        } else {
+          return fail(NotFoundError());
         }
-        return this.toEntity(permission);
-      },
-      catch: () => NotFoundError(),
-    }).pipe(orDie);
+      })
+    )
   }
 
   toEntity(permission: UserDevicePermissionSchema): UserDevicePermission {

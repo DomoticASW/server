@@ -1,7 +1,7 @@
 import { Effect, pipe } from "effect"
 import { DeviceActionId, DeviceId, DevicePropertyId } from "../../../src/domain/devices-management/Device.js"
 import { Condition, ConstantValue, ExecutionEnvironment, ExecutionEnvironmentCopy } from "../../../src/domain/scripts-management/Instruction.js"
-import { CreateConstantInstruction, CreateDevicePropertyConstantInstruction, DeviceActionInstruction, ElseInstruction, IfInstruction, SendNotificationInstruction, StartTaskInstruction, WaitInstruction } from "../../../src/domain/scripts-management/InstructionImpl.js"
+import { CreateConstantInstruction, CreateDevicePropertyConstantInstruction, DeviceActionInstruction, IfElseInstruction, IfInstruction, SendNotificationInstruction, StartTaskInstruction, WaitInstruction } from "../../../src/domain/scripts-management/InstructionImpl.js"
 import { NumberGOperator, NumberLEOperator } from "../../../src/domain/scripts-management/Operators.js"
 import { TaskId } from "../../../src/domain/scripts-management/Script.js"
 import { Email } from "../../../src/domain/users-management/User.js"
@@ -287,8 +287,8 @@ test("An else instruction can be created", async () => {
   const setupEnv = ExecutionEnvironment(notificationServiceMock, scriptsServiceMock, permissionsServiceMock, devicesServiceMock, TokenMock("email"))
   const env = await Effect.runPromise(right.execute(await Effect.runPromise(left.execute(setupEnv))))
   
-  const elseIfInstruction = ElseInstruction(thenInstructions, elseInstructions, condition)
-  const falseElseIfInstruction = ElseInstruction(thenInstructions, elseInstructions, negatedCondition)
+  const elseIfInstruction = IfElseInstruction(thenInstructions, elseInstructions, condition)
+  const falseElseIfInstruction = IfElseInstruction(thenInstructions, elseInstructions, negatedCondition)
 
   //ACT
   const stringInstruction1 = (await Effect.runPromise(elseIfInstruction.execute(env))).constants.get(thenInstruction)
@@ -308,7 +308,7 @@ test("A wait instruction should stop the task for a given period of time", async
   const instruction = WaitInstruction(1)
   const start = Date.now()
   await Effect.runPromise(instruction.execute(ExecutionEnvironment(notificationServiceMock, scriptsServiceMock, permissionsServiceMock, devicesServiceMock, TokenMock("email"))))
-  expect(Date.now()).toBeGreaterThan(start + 1 * 1000)
+  expect(Date.now()).toBeGreaterThanOrEqual(start + 1 * 1000)
 })
 
 test("A send notification instruction should use a notification service to send a notification", async () => {

@@ -5,7 +5,7 @@ import { DeviceEventTrigger, PeriodTrigger } from "../../domain/scripts-manageme
 import { DeviceActionId, DeviceId, DevicePropertyId } from "../../domain/devices-management/Device.js";
 import { Type } from "../../ports/devices-management/Types.js";
 import { Condition, ConditionOperator, ConstantInstruction, Instruction, isCreateConstantInstruction, isCreateDevicePropertyConstantInstruction, isDeviceActionInstruction, isIfElseInstruction, isIfInstruction, isSendNotificationInstruction, isStartTaskInstruction, isWaitInstruction } from "../../domain/scripts-management/Instruction.js";
-import { CreateConstantInstruction, CreateDevicePropertyConstantInstruction, DeviceActionInstruction, ElseInstruction, IfInstruction, SendNotificationInstruction, StartTaskInstruction, WaitInstruction } from "../../domain/scripts-management/InstructionImpl.js";
+import { CreateConstantInstruction, CreateDevicePropertyConstantInstruction, DeviceActionInstruction, IfElseInstruction, IfInstruction, SendNotificationInstruction, StartTaskInstruction, WaitInstruction } from "../../domain/scripts-management/InstructionImpl.js";
 import { BooleanEOperator, ColorEOperator, isBooleanEOperator, isColorEOperator, isNumberEOperator, isNumberGEOperator, isNumberGOperator, isNumberLEOperator, isNumberLOperator, isStringEOperator, NumberEOperator, NumberGEOperator, NumberGOperator, NumberLEOperator, NumberLOperator, StringEOperator } from "../../domain/scripts-management/Operators.js";
 import { Email } from "../../domain/users-management/User.js";
 import { ScriptRepository } from "../../ports/scripts-management/ScriptRepository.js";
@@ -264,7 +264,7 @@ export class ScriptRepositoryMongoAdapter extends BaseRepositoryMongoAdapter<Scr
                     if (instruction.type == InstructionType.IfInstruction) {
                         return IfInstruction(this.deserializeInstructions(i.then), Condition(leftConstantInstruction, rightConstantInstruction, conditionOperator, i.condition.negate))
                     } else {
-                        return ElseInstruction(this.deserializeInstructions(i.then), this.deserializeInstructions((i as IfElseInstructionSchema).else), Condition(leftConstantInstruction, rightConstantInstruction, conditionOperator, i.condition.negate))
+                        return IfElseInstruction(this.deserializeInstructions(i.then), this.deserializeInstructions((i as IfElseInstructionSchema).else), Condition(leftConstantInstruction, rightConstantInstruction, conditionOperator, i.condition.negate))
                     }
                 }
                 case InstructionType.CreateDevicePropertyConstantInstruction:

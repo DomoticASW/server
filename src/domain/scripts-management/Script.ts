@@ -3,7 +3,6 @@ import { ScriptError } from "../../ports/scripts-management/Errors.js"
 import { Brand } from "../../utils/Brand.js"
 import { ExecutionEnvironment, Instruction } from "./Instruction.js"
 import { Token } from "../users-management/Token.js"
-import { pipe } from "effect"
 import { DevicesService } from "../../ports/devices-management/DevicesService.js"
 import { NotificationsService } from "../../ports/notifications-management/NotificationsService.js"
 import { PermissionsService } from "../../ports/permissions-management/PermissionsService.js"
@@ -25,6 +24,7 @@ export interface Script<Id extends ScriptId> {
 }
 
 export type Task = Script<TaskId>
+
 
 export interface Automation extends Script<AutomationId> {
   enabled: boolean
@@ -55,9 +55,7 @@ class TaskImpl implements Task {
   }
 
   execute(notificationsService: NotificationsService, scriptsService: ScriptsService, permissionsService: PermissionsService, devicesService: DevicesService, token?: Token): Effect<ExecutionEnvironment, ScriptError> {
-    return pipe(
-      reduce(this.instructions, ExecutionEnvironment(notificationsService, scriptsService, permissionsService, devicesService, token), (env, instr) => instr.execute(env))
-    )
+    return reduce(this.instructions, ExecutionEnvironment(notificationsService, scriptsService, permissionsService, devicesService, token), (env, instr) => instr.execute(env))
   }
 }
 
@@ -74,6 +72,7 @@ class AutomationImpl implements Automation {
     this.trigger = trigger
     this.instructions = instructions
   }
+
 
   // deviceEventPublished(deviceId: DeviceId, event: DeviceEvent): void {
   //   if (this.trigger instanceof DeviceEventTriggerImpl && this.enabled) {

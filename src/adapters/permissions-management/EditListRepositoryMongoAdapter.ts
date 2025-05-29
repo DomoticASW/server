@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Effect, pipe } from "effect";
 import { Email } from "../../domain/users-management/User.js";
 import { DuplicateIdError, NotFoundError } from "../../ports/Repository.js";
 import mongoose from "mongoose";
@@ -12,7 +12,7 @@ export interface EditListSchema {
   users: string[],
 }
 
-export class EditListMongoAdapter implements EditListRepository {
+export class EditListRepositoryMongoAdapter implements EditListRepository {
 
   private editListSchema = new mongoose.Schema<EditListSchema>({
     _id: { type: String, required: true },
@@ -36,27 +36,33 @@ export class EditListMongoAdapter implements EditListRepository {
   }
 
   update(entity: EditList): Effect.Effect<void, NotFoundError> {
-    return tryPromise({
-      try: async () => {
-        const editList = await this.editLists.findByIdAndUpdate(entity.id, { users: entity.users }, { new: true });
-        if (!editList) {
-          throw NotFoundError();
+    const promise = async () => await this.editLists.findByIdAndUpdate(entity.id, { users: entity.users }, { new: true });
+    return pipe(
+      tryPromise(promise),
+      orDie,
+      Effect.flatMap(editList => {
+        if (editList) {
+          return Effect.succeed(null);
+        } else {
+          return Effect.fail(NotFoundError());
         }
-      },
-      catch: () => NotFoundError(),
-    }).pipe(orDie);
+      })
+    )
   }
 
   remove(id: ScriptId): Effect.Effect<void, NotFoundError> {
-    return tryPromise({
-      try: async () => {
-        const editList = await this.editLists.findByIdAndDelete(id);
-        if (!editList) {
-          throw NotFoundError();
+    const promise = async () => await this.editLists.findByIdAndDelete(id);
+    return pipe(
+      tryPromise(promise),
+      orDie,
+      Effect.flatMap(editList => {
+        if (editList) {
+          return Effect.succeed(null);
+        } else {
+          return Effect.fail(NotFoundError());
         }
-      },
-      catch: () => NotFoundError(),
-    }).pipe(orDie);
+      })
+    )
   }
 
   getAll(): Effect.Effect<Iterable<EditList>, never> {
@@ -67,17 +73,18 @@ export class EditListMongoAdapter implements EditListRepository {
   }
 
   find(id: ScriptId): Effect.Effect<EditList, NotFoundError> {
-    const promise = this.editLists.findById(id);
-    return tryPromise({
-      try: async () => {
-        const editList = await promise;
-        if (!editList) {
-          throw NotFoundError();
+    const promise = async () => await this.editLists.findById(id);
+    return pipe(
+      tryPromise(promise),
+      orDie,
+      Effect.flatMap(editList => {
+        if (editList) {
+          return Effect.succeed(this.toEntity(editList));
+        } else {
+          return Effect.fail(NotFoundError());
         }
-        return this.toEntity(editList);
-      },
-      catch: () => NotFoundError(),
-    }).pipe(orDie);
+      })
+    )
   }
 
   addUserToUsers(id: ScriptId, user: Email): Effect.Effect<EditList, NotFoundError> {

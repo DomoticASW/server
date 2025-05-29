@@ -2,7 +2,7 @@ import mongoose from "mongoose"
 import { Effect } from "effect"
 import { UserDevicePermissionRepository } from "../../../src/ports/permissions-management/UserDevicePermissionRepository.js"
 import { UserDevicePermission } from "../../../src/domain/permissions-management/UserDevicePermission.js"
-import { UserDevicePermissionMongoAdapter } from "../../../src/adapters/permissions-management/UserDevicePermissionAdapter.js"
+import { UserDevicePermissionRepositoryMongoAdapter } from "../../../src/adapters/permissions-management/UserDevicePermissionRepositoryMongoAdapter.js"
 import { Email } from "../../../src/domain/users-management/User.js"
 import { DeviceId } from "../../../src/domain/devices-management/Device.js"
 
@@ -13,7 +13,7 @@ let permission: UserDevicePermission
 
 beforeAll(async () => {
   dbConnection = await mongoose.createConnection(`mongodb://localhost:27018/${dbName}`).asPromise();
-  repo = new UserDevicePermissionMongoAdapter(dbConnection);
+  repo = new UserDevicePermissionRepositoryMongoAdapter(dbConnection);
   permission = UserDevicePermission(Email("marcoraggio@email.com"), DeviceId("1"))
 });
 
@@ -21,7 +21,7 @@ beforeEach(async () => {
   const collections = await dbConnection.listCollections()
   await Promise.all(collections.map(c => dbConnection.dropCollection(c.name)))
 
-  repo = new UserDevicePermissionMongoAdapter(dbConnection);
+  repo = new UserDevicePermissionRepositoryMongoAdapter(dbConnection);
 });
 
 test("The repository is initially empty", async () => {
@@ -51,6 +51,20 @@ test("The entity cannot has changes", async () => {
   const res = await Effect.runPromise(repo.find([permission.email, permission.deviceId]))
   expect(res).toStrictEqual(permission)
 })
+
+test("Try to find an UserDevicePermission that does not exist", async () => {
+  await Effect.runPromise(repo.add(permission));
+  await expect(
+    Effect.runPromise(repo.find([Email(""), DeviceId("2")]))
+  ).rejects.toThrow("NotFoundError")
+});
+
+test("Try to find an UserDevicePermission that has wrong deviceId", async () => {
+  await Effect.runPromise(repo.add(permission));
+  await expect(
+    Effect.runPromise(repo.find([Email("marcoraggio@email.com"), DeviceId("2")]))
+  ).rejects.toThrow("NotFoundError");
+});
 
 test("Try to remove an UserDevicePermission", async () => {
   await Effect.runPromise(repo.add(permission));
