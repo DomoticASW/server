@@ -1,9 +1,15 @@
-import { Effect, succeed, fail, tryPromise, flatMap, catchAll } from "effect/Effect";
+import { Effect, succeed, fail, tryPromise, flatMap, catchAll, timeout } from "effect/Effect";
 import { DeviceCommunicationProtocol } from "../../../ports/devices-management/DeviceCommunicationProtocol.js";
 import { DevicesService } from "../../../ports/devices-management/DevicesService.js";
 import { CommunicationError, DeviceUnreachableError, DeviceActionError } from "../../../ports/devices-management/Errors.js";
 import { Device, DeviceActionId, DeviceId, DeviceStatus } from "../../../domain/devices-management/Device.js";
 import { pipe } from "effect";
+import { millis } from "effect/Duration";
+
+class TimeoutError {
+    constructor() {
+    }
+}
 
 export class DeviceCommunicationProtocolImpl implements DeviceCommunicationProtocol {
     private deviceUrl: URL;
@@ -18,80 +24,79 @@ export class DeviceCommunicationProtocolImpl implements DeviceCommunicationProto
 
   checkDeviceStatus(deviceAddress: URL): Effect<DeviceStatus, CommunicationError> {
     const promise = async () => {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000);
-      
-      try {
-        const response = await fetch(deviceAddress.toString(), {
-          method: "GET",
-          signal: controller.signal
-        });
-        clearTimeout(timeoutId);
-        return response;
-      } catch (e) {
-        clearTimeout(timeoutId);
-        return e;
-      }
+      const response = await fetch(deviceAddress.toString(), {
+        method: "GET",
+        signal: AbortSignal.timeout(5000)
+      });
+      return response;
     };
 
     return pipe(
-      tryPromise(promise),
-      flatMap(response => {
-        if (response instanceof Response) {
-          if (response.ok) {
-            return succeed(DeviceStatus.Online);
-          } else {
-            return succeed(DeviceStatus.Offline);
+      tryPromise({
+        try: promise,
+        catch: (e) => {
+          if (e instanceof Error && e.name === "TimeoutError") {
+            return new TimeoutError();
           }
+          return CommunicationError();
+        }
+      }),
+      timeout(millis(5000)),
+      flatMap(response => {
+        if (response.ok) {
+          return succeed(DeviceStatus.Online);
         } else {
           return fail(CommunicationError());
         }
       }),
-      catchAll(() => fail(CommunicationError()))
+      catchAll((e): Effect<DeviceStatus, CommunicationError> => {
+        if (e instanceof TimeoutError) {
+          return succeed(DeviceStatus.Offline);
+        } else {
+          return fail(CommunicationError(e.message));
+        }
+      })
     );
   }
 
   executeDeviceAction(deviceAddress: URL, deviceActionId: DeviceActionId, input: unknown): Effect<void, DeviceUnreachableError | CommunicationError | DeviceActionError> {
     const promise = async () => {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000);
       const completeUrl = new URL(deviceAddress.toString() + `/${deviceActionId.toString()}`);
-
-      try {
-        const response = await fetch(completeUrl.toString(), {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          signal: controller.signal,
-          body: JSON.stringify(input)
-        });
-        clearTimeout(timeoutId);
-        return response;
-      } catch (e) {
-        clearTimeout(timeoutId);
-        return e;
-      }
+      const response = await fetch(completeUrl.toString(), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        signal: AbortSignal.timeout(5000),
+        body: JSON.stringify(input)
+      });
+      return response;
     }
 
     return pipe(
-      tryPromise(promise),
-      flatMap(response => {
-        if (response instanceof Response) {
-          if (response.ok) {
-            return succeed(undefined);
-          } else {
-            return fail(CommunicationError());
+      tryPromise({
+        try: promise,
+        catch: (e) => {
+          if (e instanceof Error && e.name === "TimeoutError") {
+            return DeviceUnreachableError();
           }
+          return CommunicationError();
+        }
+      }),
+      timeout(millis(5000)),
+      flatMap(response => {
+        if (response.ok) {
+          return succeed(undefined);
         }
         return fail(CommunicationError());
       }),
        catchAll((e): Effect<void, DeviceActionError | DeviceUnreachableError | CommunicationError> => {
+        if (e instanceof DeviceUnreachableError) {
+          return fail(DeviceUnreachableError());
+        }
         switch (e instanceof CommunicationError) {
           case (e.cause === "404"): 
             return fail(DeviceActionError());
-          case (e.cause === "500"):
-            return fail(DeviceUnreachableError());
           default:
             return fail(CommunicationError());
         }
