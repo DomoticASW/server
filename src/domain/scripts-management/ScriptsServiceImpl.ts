@@ -214,7 +214,10 @@ export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscribe
   }
 
   setAutomationState(token: Token, automationId: AutomationId, enable: boolean): Effect<void, InvalidTokenError | ScriptNotFoundError> {
-    throw new Error("Method not implemented.");
+    return pipe(
+      this.findAutomation(token, automationId),
+      map(automation => automation.enabled = enable)
+    )
   }
 
   private getAllScripts(token: Token): Effect<Iterable<Script<ScriptId>>, InvalidTokenError> {

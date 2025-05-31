@@ -512,3 +512,14 @@ test("Cannot start a task if the user has not the right permissions", async () =
 
   expect(permissionsServiceSpy.call()).toBe(1)
 })
+
+test("An automation can be disabled", async () => {
+  const automation = await runPromise(pipe(
+    scriptsService.createAutomation(token, automationBuilder),
+    flatMap(id => scriptsService.findAutomation(token, id))
+  ))
+
+  await runPromise(scriptsService.setAutomationState(token, automation.id, false))
+
+  expect(automation.enabled).toBe(false)
+})
