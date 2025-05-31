@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { Effect, flatMap, catch as catch_, succeed, fail, mapError, map, forkDaemon } from "effect/Effect";
+import { Effect, flatMap, catch as catch_, succeed, fail, mapError, map, forkDaemon, runFork, forEach, fork, sync } from "effect/Effect";
 import { PermissionError } from "../../ports/permissions-management/Errors.js";
-import { ScriptNotFoundError, TaskNameAlreadyInUseError, AutomationNameAlreadyInUseError, InvalidScriptError } from "../../ports/scripts-management/Errors.js";
+import { ScriptNotFoundError, TaskNameAlreadyInUseError, AutomationNameAlreadyInUseError, InvalidScriptError, ScriptError } from "../../ports/scripts-management/Errors.js";
 import { ScriptsService } from "../../ports/scripts-management/ScriptsService.js";
 import { InvalidTokenError } from "../../ports/users-management/Errors.js";
 import { Token } from "../users-management/Token.js";
@@ -12,17 +12,25 @@ import { DevicesService } from "../../ports/devices-management/DevicesService.js
 import { NotificationsService } from "../../ports/notifications-management/NotificationsService.js";
 import { PermissionsService } from "../../ports/permissions-management/PermissionsService.js";
 import { UsersService } from "../../ports/users-management/UserService.js";
-import { pipe } from "effect";
+import { pipe, Runtime } from "effect";
 import { DuplicateIdError, UniquenessConstraintViolatedError } from "../../ports/Repository.js";
+import { DeviceEventsService, DeviceEventsSubscriber } from "../../ports/devices-management/DeviceEventsService.js";
+import { DeviceId, DeviceEvent } from "../devices-management/Device.js";
+import { DeviceEventTrigger, DeviceEventTriggerImpl } from "./Trigger.js";
+import { RuntimeFiber } from "effect/Fiber";
+import { ExecutionEnvironment } from "./Instruction.js";
 
-export class ScriptsServiceImpl implements ScriptsService {
+export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscriber {
   constructor(
     private scriptRepository: ScriptRepository, 
     private devicesService: DevicesService,
     private notificationsService: NotificationsService,
     private usersService: UsersService,
-    private permissionsService: PermissionsService
-  ) {}
+    private permissionsService: PermissionsService,
+    deviceEventsService: DeviceEventsService
+  ) {
+    deviceEventsService.subscribeForDeviceEvents(this)
+  }
 
   findTask(token: Token, taskId: TaskId): Effect<Task, InvalidTokenError | ScriptNotFoundError> {
     return pipe(
@@ -106,6 +114,14 @@ export class ScriptsServiceImpl implements ScriptsService {
     return pipe(
       this.createScript(token, automation),
       map(id => id as AutomationId),
+      flatMap(id => pipe(
+        this.findAutomation(token, id),
+        flatMap(automation => this.startAutomationHandler(automation)),
+        catch_("__brand", {
+          failure: "ScriptNotFoundError",
+          onFailure: _ => succeed(id)
+        })
+      )),
       mapError(err => {
         if ("__brand" in err) {
           switch (err.__brand) {
@@ -117,6 +133,35 @@ export class ScriptsServiceImpl implements ScriptsService {
         return err
       })
     )
+  }
+
+  deviceEventPublished(deviceId: DeviceId, event: DeviceEvent): void {
+    runFork(
+      forkDaemon(
+        pipe(
+          this.scriptRepository.getAll(),
+          flatMap(scripts => succeed(Array.from(scripts).filter(e => e instanceof AutomationImpl))),
+          flatMap(automations => this.startDeviceEventTriggeredAutomations(automations, deviceId, event))
+        )
+      )
+    )
+  }
+
+  private startDeviceEventTriggeredAutomations(automations: Automation[], deviceId: DeviceId, event: DeviceEvent): Effect<void> {
+    return forEach(automations, (automation) => {
+      if (automation.trigger instanceof DeviceEventTriggerImpl && automation.enabled) {
+        const deviceEventTrigger = automation.trigger as DeviceEventTrigger
+
+        if (deviceId == deviceEventTrigger.deviceId && event.name == deviceEventTrigger.eventName) {
+          runFork(forkDaemon(automation.execute(this.notificationsService, this, this.permissionsService, this.devicesService)))
+        }
+      }
+      return succeed(undefined)
+    })
+  }
+
+  private startAutomationHandler(automation: Automation): Effect<AutomationId> {
+    return succeed(automation.id)
   }
 
   editAutomation(token: Token, automationId: AutomationId, automation: AutomationBuilder): Effect<void, InvalidTokenError | PermissionError | ScriptNotFoundError | AutomationNameAlreadyInUseError | Array<InvalidScriptError>> {
@@ -149,10 +194,10 @@ export class ScriptsServiceImpl implements ScriptsService {
     return pipe(
       this.usersService.verifyToken(token),
       flatMap(() => scriptBuilder.build()),
-      flatMap(automation =>
+      flatMap(script =>
         pipe(
-          this.scriptRepository.add(automation),
-          flatMap(() => succeed(automation.id)) 
+          this.scriptRepository.add(script),
+          flatMap(() => succeed(script.id)) 
         )
       )
     )

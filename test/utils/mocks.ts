@@ -9,7 +9,7 @@ import { Token, UserRole } from "../../src/domain/users-management/Token.js";
 import { Email, Nickname, PasswordHash, Role, User } from "../../src/domain/users-management/User.js";
 import { DevicesService, DevicePropertyUpdatesSubscriber } from "../../src/ports/devices-management/DevicesService.js";
 import { DeviceStatusesService, DeviceStatusChangesSubscriber } from "../../src/ports/devices-management/DeviceStatusesService.js";
-import { DeviceNotFoundError, InvalidInputError, DeviceActionError, DeviceUnreachableError, DeviceActionNotFound, DevicePropertyNotFound, DeviceAlreadyRegisteredError } from "../../src/ports/devices-management/Errors.js";
+import { DeviceNotFoundError, InvalidInputError, DeviceActionError, DeviceUnreachableError, DeviceActionNotFound, DevicePropertyNotFound, DeviceAlreadyRegisteredError, NotDeviceEventError } from "../../src/ports/devices-management/Errors.js";
 import { NotificationProtocol } from "../../src/ports/notifications-management/NotificationProtocol.js";
 import { NotificationsService } from "../../src/ports/notifications-management/NotificationsService.js";
 import { PermissionError } from "../../src/ports/permissions-management/Errors.js";
@@ -22,6 +22,7 @@ import { UsersService } from "../../src/ports/users-management/UserService.js";
 import { DeviceOfflineNotificationSubscriptionRepository } from "../../src/ports/notifications-management/DeviceOfflineNotificationSubscriptionRepository.js";
 import { DeviceOfflineNotificationSubscription } from "../../src/domain/notifications-management/DeviceOfflineNotificationSubscription.js";
 import { DuplicateIdError, NotFoundError } from "../../src/ports/Repository.js";
+import { DeviceEventsService, DeviceEventsSubscriber } from "../../src/ports/devices-management/DeviceEventsService.js";
 
 export function UserNotFoundErrorMock(cause?: string): UserNotFoundError {
   return { message: "The user has not been found", cause: cause, __brand: "UserNotFoundError" }
@@ -411,6 +412,26 @@ export function NotificationProtocolSpy(): Spy<NotificationProtocol> {
       return {
         sendNotification: function (email: Email, message: string): void {
           call++
+        }
+      }
+    }
+  }
+}
+
+export function DeviceEventsServiceSpy(): Spy<DeviceEventsService> {
+  let call = 0
+  return {
+    call: () => call,
+    get: function (): DeviceEventsService {
+      return {
+        publishEvent: function (deviceId: DeviceId, eventName: string): Effect<void, DeviceNotFoundError | NotDeviceEventError> {
+          throw new Error("Function not implemented.");
+        },
+        subscribeForDeviceEvents: function (subscriber: DeviceEventsSubscriber): void {
+          call++
+        },
+        unsubscribeForDeviceEvents: function (subscriber: DeviceEventsSubscriber): void {
+          throw new Error("Function not implemented.");
         }
       }
     }

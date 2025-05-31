@@ -60,7 +60,7 @@ export class TaskImpl implements Task {
 }
 
 export class AutomationImpl implements Automation {
-  enabled: boolean = false
+  enabled: boolean = true
   trigger: Trigger
   id: AutomationId
   name: string

@@ -33,5 +33,6 @@ export class NotificationProtocolImpl implements NotificationProtocol {
         return socket
       }
     }
+    return undefined
   }
 }

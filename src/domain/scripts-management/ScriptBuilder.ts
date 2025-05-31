@@ -179,7 +179,7 @@ class AutomationBuilderImpl extends ScriptBuilderImpl<Automation> {
 
   buildWithId(id: AutomationId): Effect<Automation, Array<InvalidScriptError>> {
     const instructions: Array<Instruction> = this.buildInstructions();
-    
+
     return this.errors.length == 0 ? succeed(Automation(id, this.name, this.trigger, instructions)) : fail(this.errors)
   }
 

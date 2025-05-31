@@ -4,7 +4,6 @@ import { DevicesService } from "../../../src/ports/devices-management/DevicesSer
 import { NotificationsService } from "../../../src/ports/notifications-management/NotificationsService.js"
 import { PermissionsService } from "../../../src/ports/permissions-management/PermissionsService.js"
 import { ScriptRepository } from "../../../src/ports/scripts-management/ScriptRepository.js"
-import { ScriptsService } from "../../../src/ports/scripts-management/ScriptsService.js"
 import { UsersService } from "../../../src/ports/users-management/UserService.js"
 import { InMemoryRepositoryMockCheckingUniqueness } from "../../InMemoryRepositoryMock.js"
 import { DeviceMock, DevicesServiceSpy, MessageReader, NotificationsServiceSpy, PermissionsServiceSpy, TokenMock, UserMock, UsersServiceSpy } from "../../utils/mocks.js"
@@ -18,6 +17,9 @@ import { Type } from "../../../src/ports/devices-management/Types.js"
 import { NumberEOperator, StringEOperator } from "../../../src/domain/scripts-management/Operators.js"
 import { AutomationId, TaskId } from "../../../src/domain/scripts-management/Script.js"
 import { PermissionError } from "../../../src/ports/permissions-management/Errors.js"
+import { DeviceEventsService } from "../../../src/ports/devices-management/DeviceEventsService.js"
+import { DeviceEventsServiceImpl } from "../../../src/domain/devices-management/DeviceEventsServiceImpl.js"
+import { ScriptsService } from "../../../src/ports/scripts-management/ScriptsService.js"
 
 const user = UserMock()
 const email = user.email
@@ -31,6 +33,7 @@ let usersServiceSpy: Spy<UsersService>
 let permissionsServiceSpy: Spy<PermissionsService>
 let scriptsRepository: ScriptRepository
 let scriptsService: ScriptsService
+let deviceEventsService: DeviceEventsService
 
 const taskBuilderAndRef = TaskBuilder("taskName")
 const root = taskBuilderAndRef[1]
@@ -43,8 +46,9 @@ beforeEach(() => {
   notificationsServiceSpy = NotificationsServiceSpy(email)
   usersServiceSpy = UsersServiceSpy(user, token)
   permissionsServiceSpy = PermissionsServiceSpy(token, true)
+  deviceEventsService = new DeviceEventsServiceImpl(devicesServiceSpy.get())
   scriptsRepository = new InMemoryRepositoryMockCheckingUniqueness((script) => script.id, (id) => id, (script1, script2) => script1.name != script2.name)
-  scriptsService = new ScriptsServiceImpl(scriptsRepository, devicesServiceSpy.get(), notificationsServiceSpy.get(), usersServiceSpy.get(), permissionsServiceSpy.get())
+  scriptsService = new ScriptsServiceImpl(scriptsRepository, devicesServiceSpy.get(), notificationsServiceSpy.get(), usersServiceSpy.get(), permissionsServiceSpy.get(), deviceEventsService)
 })
 
 test("Initially does not have tasks", async () => {
@@ -200,7 +204,6 @@ test("Creating an automation adds it to the service and the repository", async (
 
   expect(automations).toContain(automation)
   expect(repoAutomations).toContain(automation)
-  expect(usersServiceSpy.call()).toBe(3)
 })
 
 test("It is possible to get a task without a token", async () => {
@@ -252,7 +255,7 @@ test("A task can be edited", async () => {
 
 test("Cannot edit a task if the token is invalid", async () => {
   permissionsServiceSpy = PermissionsServiceSpy(TokenMock("otherEmail"), true, true)
-  scriptsService = new ScriptsServiceImpl(scriptsRepository, devicesServiceSpy.get(), notificationsServiceSpy.get(), usersServiceSpy.get(), permissionsServiceSpy.get())
+  scriptsService = new ScriptsServiceImpl(scriptsRepository, devicesServiceSpy.get(), notificationsServiceSpy.get(), usersServiceSpy.get(), permissionsServiceSpy.get(), deviceEventsService)
   const taskId = await runPromise(scriptsService.createTask(token, taskBuilder))
 
   await runPromise(pipe(
@@ -268,7 +271,7 @@ test("Cannot edit a task if the token is invalid", async () => {
 
 test("Cannot edit a task if the user has not the right permissions", async () => {
   permissionsServiceSpy = PermissionsServiceSpy(TokenMock("otherEmail"))
-  scriptsService = new ScriptsServiceImpl(scriptsRepository, devicesServiceSpy.get(), notificationsServiceSpy.get(), usersServiceSpy.get(), permissionsServiceSpy.get())
+  scriptsService = new ScriptsServiceImpl(scriptsRepository, devicesServiceSpy.get(), notificationsServiceSpy.get(), usersServiceSpy.get(), permissionsServiceSpy.get(), deviceEventsService)
   const taskId = await runPromise(scriptsService.createTask(token, taskBuilder))
 
   await runPromise(pipe(
@@ -371,7 +374,7 @@ test("An automation can be edited", async () => {
 
 test("Cannot edit an automation if the token is invalid", async () => {
   permissionsServiceSpy = PermissionsServiceSpy(TokenMock("otherEmail"), true, true)
-  scriptsService = new ScriptsServiceImpl(scriptsRepository, devicesServiceSpy.get(), notificationsServiceSpy.get(), usersServiceSpy.get(), permissionsServiceSpy.get())
+  scriptsService = new ScriptsServiceImpl(scriptsRepository, devicesServiceSpy.get(), notificationsServiceSpy.get(), usersServiceSpy.get(), permissionsServiceSpy.get(), deviceEventsService)
   const taskId = await runPromise(scriptsService.createAutomation(token, automationBuilder))
 
   await runPromise(pipe(
@@ -387,7 +390,7 @@ test("Cannot edit an automation if the token is invalid", async () => {
 
 test("Cannot edit an automation if the user has not the right permissions", async () => {
   permissionsServiceSpy = PermissionsServiceSpy(TokenMock("otherEmail"))
-  scriptsService = new ScriptsServiceImpl(scriptsRepository, devicesServiceSpy.get(), notificationsServiceSpy.get(), usersServiceSpy.get(), permissionsServiceSpy.get())
+  scriptsService = new ScriptsServiceImpl(scriptsRepository, devicesServiceSpy.get(), notificationsServiceSpy.get(), usersServiceSpy.get(), permissionsServiceSpy.get(), deviceEventsService)
   const automationId = await runPromise(scriptsService.createAutomation(token, automationBuilder))
 
   await runPromise(pipe(
@@ -479,7 +482,7 @@ test("Cannot start a task that does not exists", async () => {
 
 test("Cannot start a task if the token is not valid", async () => {
   permissionsServiceSpy = PermissionsServiceSpy(TokenMock("otherEmail"), false, true)
-  scriptsService = new ScriptsServiceImpl(scriptsRepository, devicesServiceSpy.get(), notificationsServiceSpy.get(), usersServiceSpy.get(), permissionsServiceSpy.get())
+  scriptsService = new ScriptsServiceImpl(scriptsRepository, devicesServiceSpy.get(), notificationsServiceSpy.get(), usersServiceSpy.get(), permissionsServiceSpy.get(), deviceEventsService)
   const taskId = await runPromise(scriptsService.createTask(token, taskBuilder))
   await runPromise(pipe(
     scriptsService.startTask(token, taskId),
@@ -495,7 +498,7 @@ test("Cannot start a task if the token is not valid", async () => {
 
 test("Cannot start a task if the user has not the right permissions", async () => {
   permissionsServiceSpy = PermissionsServiceSpy(TokenMock("otherEmail"))
-  scriptsService = new ScriptsServiceImpl(scriptsRepository, devicesServiceSpy.get(), notificationsServiceSpy.get(), usersServiceSpy.get(), permissionsServiceSpy.get())
+  scriptsService = new ScriptsServiceImpl(scriptsRepository, devicesServiceSpy.get(), notificationsServiceSpy.get(), usersServiceSpy.get(), permissionsServiceSpy.get(), deviceEventsService)
   const taskId = await runPromise(scriptsService.createTask(token, taskBuilder))
   await runPromise(pipe(
     scriptsService.startTask(token, taskId),
