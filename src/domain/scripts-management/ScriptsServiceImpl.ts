@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { Effect, flatMap, catch as catch_, succeed, fail, mapError, map, forkDaemon, runFork, forEach, fork, sync } from "effect/Effect";
+import { Effect, flatMap, catch as catch_, succeed, fail, mapError, map, forkDaemon, runFork, forEach, fork, sync, sleep, andThen, tap } from "effect/Effect";
 import { PermissionError } from "../../ports/permissions-management/Errors.js";
 import { ScriptNotFoundError, TaskNameAlreadyInUseError, AutomationNameAlreadyInUseError, InvalidScriptError, ScriptError } from "../../ports/scripts-management/Errors.js";
 import { ScriptsService } from "../../ports/scripts-management/ScriptsService.js";
@@ -16,9 +16,10 @@ import { pipe, Runtime } from "effect";
 import { DuplicateIdError, UniquenessConstraintViolatedError } from "../../ports/Repository.js";
 import { DeviceEventsService, DeviceEventsSubscriber } from "../../ports/devices-management/DeviceEventsService.js";
 import { DeviceId, DeviceEvent } from "../devices-management/Device.js";
-import { DeviceEventTrigger, DeviceEventTriggerImpl } from "./Trigger.js";
+import { DeviceEventTrigger, DeviceEventTriggerImpl, PeriodTrigger, PeriodTriggerImpl } from "./Trigger.js";
 import { RuntimeFiber } from "effect/Fiber";
 import { ExecutionEnvironment } from "./Instruction.js";
+import { millis, seconds } from "effect/Duration";
 
 export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscriber {
   constructor(
@@ -116,7 +117,10 @@ export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscribe
       map(id => id as AutomationId),
       flatMap(id => pipe(
         this.findAutomation(token, id),
-        flatMap(automation => this.startAutomationHandler(automation)),
+        map(automation => {
+          this.startAutomationHandler(automation)
+          return automation.id
+        }),
         catch_("__brand", {
           failure: "ScriptNotFoundError",
           onFailure: _ => succeed(id)
@@ -153,15 +157,45 @@ export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscribe
         const deviceEventTrigger = automation.trigger as DeviceEventTrigger
 
         if (deviceId == deviceEventTrigger.deviceId && event.name == deviceEventTrigger.eventName) {
-          runFork(forkDaemon(automation.execute(this.notificationsService, this, this.permissionsService, this.devicesService)))
+          runFork(forkDaemon(this.startAutomation(automation)))
         }
       }
       return succeed(undefined)
     })
   }
 
-  private startAutomationHandler(automation: Automation): Effect<AutomationId> {
-    return succeed(automation.id)
+  private startAutomationHandler(automation: Automation) {
+    if (automation.trigger instanceof PeriodTriggerImpl && automation.enabled) {
+      const periodTrigger = automation.trigger as PeriodTrigger
+      runFork(forkDaemon(pipe(
+        this.waitToStart(periodTrigger),
+        andThen(() => this.periodLoop(automation, periodTrigger))
+      )))
+    }
+  }
+
+  private waitToStart(periodTrigger: PeriodTrigger): Effect<void> {
+    const delay = periodTrigger.start.getMilliseconds() - new Date().getMilliseconds()
+    return delay > 0 ? sleep(millis(delay)) : succeed(null)
+  }
+
+  private periodLoop(automation: Automation, periodTrigger: PeriodTrigger): Effect<undefined, ScriptError> {
+    return pipe(
+      sync(() => automation.enabled),
+      flatMap(enabled =>
+        enabled
+          ? pipe(
+            this.startAutomation(automation),
+            andThen(() => sleep(seconds(periodTrigger.periodSeconds))),
+            andThen(() => this.periodLoop(automation, periodTrigger))
+          )
+          : succeed(undefined)
+      )
+    )
+  }
+
+  private startAutomation(automation: Automation) {
+    return automation.execute(this.notificationsService, this, this.permissionsService, this.devicesService)
   }
 
   editAutomation(token: Token, automationId: AutomationId, automation: AutomationBuilder): Effect<void, InvalidTokenError | PermissionError | ScriptNotFoundError | AutomationNameAlreadyInUseError | Array<InvalidScriptError>> {
