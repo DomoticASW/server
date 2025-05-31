@@ -79,7 +79,7 @@ export function registerDevicesServiceRoutes(app: express.Express, service: Perm
         Effect.bind("_", ({ token }) => service.canExecuteTask(token, TaskId(req.params.id))),
         Effect.map(() => Response(StatusCodes.OK)),
         Effect.catch("__brand", {
-            failure: "TaskNotFoundError",
+            failure: "ScriptNotFoundError",
             onFailure: (err) => Effect.succeed(Response(StatusCodes.NOT_FOUND, err))
         }),
         handleCommonErrors,
