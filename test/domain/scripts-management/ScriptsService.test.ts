@@ -12,7 +12,7 @@ import { pipe } from "effect"
 import { AutomationBuilderWithDeviceEventTrigger, TaskBuilder } from "../../../src/domain/scripts-management/ScriptBuilder.js"
 import { flatMap } from "effect/Effect"
 import { InvalidTokenError } from "../../../src/ports/users-management/Errors.js"
-import { AutomationNameAlreadyInUseError, InvalidScriptError, ScriptNotFoundError, TaskNameAlreadyInUseError } from "../../../src/ports/scripts-management/Errors.js"
+import { AutomationNameAlreadyInUseError, ScriptNotFoundError, TaskNameAlreadyInUseError } from "../../../src/ports/scripts-management/Errors.js"
 import { Type } from "../../../src/ports/devices-management/Types.js"
 import { NumberEOperator, StringEOperator } from "../../../src/domain/scripts-management/Operators.js"
 import { AutomationId, TaskId } from "../../../src/domain/scripts-management/Script.js"
@@ -159,10 +159,7 @@ test("If trying to create a task with syntax errors, the errors are returned", a
     match({
       onSuccess: () => { throw Error("should not be here") },
       onFailure: err => {
-        expect(err).toStrictEqual([
-          InvalidScriptError("The constant constantName3 was not defined inside of the if's scope"), 
-          InvalidScriptError("The constant constantName4 was not defined inside of the if's scope")
-        ])
+        expect(err.cause).toBe("The constant constantName3 was not defined inside of the if's scope, The constant constantName4 was not defined inside of the if's scope")
       },
     })
   ))
@@ -340,10 +337,7 @@ test("If trying to edit a task with syntax errors, the errors are returned", asy
     match({
       onSuccess: () => { throw Error("should not be here") },
       onFailure: err => {
-        expect(err).toStrictEqual([
-          InvalidScriptError("The constant constantName3 was not defined inside of the if's scope"), 
-          InvalidScriptError("The constant constantName4 was not defined inside of the if's scope")
-        ])
+        expect(err.cause).toBe("The constant constantName3 was not defined inside of the if's scope, The constant constantName4 was not defined inside of the if's scope")
       },
     })
   ))
@@ -459,10 +453,7 @@ test("If trying to edit an automation with syntax errors, the errors are returne
     match({
       onSuccess: () => { throw Error("should not be here") },
       onFailure: err => {
-        expect(err).toStrictEqual([
-          InvalidScriptError("The constant constantName3 was not defined inside of the if's scope"), 
-          InvalidScriptError("The constant constantName4 was not defined inside of the if's scope")
-        ])
+        expect(err.cause).toBe("The constant constantName3 was not defined inside of the if's scope, The constant constantName4 was not defined inside of the if's scope")
       },
     })
   ))

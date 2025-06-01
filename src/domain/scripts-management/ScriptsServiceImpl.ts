@@ -57,7 +57,7 @@ export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscribe
     )
   }
 
-  createTask(token: Token, task: TaskBuilder): Effect<TaskId, InvalidTokenError | TaskNameAlreadyInUseError | Array<InvalidScriptError>> {
+  createTask(token: Token, task: TaskBuilder): Effect<TaskId, InvalidTokenError | TaskNameAlreadyInUseError | InvalidScriptError> {
     return pipe(
       this.createScript(token, task),
       map(id => id as TaskId),
@@ -74,7 +74,7 @@ export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscribe
     )
   }
 
-  editTask(token: Token, taskId: TaskId, task: TaskBuilder): Effect<void, InvalidTokenError | PermissionError | ScriptNotFoundError | TaskNameAlreadyInUseError | Array<InvalidScriptError>> {
+  editTask(token: Token, taskId: TaskId, task: TaskBuilder): Effect<void, InvalidTokenError | PermissionError | ScriptNotFoundError | TaskNameAlreadyInUseError | InvalidScriptError> {
     return pipe(
       this.editScript(token, taskId, task),
       mapError(err => {
@@ -111,7 +111,7 @@ export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscribe
     )
   }
 
-  createAutomation(token: Token, automation: AutomationBuilder): Effect<AutomationId, InvalidTokenError | AutomationNameAlreadyInUseError | Array<InvalidScriptError>> {
+  createAutomation(token: Token, automation: AutomationBuilder): Effect<AutomationId, InvalidTokenError | AutomationNameAlreadyInUseError | InvalidScriptError> {
     return pipe(
       this.createScript(token, automation),
       map(id => id as AutomationId),
@@ -198,7 +198,7 @@ export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscribe
     return automation.execute(this.notificationsService, this, this.permissionsService, this.devicesService)
   }
 
-  editAutomation(token: Token, automationId: AutomationId, automation: AutomationBuilder): Effect<void, InvalidTokenError | PermissionError | ScriptNotFoundError | AutomationNameAlreadyInUseError | Array<InvalidScriptError>> {
+  editAutomation(token: Token, automationId: AutomationId, automation: AutomationBuilder): Effect<void, InvalidTokenError | PermissionError | ScriptNotFoundError | AutomationNameAlreadyInUseError | InvalidScriptError> {
     return pipe(
       this.editScript(token, automationId, automation),
       mapError(err => {
@@ -227,7 +227,7 @@ export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscribe
     )
   }
 
-  private createScript(token: Token, scriptBuilder: ScriptBuilder<Script<ScriptId>>): Effect<ScriptId, DuplicateIdError | UniquenessConstraintViolatedError | InvalidTokenError | Array<InvalidScriptError>> {
+  private createScript(token: Token, scriptBuilder: ScriptBuilder<Script<ScriptId>>): Effect<ScriptId, DuplicateIdError | UniquenessConstraintViolatedError | InvalidTokenError | InvalidScriptError> {
     return pipe(
       this.usersService.verifyToken(token),
       flatMap(() => scriptBuilder.build()),
@@ -251,7 +251,7 @@ export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscribe
     )
   }
 
-  private editScript(token: Token, scriptId: ScriptId, scriptBuilder: ScriptBuilder): Effect<void, InvalidTokenError | PermissionError | ScriptNotFoundError | UniquenessConstraintViolatedError | Array<InvalidScriptError>> {
+  private editScript(token: Token, scriptId: ScriptId, scriptBuilder: ScriptBuilder): Effect<void, InvalidTokenError | PermissionError | ScriptNotFoundError | UniquenessConstraintViolatedError | InvalidScriptError> {
     return pipe(
       this.permissionsService.canEdit(token, scriptId),
       flatMap(() => scriptBuilder.buildWithId(scriptId)),

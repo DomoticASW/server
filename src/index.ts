@@ -18,6 +18,8 @@ import { DeviceEventsServiceImpl } from "./domain/devices-management/DeviceEvent
 import { DeviceStatusChangesSubscriber, DeviceStatusesService } from "./ports/devices-management/DeviceStatusesService.js";
 import { DeviceOfflineNotificationSubscriptionRepositoryMongoAdapter } from "./adapters/notifications-management/DeviceOfflineNotificationSubscription.js";
 import { NotificationsService } from "./domain/notifications-management/NotificationsServiceImpl.js";
+import { ScriptsServiceImpl } from "./domain/scripts-management/ScriptsServiceImpl.js";
+import { ScriptRepositoryMongoAdapter } from "./adapters/scripts-management/ScriptRepositoryMongoAdapter.js";
 
 const mongoDBConnection = mongoose.createConnection("mongodb://localhost:27017/DomoticASW")
 // TODO: replace with production impl
@@ -55,8 +57,10 @@ const deviceStatusesService: DeviceStatusesService = {
 const deviceGroupRepository = new DeviceGroupRepositoryMongoAdapter(mongoDBConnection)
 const deviceRepository = new DeviceRepositoryMongoAdapter(mongoDBConnection)
 const deviceOfflineNotificationSubscriptionRepository = new DeviceOfflineNotificationSubscriptionRepositoryMongoAdapter(mongoDBConnection)
+const scriptRepository = new ScriptRepositoryMongoAdapter(mongoDBConnection)
 const devicesService = new DevicesServiceImpl(deviceRepository, deviceFactory, usersServiceMock, permissionsService)
 const deviceGroupsService = new DeviceGroupsServiceImpl(deviceGroupRepository, devicesService, usersServiceMock)
 const deviceEventsService = new DeviceEventsServiceImpl(devicesService)
 const notificationsService = NotificationsService(deviceStatusesService, devicesService, usersServiceMock, deviceOfflineNotificationSubscriptionRepository)
-new HTTPServerAdapter(3000, deviceGroupsService, devicesService, deviceEventsService, usersServiceMock, notificationsService)
+const scriptsService = new ScriptsServiceImpl(scriptRepository, devicesService, notificationsService, usersServiceMock, permissionsService, deviceEventsService)
+new HTTPServerAdapter(3000, deviceGroupsService, devicesService, deviceEventsService, usersServiceMock, notificationsService, scriptsService)

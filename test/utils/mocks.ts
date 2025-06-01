@@ -104,10 +104,10 @@ export function ScriptsServiceSpy(task: Task = SpyTaskMock().get(), isTask: bool
         getAllTasks: function (token: Token): Effect<Iterable<Task>, InvalidTokenError> {
           throw new Error("Function not implemented.");
         },
-        createTask: function (token: Token, task: TaskBuilder): Effect<TaskId, InvalidTokenError | TaskNameAlreadyInUseError | Array<InvalidScriptError>> {
+        createTask: function (token: Token, task: TaskBuilder): Effect<TaskId, InvalidTokenError | TaskNameAlreadyInUseError | InvalidScriptError> {
           throw new Error("Function not implemented.");
         },
-        editTask: function (token: Token, taskId: TaskId, task: TaskBuilder): Effect<void, InvalidTokenError | PermissionError | ScriptNotFoundError | TaskNameAlreadyInUseError | Array<InvalidScriptError>> {
+        editTask: function (token: Token, taskId: TaskId, task: TaskBuilder): Effect<void, InvalidTokenError | PermissionError | ScriptNotFoundError | TaskNameAlreadyInUseError | InvalidScriptError> {
           throw new Error("Function not implemented.");
         },
         startTask: function (token: Token, taskId: TaskId): Effect<void, InvalidTokenError | ScriptNotFoundError | PermissionError> {
@@ -119,10 +119,10 @@ export function ScriptsServiceSpy(task: Task = SpyTaskMock().get(), isTask: bool
         getAllAutomations: function (token: Token): Effect<Iterable<Automation>, InvalidTokenError> {
           throw new Error("Function not implemented.");
         },
-        createAutomation: function (token: Token, automation: AutomationBuilder): Effect<AutomationId, InvalidTokenError | ScriptNotFoundError | AutomationNameAlreadyInUseError | Array<InvalidScriptError>> {
+        createAutomation: function (token: Token, automation: AutomationBuilder): Effect<AutomationId, InvalidTokenError | ScriptNotFoundError | AutomationNameAlreadyInUseError | InvalidScriptError> {
           throw new Error("Function not implemented.");
         },
-        editAutomation: function (token: Token, automationId: AutomationId, automation: AutomationBuilder): Effect<void, InvalidTokenError | PermissionError | ScriptNotFoundError | AutomationNameAlreadyInUseError | Array<InvalidScriptError>> {
+        editAutomation: function (token: Token, automationId: AutomationId, automation: AutomationBuilder): Effect<void, InvalidTokenError | PermissionError | ScriptNotFoundError | AutomationNameAlreadyInUseError | InvalidScriptError> {
           throw new Error("Function not implemented.");
         },
         setAutomationState: function (token: Token, automationId: AutomationId, enable: boolean): Effect<void, InvalidTokenError | ScriptNotFoundError> {
