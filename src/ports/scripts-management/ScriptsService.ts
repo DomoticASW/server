@@ -13,11 +13,13 @@ export interface ScriptsService {
   getAllTasks(token: Token): Effect<Iterable<Task>, InvalidTokenError>
   createTask(token: Token, task: TaskBuilder): Effect<TaskId, InvalidTokenError | TaskNameAlreadyInUseError | InvalidScriptError>
   editTask(token: Token, taskId: TaskId, task: TaskBuilder): Effect<void, InvalidTokenError | PermissionError | ScriptNotFoundError | TaskNameAlreadyInUseError | InvalidScriptError>
-  startTask(token: Token, taskid: TaskId): Effect<void, InvalidTokenError | ScriptNotFoundError | PermissionError>
-
+  startTask(token: Token, taskId: TaskId): Effect<void, InvalidTokenError | ScriptNotFoundError | PermissionError>
+  removeTask(token: Token, taskId: TaskId): Effect<void, InvalidTokenError | ScriptNotFoundError | PermissionError>
+  
   findAutomation(token: Token, automationId: AutomationId): Effect<Automation, InvalidTokenError | ScriptNotFoundError>
   getAllAutomations(token: Token): Effect<Iterable<Automation>, InvalidTokenError>
   createAutomation(token: Token, automation: AutomationBuilder): Effect<AutomationId, InvalidTokenError | ScriptNotFoundError | AutomationNameAlreadyInUseError | InvalidScriptError>
   editAutomation(token: Token, automationId: AutomationId, automation: AutomationBuilder): Effect<void, InvalidTokenError | PermissionError | ScriptNotFoundError | AutomationNameAlreadyInUseError | InvalidScriptError>
   setAutomationState(token: Token, automationId: AutomationId, enable: boolean): Effect<void, InvalidTokenError | ScriptNotFoundError>
+  removeAutomation(token: Token, automationId: AutomationId): Effect<void, InvalidTokenError | ScriptNotFoundError | PermissionError>
 }

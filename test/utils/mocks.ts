@@ -113,6 +113,9 @@ export function ScriptsServiceSpy(task: Task = SpyTaskMock().get(), isTask: bool
         startTask: function (token: Token, taskId: TaskId): Effect<void, InvalidTokenError | ScriptNotFoundError | PermissionError> {
           throw new Error("Function not implemented.");
         },
+        removeTask(token, taskId) {
+          throw new Error("Function not implemented.");
+        },
         findAutomation: function (token: Token, automationId: AutomationId): Effect<Automation, InvalidTokenError | ScriptNotFoundError> {
           throw new Error("Function not implemented.");
         },
@@ -127,7 +130,10 @@ export function ScriptsServiceSpy(task: Task = SpyTaskMock().get(), isTask: bool
         },
         setAutomationState: function (token: Token, automationId: AutomationId, enable: boolean): Effect<void, InvalidTokenError | ScriptNotFoundError> {
           throw new Error("Function not implemented.");
-        }
+        },
+        removeAutomation(token, automationId) {
+          throw new Error("Function not implemented.");
+        },
       }
     }
   }

@@ -514,3 +514,29 @@ test("An automation can be disabled", async () => {
 
   expect(automation.enabled).toBe(false)
 })
+
+test("A task can be removed", async () => {
+  const taskId = await runPromise(pipe(
+    scriptsService.createTask(token, taskBuilder)
+  ))
+
+  await runPromise(scriptsService.removeTask(token, taskId))
+  const tasks = await runPromise(scriptsService.getAllTasks(token))
+  const repoTasks = await runPromise(scriptsRepository.getAll())
+
+  expect(tasks).toHaveLength(0)
+  expect(repoTasks).toHaveLength(0)
+})
+
+test("An automation can be removed", async () => {
+  const automationId = await runPromise(pipe(
+    scriptsService.createAutomation(token, automationBuilder)
+  ))
+
+  await runPromise(scriptsService.removeAutomation(token, automationId))
+  const automations = await runPromise(scriptsService.getAllAutomations(token))
+  const repoAutomations = await runPromise(scriptsRepository.getAll())
+
+  expect(automations).toHaveLength(0)
+  expect(repoAutomations).toHaveLength(0)
+})
