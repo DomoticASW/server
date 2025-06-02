@@ -1,5 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-import { Effect, flatMap, catch as catch_, succeed, fail, mapError, map, forkDaemon, runFork, forEach, fork, sync, sleep, andThen, tap } from "effect/Effect";
+import { Effect, flatMap, catch as catch_, succeed, fail, mapError, map, forkDaemon, runFork, forEach, sync, sleep, andThen, runPromise } from "effect/Effect";
 import { PermissionError } from "../../ports/permissions-management/Errors.js";
 import { ScriptNotFoundError, TaskNameAlreadyInUseError, AutomationNameAlreadyInUseError, InvalidScriptError, ScriptError } from "../../ports/scripts-management/Errors.js";
 import { ScriptsService } from "../../ports/scripts-management/ScriptsService.js";
@@ -12,13 +11,11 @@ import { DevicesService } from "../../ports/devices-management/DevicesService.js
 import { NotificationsService } from "../../ports/notifications-management/NotificationsService.js";
 import { PermissionsService } from "../../ports/permissions-management/PermissionsService.js";
 import { UsersService } from "../../ports/users-management/UserService.js";
-import { pipe, Runtime } from "effect";
+import { pipe } from "effect";
 import { DuplicateIdError, UniquenessConstraintViolatedError } from "../../ports/Repository.js";
 import { DeviceEventsService, DeviceEventsSubscriber } from "../../ports/devices-management/DeviceEventsService.js";
 import { DeviceId, DeviceEvent } from "../devices-management/Device.js";
 import { DeviceEventTrigger, DeviceEventTriggerImpl, PeriodTrigger, PeriodTriggerImpl } from "./Trigger.js";
-import { RuntimeFiber } from "effect/Fiber";
-import { ExecutionEnvironment } from "./Instruction.js";
 import { millis, seconds } from "effect/Duration";
 
 export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscriber {
@@ -31,6 +28,8 @@ export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscribe
     deviceEventsService: DeviceEventsService
   ) {
     deviceEventsService.subscribeForDeviceEvents(this)
+    runPromise(this.scriptRepository.getAll())
+      .then(scripts => this.startAutomationsHandler(Array.from(scripts).filter(e => e instanceof AutomationImpl)))
   }
 
   findTask(token: Token, taskId: TaskId): Effect<Task, InvalidTokenError | ScriptNotFoundError> {
@@ -127,7 +126,7 @@ export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscribe
         }),
         catch_("__brand", {
           failure: "ScriptNotFoundError",
-          onFailure: _ => succeed(id)
+          onFailure: () => succeed(id)
         })
       )),
       mapError(err => {
@@ -166,6 +165,12 @@ export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscribe
       }
       return succeed(undefined)
     })
+  }
+
+  private startAutomationsHandler(automations: Automation[]) {
+    for (const automation of automations) {
+      this.startAutomationHandler(automation)
+    }
   }
 
   private startAutomationHandler(automation: Automation) {

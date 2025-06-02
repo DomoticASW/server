@@ -122,7 +122,7 @@ export function ScriptsServiceSpy(task: Task = SpyTaskMock().get(), isTask: bool
         getAllAutomations: function (token: Token): Effect<Iterable<Automation>, InvalidTokenError> {
           throw new Error("Function not implemented.");
         },
-        createAutomation: function (token: Token, automation: AutomationBuilder): Effect<AutomationId, InvalidTokenError | ScriptNotFoundError | AutomationNameAlreadyInUseError | InvalidScriptError> {
+        createAutomation: function (token: Token, automation: AutomationBuilder): Effect<AutomationId, InvalidTokenError | AutomationNameAlreadyInUseError | InvalidScriptError> {
           throw new Error("Function not implemented.");
         },
         editAutomation: function (token: Token, automationId: AutomationId, automation: AutomationBuilder): Effect<void, InvalidTokenError | PermissionError | ScriptNotFoundError | AutomationNameAlreadyInUseError | InvalidScriptError> {

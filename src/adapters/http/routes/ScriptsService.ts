@@ -3,11 +3,11 @@ import { ScriptsService } from "../../../ports/scripts-management/ScriptsService
 import { UsersService } from "../../../ports/users-management/UserService.js";
 import { Effect } from "effect";
 import { BadRequest, deserializeToken, handleCommonErrors, sendResponse, Response } from "./HttpUtils.js";
-import { TaskBuilder } from "../../../domain/scripts-management/ScriptBuilder.js";
+import { AutomationBuilder, AutomationBuilderWithDeviceEventTrigger, AutomationBuilderWithPeriodtrigger, ScriptBuilder, TaskBuilder } from "../../../domain/scripts-management/ScriptBuilder.js";
 import { StatusCodes } from "http-status-codes";
 import { ConstantRef, NodeRef } from "../../../domain/scripts-management/Refs.js";
 import { Email } from "../../../domain/users-management/User.js";
-import { TaskId } from "../../../domain/scripts-management/Script.js";
+import { Automation, Task, TaskId } from "../../../domain/scripts-management/Script.js";
 import { DeviceActionId, DeviceId, DevicePropertyId } from "../../../domain/devices-management/Device.js";
 import { Type } from "../../../ports/devices-management/Types.js";
 import { ConditionOperator } from "../../../domain/scripts-management/Instruction.js";
@@ -103,6 +103,32 @@ interface NodeRefSchema {
 
 interface BranchNodeRefSchema extends NodeRefSchema {
   id: string
+}
+
+interface PeriodTriggerSchema {
+    start: string
+    periodSeconds: number
+}
+
+interface DeviceEventTriggerSchema {
+    deviceId: string
+    eventName: string
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function isPeriodTrigger(o: any): o is PeriodTriggerSchema {
+  return o &&
+    typeof o === 'object' &&
+    'start' in o && typeof o.start === "string" &&
+    'periodSeconds' in o && typeof o.periodSeconds === "number"
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function isDeviceEventTrigger(o: any): o is DeviceEventTriggerSchema {
+  return o &&
+    typeof o === 'object' &&
+    'deviceId' in o && typeof o.deviceId === "string" &&
+    'eventName' in o && typeof o.eventName === "number"
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -234,8 +260,8 @@ export function registerScriptsServiceRoutes(app: express.Express, service: Scri
   app.post('/api/tasks', async (req, res) => {
     const response = await Effect.Do.pipe(
       Effect.bind("token", () => deserializeToken(req, usersService)),
-      Effect.bind("completeBuilder", () => completeBuilder(req)),
-      Effect.bind('taskId', ({token, completeBuilder}) => service.createTask(token, completeBuilder)),
+      Effect.bind("completeBuilder", () => completeBuilder(req, "task")),
+      Effect.bind('taskId', ({token, completeBuilder}) => service.createTask(token, completeBuilder as TaskBuilder)),
       Effect.map(({taskId}) => Response(StatusCodes.CREATED, { id: taskId})),
       Effect.catch("__brand", {
         failure: "InvalidScriptError",
@@ -272,8 +298,8 @@ export function registerScriptsServiceRoutes(app: express.Express, service: Scri
   app.patch('/api/tasks/:id', async (req, res) => {
     const response = await Effect.Do.pipe(
       Effect.bind("token", () => deserializeToken(req, usersService)),
-      Effect.bind("completeBuilder", () => completeBuilder(req)),
-      Effect.bind("_", ({ token, completeBuilder }) => service.editTask(token, TaskId(req.params.id), completeBuilder)),
+      Effect.bind("completeBuilder", () => completeBuilder(req, "task")),
+      Effect.bind("_", ({ token, completeBuilder }) => service.editTask(token, TaskId(req.params.id), completeBuilder as TaskBuilder)),
       Effect.map(() => Response(StatusCodes.OK)),
       Effect.catch("__brand", {
         failure: "ScriptNotFoundError",
@@ -336,10 +362,32 @@ export function registerScriptsServiceRoutes(app: express.Express, service: Scri
     )
     sendResponse(res, response)
   });
+
+  //create
+  app.post('/api/automations', async (req, res) => {
+    const response = await Effect.Do.pipe(
+      Effect.bind("token", () => deserializeToken(req, usersService)),
+      Effect.bind("completeBuilder", () => completeBuilder(req, "automation")),
+      Effect.bind('taskId', ({token, completeBuilder}) => service.createAutomation(token, completeBuilder as AutomationBuilder)),
+      Effect.map(({taskId}) => Response(StatusCodes.CREATED, { id: taskId})),
+      Effect.catch("__brand", {
+        failure: "InvalidScriptError",
+        onFailure: (error) => Effect.succeed(Response(StatusCodes.BAD_REQUEST, error))
+      }),
+      Effect.catch("__brand", {
+        failure: "AutomationNameAlreadyInUse",
+        onFailure: error => Effect.succeed(Response(StatusCodes.CONFLICT, error))
+      }),
+      handleCommonErrors,
+      Effect.runPromise
+    )
+
+    sendResponse(res, response)
+  })
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function completeBuilder(req: Request<object, any, any, ParsedQs, Record<string, any>>): Effect.Effect<TaskBuilder, BadRequest | InvalidScriptError> {
+function completeBuilder(req: Request<object, any, any, ParsedQs, Record<string, any>>, type: "task" | "automation"): Effect.Effect<TaskBuilder | AutomationBuilder, BadRequest | InvalidScriptError> {
   return Effect.Do.pipe(
     Effect.bind("taskNameVal", () => Effect.if(req.body != undefined && "name" in req.body, {
       onTrue: () => Effect.succeed(req.body.name),
@@ -349,18 +397,38 @@ function completeBuilder(req: Request<object, any, any, ParsedQs, Record<string,
       if (typeof taskNameVal == "string") { return Effect.succeed(taskNameVal) }
       else { return Effect.fail(BadRequest(`Expected task name of type string but found ${typeof taskNameVal}`)) }
     }),
-    Effect.bind("builderAndRef", ({ taskName }) => Effect.succeed(TaskBuilder(taskName))),
+    Effect.bind("trigger", () => Effect.if(type == "automation" && "trigger" in req.body, {
+      onTrue: () => Effect.succeed(req.body.trigger),
+      onFalse: () => Effect.fail(BadRequest("Missing trigger for the automation"))
+    })),
+    Effect.bind("builderAndRef", ({ taskName, trigger }) => 
+      Effect.if(type == "task", {
+        onTrue: () => Effect.succeed(TaskBuilder(taskName)),
+        onFalse: () =>
+          Effect.if(isPeriodTrigger(trigger), {
+            onTrue: () => Effect.succeed(AutomationBuilderWithPeriodtrigger(taskName, new Date(trigger.start), trigger.periodSeconds)),
+            onFalse: () =>
+              Effect.if(isDeviceEventTrigger(trigger), {
+                onTrue: () => Effect.succeed(AutomationBuilderWithDeviceEventTrigger(taskName, DeviceId(trigger.deviceId), trigger.eventName)),
+                onFalse: () => Effect.fail(BadRequest("Trigger is neither a period trigger nor a device event trigger"))
+              })
+          })
+      })
+    ),
     Effect.bind("instructionsAndRefsVal", () => Effect.if("instructions" in req.body, {
       onTrue: () => Effect.succeed(req.body.instructions),
       onFalse: () => Effect.succeed([])
     })),
     Effect.bind("instructionsSchemas", ({ instructionsAndRefsVal }) => createInstructionsSchemas(instructionsAndRefsVal)),
-    Effect.flatMap(({ instructionsSchemas, builderAndRef }) => createBuilderWithInstructions(builderAndRef, instructionsSchemas))
+    Effect.flatMap(({ instructionsSchemas, builderAndRef }) => Effect.if(type == "task", {
+      onTrue: () => createBuilderWithInstructions(builderAndRef as unknown as [TaskBuilder, NodeRef], instructionsSchemas),
+      onFalse: () => createBuilderWithInstructions(builderAndRef as unknown as [AutomationBuilder, NodeRef], instructionsSchemas)
+    }))
   )
 }
 
-function createBuilderWithInstructions(builderAndRef: [TaskBuilder, NodeRef], instructionsSchemas: Array<[InstructionSchema, NodeRefSchema]>) {
-  let taskBuilderAndErr: [TaskBuilder, InvalidScriptError | undefined] = [builderAndRef[0], undefined]
+function createBuilderWithInstructions<S = Task | Automation>(builderAndRef: [ScriptBuilder<S>, NodeRef], instructionsSchemas: Array<[InstructionSchema, NodeRefSchema]>) {
+  let taskBuilderAndErr: [ScriptBuilder<S>, InvalidScriptError | undefined] = [builderAndRef[0], undefined]
   const root = builderAndRef[1]
   const branchRefs: Map<string, NodeRef> = new Map()
   const constRefs: Array<ConstantRef> = []
@@ -406,7 +474,7 @@ function pushInstructionAndRef(instructionAndRef: any, instructions: [Instructio
   return false
 }
 
-function createBuilderFromInstructionAndRef(taskBuilder: TaskBuilder, instructionSchema: InstructionSchema, nodeRef: NodeRef, constRefs: ConstantRef[], branchRefs: Map<string, NodeRef>): [TaskBuilder, InvalidScriptError | undefined] {
+function createBuilderFromInstructionAndRef<S = Task | Automation>(taskBuilder: ScriptBuilder<S>, instructionSchema: InstructionSchema, nodeRef: NodeRef, constRefs: ConstantRef[], branchRefs: Map<string, NodeRef>): [ScriptBuilder<S>, InvalidScriptError | undefined] {
   let err: InvalidScriptError | undefined
   switch (instructionSchema.type) {
     case InstructionType.SendNotificationInstruction: {
