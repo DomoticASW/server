@@ -141,7 +141,7 @@ export class ScriptRepositoryMongoAdapter extends BaseRepositoryMongoAdapter<Scr
     });
     private scriptSchema = new mongoose.Schema<ScriptSchema>({
         _id: { type: String, required: true },
-        name: { type: String, required: true },
+        name: { type: String, required: true, unique: true },
         scriptType: { type: String, enum: ScriptType, required: true },
         instructions: { type: [this.instructionSchema], required: true },
         automationData: { type: this.automationDataSchema, required: false }
