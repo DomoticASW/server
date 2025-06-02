@@ -7,14 +7,15 @@ import { AutomationBuilder, AutomationBuilderWithDeviceEventTrigger, AutomationB
 import { StatusCodes } from "http-status-codes";
 import { ConstantRef, NodeRef } from "../../../domain/scripts-management/Refs.js";
 import { Email } from "../../../domain/users-management/User.js";
-import { Automation, Task, TaskId } from "../../../domain/scripts-management/Script.js";
+import { Automation, AutomationId, Script, ScriptId, Task, TaskId } from "../../../domain/scripts-management/Script.js";
 import { DeviceActionId, DeviceId, DevicePropertyId } from "../../../domain/devices-management/Device.js";
 import { Type } from "../../../ports/devices-management/Types.js";
 import { ConditionOperator } from "../../../domain/scripts-management/Instruction.js";
 import { NumberEOperator, NumberGEOperator, NumberGOperator, NumberLEOperator, NumberLOperator, BooleanEOperator, StringEOperator, ColorEOperator } from "../../../domain/scripts-management/Operators.js";
-import { InvalidScriptError } from "../../../ports/scripts-management/Errors.js";
-import { Request } from "express-serve-static-core";
-import { ParsedQs } from "qs";
+import { InvalidScriptError, ScriptNotFoundError } from "../../../ports/scripts-management/Errors.js";
+import { Token } from "../../../domain/users-management/Token.js";
+import { InvalidTokenError } from "../../../ports/users-management/Errors.js";
+import { PermissionError } from "../../../ports/permissions-management/Errors.js";
 
 enum InstructionType {
     SendNotificationInstruction = "SendNotificationInstruction",
@@ -321,45 +322,19 @@ export function registerScriptsServiceRoutes(app: express.Express, service: Scri
 
   // delete task
   app.delete('/api/tasks/:id', async (req, res) => {
-    const response = await Effect.Do.pipe(
-      Effect.bind("token", () => deserializeToken(req, usersService)),
-      Effect.bind("_", ({ token }) => service.removeTask(token, TaskId(req.params.id))),
-      Effect.map(() => Response(StatusCodes.OK)),
-      Effect.catch("__brand", {
-        failure: "ScriptNotFoundError",
-        onFailure: (err) => Effect.succeed(Response(StatusCodes.NOT_FOUND, err))
-      }),
-      handleCommonErrors,
-      Effect.runPromise
-    )
+    const response = await deleteScript(req, usersService, (token) => service.removeTask(token, TaskId(req.params.id)))
     sendResponse(res, response)
   });
 
   // get one task
   app.get('/api/tasks/:id', async (req, res) => {
-    const response = await Effect.Do.pipe(
-      Effect.bind("token", () => deserializeToken(req, usersService)),
-      Effect.bind("task", ({ token }) => service.findTask(token, TaskId(req.params.id))),
-      Effect.map(({ task }) => Response(StatusCodes.OK, task)),
-      Effect.catch("__brand", {
-        failure: "ScriptNotFoundError",
-        onFailure: (err) => Effect.succeed(Response(StatusCodes.NOT_FOUND, err))
-      }),
-      handleCommonErrors,
-      Effect.runPromise
-    )
+    const response = await getScript(req, usersService, (token) => service.findTask(token, TaskId(req.params.id)))
     sendResponse(res, response)
   });
 
   // get all tasks
   app.get('/api/tasks', async (req, res) => {
-    const response = await Effect.Do.pipe(
-      Effect.bind("token", () => deserializeToken(req, usersService)),
-      Effect.bind("tasks", ({ token }) => service.getAllTasks(token)),
-      Effect.map(({ tasks }) => Response(StatusCodes.CREATED, Array.from(tasks))),
-      handleCommonErrors,
-      Effect.runPromise
-    )
+    const response = await getAllScripts(req, usersService, (token) => service.getAllTasks(token))
     sendResponse(res, response)
   });
 
@@ -384,32 +359,112 @@ export function registerScriptsServiceRoutes(app: express.Express, service: Scri
 
     sendResponse(res, response)
   })
+
+  // edit Automation
+  app.patch('/api/automations/:id', async (req, res) => {
+    const response = await Effect.Do.pipe(
+      Effect.bind("token", () => deserializeToken(req, usersService)),
+      Effect.bind("completeBuilder", () => completeBuilder(req, "automation")),
+      Effect.bind("_", ({ token, completeBuilder }) => service.editAutomation(token, AutomationId(req.params.id), completeBuilder as AutomationBuilder)),
+      Effect.map(() => Response(StatusCodes.OK)),
+      Effect.catch("__brand", {
+        failure: "ScriptNotFoundError",
+        onFailure: (err) => Effect.succeed(Response(StatusCodes.NOT_FOUND, err))
+      }),
+      Effect.catch("__brand", {
+        failure: "InvalidScriptError",
+        onFailure: (error) => Effect.succeed(Response(StatusCodes.BAD_REQUEST, error))
+      }),
+      Effect.catch("__brand", {
+        failure: "AutomationNameAlreadyInUse",
+        onFailure: error => Effect.succeed(Response(StatusCodes.CONFLICT, error))
+      }),
+      handleCommonErrors,
+      Effect.runPromise
+    )
+    sendResponse(res, response)
+  });
+
+  // delete automation
+  app.delete('/api/automations/:id', async (req, res) => {
+    const response = await deleteScript(req, usersService, (token) => service.removeAutomation(token, AutomationId(req.params.id)))
+    sendResponse(res, response)
+  });
+
+  // get one automation
+  app.get('/api/automations/:id', async (req, res) => {
+    const response = await getScript(req, usersService, (token) => service.findAutomation(token, AutomationId(req.params.id)))
+    sendResponse(res, response)
+  });
+
+  // get all automations
+  app.get('/api/automations', async (req, res) => {
+    const response = await getAllScripts(req, usersService, (token) => service.getAllAutomations(token))
+    sendResponse(res, response)
+  });
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function completeBuilder(req: Request<object, any, any, ParsedQs, Record<string, any>>, type: "task" | "automation"): Effect.Effect<TaskBuilder | AutomationBuilder, BadRequest | InvalidScriptError> {
+function deleteScript(req: express.Request, usersService: UsersService, fun: (token: Token) => Effect.Effect<void, InvalidTokenError | ScriptNotFoundError | PermissionError>) {
   return Effect.Do.pipe(
-    Effect.bind("taskNameVal", () => Effect.if(req.body != undefined && "name" in req.body, {
+    Effect.bind("token", () => deserializeToken(req, usersService)),
+    Effect.bind("_", ({ token }) => fun(token)),
+    Effect.map(() => Response(StatusCodes.OK)),
+    Effect.catch("__brand", {
+      failure: "ScriptNotFoundError",
+      onFailure: (err) => Effect.succeed(Response(StatusCodes.NOT_FOUND, err))
+    }),
+    handleCommonErrors,
+    Effect.runPromise
+  );
+}
+
+function getScript(req: express.Request, usersService: UsersService, fun: (token: Token) => Effect.Effect<Script<ScriptId>, InvalidTokenError | ScriptNotFoundError>) {
+  return Effect.Do.pipe(
+    Effect.bind("token", () => deserializeToken(req, usersService)),
+    Effect.bind("task", ({ token }) => fun(token)),
+    Effect.map(({ task }) => Response(StatusCodes.OK, task)),
+    Effect.catch("__brand", {
+      failure: "ScriptNotFoundError",
+      onFailure: (err) => Effect.succeed(Response(StatusCodes.NOT_FOUND, err))
+    }),
+    handleCommonErrors,
+    Effect.runPromise
+  );
+}
+
+function getAllScripts(req: express.Request, usersService: UsersService, fun: (token: Token) => Effect.Effect<Iterable<Script<ScriptId>>, InvalidTokenError>) {
+  return Effect.Do.pipe(
+    Effect.bind("token", () => deserializeToken(req, usersService)),
+    Effect.bind("automations", ({ token }) => fun(token)),
+    Effect.map(({ automations }) => Response(StatusCodes.CREATED, Array.from(automations))),
+    handleCommonErrors,
+    Effect.runPromise
+  )
+}
+
+function completeBuilder(req: express.Request, type: "task" | "automation"): Effect.Effect<TaskBuilder | AutomationBuilder, BadRequest | InvalidScriptError> {
+  return Effect.Do.pipe(
+    Effect.bind("scriptNameVal", () => Effect.if(req.body != undefined && "name" in req.body, {
       onTrue: () => Effect.succeed(req.body.name),
       onFalse: () => Effect.fail(BadRequest("Missing task name property in request body"))
     })),
-    Effect.bind("taskName", ({ taskNameVal }) => {
-      if (typeof taskNameVal == "string") { return Effect.succeed(taskNameVal) }
-      else { return Effect.fail(BadRequest(`Expected task name of type string but found ${typeof taskNameVal}`)) }
+    Effect.bind("scriptName", ({ scriptNameVal }) => {
+      if (typeof scriptNameVal == "string") { return Effect.succeed(scriptNameVal) }
+      else { return Effect.fail(BadRequest(`Expected task name of type string but found ${typeof scriptNameVal}`)) }
     }),
     Effect.bind("trigger", () => Effect.if(type == "automation" && "trigger" in req.body, {
       onTrue: () => Effect.succeed(req.body.trigger),
       onFalse: () => Effect.fail(BadRequest("Missing trigger for the automation"))
     })),
-    Effect.bind("builderAndRef", ({ taskName, trigger }) => 
+    Effect.bind("builderAndRef", ({ scriptName, trigger }) => 
       Effect.if(type == "task", {
-        onTrue: () => Effect.succeed(TaskBuilder(taskName)),
+        onTrue: () => Effect.succeed(TaskBuilder(scriptName)),
         onFalse: () =>
           Effect.if(isPeriodTrigger(trigger), {
-            onTrue: () => Effect.succeed(AutomationBuilderWithPeriodtrigger(taskName, new Date(trigger.start), trigger.periodSeconds)),
+            onTrue: () => Effect.succeed(AutomationBuilderWithPeriodtrigger(scriptName, new Date(trigger.start), trigger.periodSeconds)),
             onFalse: () =>
               Effect.if(isDeviceEventTrigger(trigger), {
-                onTrue: () => Effect.succeed(AutomationBuilderWithDeviceEventTrigger(taskName, DeviceId(trigger.deviceId), trigger.eventName)),
+                onTrue: () => Effect.succeed(AutomationBuilderWithDeviceEventTrigger(scriptName, DeviceId(trigger.deviceId), trigger.eventName)),
                 onFalse: () => Effect.fail(BadRequest("Trigger is neither a period trigger nor a device event trigger"))
               })
           })
