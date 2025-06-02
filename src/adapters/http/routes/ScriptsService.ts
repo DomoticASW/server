@@ -13,6 +13,8 @@ import { Type } from "../../../ports/devices-management/Types.js";
 import { ConditionOperator } from "../../../domain/scripts-management/Instruction.js";
 import { NumberEOperator, NumberGEOperator, NumberGOperator, NumberLEOperator, NumberLOperator, BooleanEOperator, StringEOperator, ColorEOperator } from "../../../domain/scripts-management/Operators.js";
 import { InvalidScriptError } from "../../../ports/scripts-management/Errors.js";
+import { Request } from "express-serve-static-core";
+import { ParsedQs } from "qs";
 
 enum InstructionType {
     SendNotificationInstruction = "SendNotificationInstruction",
@@ -232,21 +234,7 @@ export function registerScriptsServiceRoutes(app: express.Express, service: Scri
   app.post('/api/tasks', async (req, res) => {
     const response = await Effect.Do.pipe(
       Effect.bind("token", () => deserializeToken(req, usersService)),
-      Effect.bind("taskNameVal", () => Effect.if(req.body != undefined && "name" in req.body, {
-          onTrue: () => Effect.succeed(req.body.name),
-          onFalse: () => Effect.fail(BadRequest("Missing task name property in request body"))
-      })),
-      Effect.bind("taskName", ({ taskNameVal }) => {
-        if (typeof taskNameVal == "string") { return Effect.succeed(taskNameVal) }
-        else { return Effect.fail(BadRequest(`Expected task name of type string but found ${typeof taskNameVal}`)) }
-      }),
-      Effect.bind("builderAndRef", ({ taskName }) => Effect.succeed(TaskBuilder(taskName))),
-      Effect.bind("instructionsAndRefsVal", () => Effect.if("instructions" in req.body, {
-        onTrue: () => Effect.succeed(req.body.instructions),
-        onFalse: () => Effect.succeed([])
-      })),
-      Effect.bind("instructionsSchemas", ({ instructionsAndRefsVal }) => createInstructionsSchemas(instructionsAndRefsVal)),
-      Effect.bind("completeBuilder", ({ instructionsSchemas, builderAndRef }) => createCompleteBuilder(builderAndRef, instructionsSchemas)),
+      Effect.bind("completeBuilder", () => completeBuilder(req)),
       Effect.bind('taskId', ({token, completeBuilder}) => service.createTask(token, completeBuilder)),
       Effect.map(({taskId}) => Response(StatusCodes.CREATED, { id: taskId})),
       Effect.catch("__brand", {
@@ -264,7 +252,7 @@ export function registerScriptsServiceRoutes(app: express.Express, service: Scri
     sendResponse(res, response)
   })
 
-  //Execute task
+  // execute task
   app.post('/api/tasks/:id/execute', async (req, res) => {
     const response = await Effect.Do.pipe(
       Effect.bind("token", () => deserializeToken(req, usersService)),
@@ -279,6 +267,47 @@ export function registerScriptsServiceRoutes(app: express.Express, service: Scri
     )
     sendResponse(res, response)
   })
+
+  // edit task
+  app.patch('/api/tasks/:id', async (req, res) => {
+    const response = await Effect.Do.pipe(
+      Effect.bind("token", () => deserializeToken(req, usersService)),
+      Effect.bind("completeBuilder", () => completeBuilder(req)),
+      Effect.bind("_", ({ token, completeBuilder }) => service.editTask(token, TaskId(req.params.id), completeBuilder)),
+      Effect.map(() => Response(StatusCodes.OK)),
+      Effect.catch("__brand", {
+        failure: "ScriptNotFoundError",
+        onFailure: (err) => Effect.succeed(Response(StatusCodes.NOT_FOUND, err))
+      }),
+      Effect.catch("__brand", {
+        failure: "InvalidScriptError",
+        onFailure: (error) => Effect.succeed(Response(StatusCodes.BAD_REQUEST, error))
+      }),
+      Effect.catch("__brand", {
+        failure: "TaskNameAlreadyInUse",
+        onFailure: error => Effect.succeed(Response(StatusCodes.CONFLICT, error))
+      }),
+      handleCommonErrors,
+      Effect.runPromise
+    )
+    sendResponse(res, response)
+  });
+
+  // delete task
+  app.delete('/api/tasks/:id', async (req, res) => {
+    const response = await Effect.Do.pipe(
+      Effect.bind("token", () => deserializeToken(req, usersService)),
+      Effect.bind("_", ({ token }) => service.removeTask(token, TaskId(req.params.id))),
+      Effect.map(() => Response(StatusCodes.OK)),
+      Effect.catch("__brand", {
+        failure: "ScriptNotFoundError",
+        onFailure: (err) => Effect.succeed(Response(StatusCodes.NOT_FOUND, err))
+      }),
+      handleCommonErrors,
+      Effect.runPromise
+    )
+    sendResponse(res, response)
+  });
 
   // get one task
   app.get('/api/tasks/:id', async (req, res) => {
@@ -309,7 +338,28 @@ export function registerScriptsServiceRoutes(app: express.Express, service: Scri
   });
 }
 
-function createCompleteBuilder(builderAndRef: [TaskBuilder, NodeRef], instructionsSchemas: Array<[InstructionSchema, NodeRefSchema]>) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function completeBuilder(req: Request<object, any, any, ParsedQs, Record<string, any>>): Effect.Effect<TaskBuilder, BadRequest | InvalidScriptError> {
+  return Effect.Do.pipe(
+    Effect.bind("taskNameVal", () => Effect.if(req.body != undefined && "name" in req.body, {
+      onTrue: () => Effect.succeed(req.body.name),
+      onFalse: () => Effect.fail(BadRequest("Missing task name property in request body"))
+    })),
+    Effect.bind("taskName", ({ taskNameVal }) => {
+      if (typeof taskNameVal == "string") { return Effect.succeed(taskNameVal) }
+      else { return Effect.fail(BadRequest(`Expected task name of type string but found ${typeof taskNameVal}`)) }
+    }),
+    Effect.bind("builderAndRef", ({ taskName }) => Effect.succeed(TaskBuilder(taskName))),
+    Effect.bind("instructionsAndRefsVal", () => Effect.if("instructions" in req.body, {
+      onTrue: () => Effect.succeed(req.body.instructions),
+      onFalse: () => Effect.succeed([])
+    })),
+    Effect.bind("instructionsSchemas", ({ instructionsAndRefsVal }) => createInstructionsSchemas(instructionsAndRefsVal)),
+    Effect.flatMap(({ instructionsSchemas, builderAndRef }) => createBuilderWithInstructions(builderAndRef, instructionsSchemas))
+  )
+}
+
+function createBuilderWithInstructions(builderAndRef: [TaskBuilder, NodeRef], instructionsSchemas: Array<[InstructionSchema, NodeRefSchema]>) {
   let taskBuilderAndErr: [TaskBuilder, InvalidScriptError | undefined] = [builderAndRef[0], undefined]
   const root = builderAndRef[1]
   const branchRefs: Map<string, NodeRef> = new Map()

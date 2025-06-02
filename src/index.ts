@@ -31,7 +31,8 @@ const usersServiceMock: UsersService = {
 // TODO: replace with production impl
 const permissionsService: PermissionsService = {
     canExecuteActionOnDevice: () => Effect.succeed(undefined),
-    canExecuteTask: () => Effect.succeed(undefined)
+    canExecuteTask: () => Effect.succeed(undefined),
+    canEdit: () => Effect.succeed(undefined)
 } as unknown as PermissionsService
 // TODO: replace with production impl
 const deviceFactory: DeviceFactory = {
