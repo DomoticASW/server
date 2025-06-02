@@ -280,6 +280,22 @@ export function registerScriptsServiceRoutes(app: express.Express, service: Scri
     sendResponse(res, response)
   })
 
+  // get one task
+  app.get('/api/tasks/:id', async (req, res) => {
+    const response = await Effect.Do.pipe(
+      Effect.bind("token", () => deserializeToken(req, usersService)),
+      Effect.bind("task", ({ token }) => service.findTask(token, TaskId(req.params.id))),
+      Effect.map(({ task }) => Response(StatusCodes.OK, task)),
+      Effect.catch("__brand", {
+        failure: "ScriptNotFoundError",
+        onFailure: (err) => Effect.succeed(Response(StatusCodes.NOT_FOUND, err))
+      }),
+      handleCommonErrors,
+      Effect.runPromise
+    )
+    sendResponse(res, response)
+  });
+
   // get all tasks
   app.get('/api/tasks', async (req, res) => {
     const response = await Effect.Do.pipe(
