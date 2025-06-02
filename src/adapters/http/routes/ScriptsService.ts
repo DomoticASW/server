@@ -264,6 +264,7 @@ export function registerScriptsServiceRoutes(app: express.Express, service: Scri
     sendResponse(res, response)
   })
 
+  //Execute task
   app.post('/api/tasks/:id/execute', async (req, res) => {
     const response = await Effect.Do.pipe(
       Effect.bind("token", () => deserializeToken(req, usersService)),
@@ -278,6 +279,18 @@ export function registerScriptsServiceRoutes(app: express.Express, service: Scri
     )
     sendResponse(res, response)
   })
+
+  // get all tasks
+  app.get('/api/tasks', async (req, res) => {
+    const response = await Effect.Do.pipe(
+      Effect.bind("token", () => deserializeToken(req, usersService)),
+      Effect.bind("tasks", ({ token }) => service.getAllTasks(token)),
+      Effect.map(({ tasks }) => Response(StatusCodes.CREATED, Array.from(tasks))),
+      handleCommonErrors,
+      Effect.runPromise
+    )
+    sendResponse(res, response)
+  });
 }
 
 function createCompleteBuilder(builderAndRef: [TaskBuilder, NodeRef], instructionsSchemas: Array<[InstructionSchema, NodeRefSchema]>) {
