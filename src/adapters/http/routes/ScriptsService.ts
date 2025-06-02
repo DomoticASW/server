@@ -92,8 +92,7 @@ enum ConditionOperatorType {
 
 enum NodeRefType {
   RootNodeRef = "RootNodeRef",
-  ThenNodeRef = "ThenNodeRef",
-  ElseNodeRef = "ElseNodeRef"
+  BranchNodeRef = "BranchNodeRef"
 }
 
 interface NodeRefSchema {
@@ -290,6 +289,9 @@ function createCompleteBuilder(builderAndRef: [TaskBuilder, NodeRef], instructio
   for (const schema of instructionsSchemas) {
     const instructionSchema = schema[0]
     const nodeRefSchema = schema[1]
+    if (isBranchNodeRef(nodeRefSchema) && !branchRefs.get(nodeRefSchema.id)) {
+      return Effect.fail(InvalidScriptError("The node with the id " + nodeRefSchema.id + " does not exists in the task"))
+    }
     const nodeRef: NodeRef = isBranchNodeRef(nodeRefSchema) ? branchRefs.get(nodeRefSchema.id)! : root
 
     taskBuilderAndErr = createBuilderFromInstructionAndRef(taskBuilderAndErr[0]!, instructionSchema, nodeRef, constRefs, branchRefs);
