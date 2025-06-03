@@ -403,6 +403,7 @@ export function registerScriptsServiceRoutes(app: express.Express, service: Scri
     sendResponse(res, response)
   });
 
+  // enable or disable automation
   app.post('/api/automations/:id', async (req, res) => {
     const response = await Effect.Do.pipe(
       Effect.bind("token", () => deserializeToken(req, usersService)),
