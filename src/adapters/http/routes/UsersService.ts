@@ -165,7 +165,7 @@ export function registerUsersServiceRoutes(app: express.Application, service: Us
     });
 
     // get one with token
-    app.get('/api/users/:id', async (req, res) => {
+    app.get('/api/user', async (req, res) => {
         const response = await Effect.Do.pipe(
             Effect.bind("token", () => deserializeToken(req, service)),
             Effect.bind("user", ({ token }) => service.getUserData(token)),
