@@ -77,7 +77,7 @@ export function registerUsersServiceRoutes(app: express.Application, service: Us
     });
 
     // reject registration request
-    app.post('api/users/reject', async (req, res) => {
+    app.post('/api/users/reject', async (req, res) => {
         const key = "email"
         const response = await Effect.Do.pipe(
             Effect.bind("token", () => deserializeToken(req, service)),
@@ -103,7 +103,7 @@ export function registerUsersServiceRoutes(app: express.Application, service: Us
     });
 
     // delete
-    app.delete('api/users/:id', async (req, res) => {
+    app.delete('/api/users/:id', async (req, res) => {
         const response = await Effect.Do.pipe(
             Effect.bind("token", () => deserializeToken(req, service)),
             Effect.bind("_", ({ token }) => service.removeUser(token, Email(req.params.id))),
@@ -119,7 +119,7 @@ export function registerUsersServiceRoutes(app: express.Application, service: Us
     });
 
     // update
-    app.patch('api/users/:id', async (req, res) => {
+    app.patch('/api/users/:id', async (req, res) => {
         const response = await Effect.Do.pipe(
             Effect.bind("token", () => deserializeToken(req, service)),
             Effect.bind("nicknameVal", () => {
