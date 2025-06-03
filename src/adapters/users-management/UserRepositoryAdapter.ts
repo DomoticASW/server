@@ -53,8 +53,8 @@ export class UserRepositoryAdapter implements UserRepository {
                 const user = await this.userRequest.findByIdAndUpdate(
                     entity.email,
                     {
+                        _id: entity.email,
                         nickname: entity.nickname,
-                        email: entity.email,
                         passwordHash: entity.passwordHash,
                         role: entity.role,
                     },

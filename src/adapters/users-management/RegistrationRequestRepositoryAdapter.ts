@@ -46,7 +46,7 @@ export class RegistrationRequestRepositoryAdapter implements RegistrationRequest
             try: async () => {
                 const RR = await this.registrationRequest.findByIdAndUpdate(
                     entity.email,
-                    { nickname: entity.nickname, email: entity.email, passwordHash: entity.passwordHash },
+                    { _id: entity.email, nickname: entity.nickname, passwordHash: entity.passwordHash  },
                     { new: true }
                 );
                 if (!RR) {
