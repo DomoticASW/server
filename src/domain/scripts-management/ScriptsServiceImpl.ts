@@ -1,4 +1,4 @@
-import { Effect, flatMap, catch as catch_, succeed, fail, mapError, map, forkDaemon, runFork, forEach, sync, sleep, andThen, runPromise } from "effect/Effect";
+import { Effect, flatMap, catch as catch_, succeed, fail, mapError, map, forkDaemon, runFork, forEach, sleep, andThen, runPromise, sync, tap, if as if_ } from "effect/Effect";
 import { PermissionError } from "../../ports/permissions-management/Errors.js";
 import { ScriptNotFoundError, TaskNameAlreadyInUseError, AutomationNameAlreadyInUseError, InvalidScriptError, ScriptError } from "../../ports/scripts-management/Errors.js";
 import { ScriptsService } from "../../ports/scripts-management/ScriptsService.js";
@@ -11,14 +11,16 @@ import { DevicesService } from "../../ports/devices-management/DevicesService.js
 import { NotificationsService } from "../../ports/notifications-management/NotificationsService.js";
 import { PermissionsService } from "../../ports/permissions-management/PermissionsService.js";
 import { UsersService } from "../../ports/users-management/UserService.js";
-import { pipe } from "effect";
-import { DuplicateIdError, UniquenessConstraintViolatedError } from "../../ports/Repository.js";
+import { Fiber, pipe } from "effect";
+import { DuplicateIdError, NotFoundError, UniquenessConstraintViolatedError } from "../../ports/Repository.js";
 import { DeviceEventsService, DeviceEventsSubscriber } from "../../ports/devices-management/DeviceEventsService.js";
 import { DeviceId, DeviceEvent } from "../devices-management/Device.js";
 import { DeviceEventTrigger, DeviceEventTriggerImpl, PeriodTrigger, PeriodTriggerImpl } from "./Trigger.js";
 import { millis, seconds } from "effect/Duration";
 
 export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscriber {
+  private automationsFiberMap: Map<AutomationId, Fiber.RuntimeFiber<undefined, ScriptError | NotFoundError>> = new Map()
+
   constructor(
     private scriptRepository: ScriptRepository, 
     private devicesService: DevicesService,
@@ -174,12 +176,16 @@ export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscribe
   }
 
   private startAutomationHandler(automation: Automation) {
-    if (automation.trigger instanceof PeriodTriggerImpl && automation.enabled) {
-      const periodTrigger = automation.trigger as PeriodTrigger
-      runFork(forkDaemon(pipe(
+    if (automation.trigger instanceof PeriodTriggerImpl) {
+      const periodTrigger = automation.trigger as PeriodTrigger 
+
+      runFork(pipe(
         this.waitToStart(periodTrigger),
-        andThen(() => this.periodLoop(automation, periodTrigger))
-      )))
+        flatMap(() => forkDaemon(this.periodLoop(automation, periodTrigger))),
+        tap(fiber =>
+          sync(() => this.automationsFiberMap.set(automation.id, fiber))
+        )
+      ))
     }
   }
 
@@ -188,18 +194,11 @@ export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscribe
     return delay > 0 ? sleep(millis(delay)) : succeed(null)
   }
 
-  private periodLoop(automation: Automation, periodTrigger: PeriodTrigger): Effect<undefined, ScriptError> {
+  private periodLoop(automation: Automation, periodTrigger: PeriodTrigger): Effect<undefined, ScriptError | NotFoundError> {
     return pipe(
-      sync(() => automation.enabled),
-      flatMap(enabled =>
-        enabled
-          ? pipe(
-            this.startAutomation(automation),
-            andThen(() => sleep(seconds(periodTrigger.periodSeconds))),
-            andThen(() => this.periodLoop(automation, periodTrigger))
-          )
-          : succeed(undefined)
-      )
+      this.startAutomation(automation),
+      andThen(() => sleep(seconds(periodTrigger.periodSeconds))),
+      andThen(() => this.periodLoop(automation, periodTrigger))
     )
   }
 
@@ -225,7 +224,22 @@ export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscribe
   setAutomationState(token: Token, automationId: AutomationId, enable: boolean): Effect<void, InvalidTokenError | ScriptNotFoundError> {
     return pipe(
       this.findAutomation(token, automationId),
-      map(automation => automation.enabled = enable)
+      flatMap(automation => pipe(
+        sync(() => automation.enabled = enable),
+        flatMap(() => if_(enable, {
+          onTrue: () => succeed(this.startAutomationHandler(automation)),
+          onFalse: () => Fiber.interrupt(this.automationsFiberMap.get(automationId)!)
+        })),
+        flatMap(() => this.scriptRepository.update(automation))
+      )),
+      catch_("__brand", {
+        failure: "NotFoundError",
+        onFailure: () => succeed(undefined)
+      }),
+      catch_("__brand", {
+        failure: "UniquenessConstraintViolatedError",
+        onFailure: () => succeed(undefined)
+      })
     )
   }
 

@@ -402,6 +402,28 @@ export function registerScriptsServiceRoutes(app: express.Express, service: Scri
     const response = await getAllScripts(req, usersService, (token) => service.getAllAutomations(token))
     sendResponse(res, response)
   });
+
+  app.post('/api/automations/:id', async (req, res) => {
+    const response = await Effect.Do.pipe(
+      Effect.bind("token", () => deserializeToken(req, usersService)),
+      Effect.bind("enable", () => Effect.if(req.body != undefined && "enable" in req.body, {
+        onTrue: () => Effect.succeed(req.body.enable),
+        onFalse: () => Effect.fail(BadRequest("Missing enable property in request body"))
+      })),
+      Effect.bind("_", ({token, enable}) => Effect.if(typeof enable === "boolean", {
+        onTrue: () => service.setAutomationState(token, AutomationId(req.params.id), enable),
+        onFalse: () => Effect.fail(BadRequest("Enable property must be a boolean"))
+      })),
+      Effect.map(() => Response(StatusCodes.OK)),
+      Effect.catch("__brand", {
+        failure: "ScriptNotFoundError",
+        onFailure: (err) => Effect.succeed(Response(StatusCodes.NOT_FOUND, err))
+      }),
+      handleCommonErrors,
+      Effect.runPromise
+    )
+    sendResponse(res, response)
+  })
 }
 
 function deleteScript(req: express.Request, usersService: UsersService, fun: (token: Token) => Effect.Effect<void, InvalidTokenError | ScriptNotFoundError | PermissionError>) {

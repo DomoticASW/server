@@ -511,8 +511,10 @@ test("An automation can be disabled", async () => {
   ))
 
   await runPromise(scriptsService.setAutomationState(token, automation.id, false))
+  const automationFromService = await runPromise(scriptsService.findAutomation(token, automation.id))
 
   expect(automation.enabled).toBe(false)
+  expect(automationFromService.enabled).toBe(false)
 })
 
 test("A task can be removed", async () => {

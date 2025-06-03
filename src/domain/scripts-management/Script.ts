@@ -66,12 +66,12 @@ export class AutomationImpl implements Automation {
   name: string
   instructions: Instruction[]
 
-  constructor(id: AutomationId, name: string, trigger: Trigger, instructions: Array<Instruction>) {
+  constructor(id: AutomationId, name: string, trigger: Trigger, enabled: boolean, instructions: Array<Instruction>) {
     this.id = id
     this.name = name
     this.trigger = trigger
     this.instructions = instructions
-    this.enabled = true
+    this.enabled = enabled
   }
 
   execute(notificationsService: NotificationsService, scriptsService: ScriptsService, permissionsService: PermissionsService, devicesService: DevicesService): Effect<ExecutionEnvironment, ScriptError> {
@@ -79,6 +79,6 @@ export class AutomationImpl implements Automation {
   }
 }
 
-export function Automation(id: AutomationId, name: string, trigger: Trigger, instructions: Array<Instruction>): Automation {
-  return new AutomationImpl(id, name, trigger, instructions)
+export function Automation(id: AutomationId, name: string, trigger: Trigger, instructions: Array<Instruction>, enabled: boolean = false): Automation {
+  return new AutomationImpl(id, name, trigger, enabled, instructions)
 }
