@@ -1,10 +1,10 @@
 import { Effect, pipe } from "effect"
 import { InMemoryRepositoryMock, InMemoryRepositoryMockCheckingUniqueness } from "../../InMemoryRepositoryMock.js"
 import { Email, Nickname, PasswordHash, Role, User } from "../../../src/domain/users-management/User.js"
-import { Token, UserRole } from "../../../src/domain/users-management/Token.js"
+import { Token } from "../../../src/domain/users-management/Token.js"
 import { DevicesService } from "../../../src/ports/devices-management/DevicesService.js"
 import { DeviceNotFoundError } from "../../../src/ports/devices-management/Errors.js"
-import { UsersService } from "../../../src/ports/users-management/UserService.js"
+import { UsersService } from "../../../src/ports/users-management/UsersService.js"
 import { Device, DeviceId, DeviceStatus } from "../../../src/domain/devices-management/Device.js"
 import { TaskLists } from "../../../src/domain/permissions-management/TaskLists.js"
 import { EditList } from "../../../src/domain/permissions-management/EditList.js"
@@ -21,24 +21,27 @@ let taskListsRepo: InMemoryRepositoryMock<TaskId, TaskLists>
 let editListRepo: InMemoryRepositoryMock<ScriptId, EditList>
 let userRepo: InMemoryRepositoryMockCheckingUniqueness<Email, User>
 
-function makeToken(role: UserRole = UserRole.Admin): Token {
+function makeToken(role: Role = Role.Admin): Token {
     return {
         userEmail: Email("test@test.com"),
-        role: role
+        role: role,
+        source: ""
     }
 }
 
-function makeTokenUserRole(role: UserRole = UserRole.User): Token {
+function makeTokenRole(role: Role = Role.User): Token {
     return {
         userEmail: Email("test@test.com"),
-        role: role
+        role: role,
+        source: ""
     }
 }
 
-function makeTokenWithUnknownUser(role: UserRole = UserRole.Admin): Token {
+function makeTokenWithUnknownUser(role: Role = Role.Admin): Token {
     return {
         userEmail: Email("unkown@user.com"),
-        role: role
+        role: role,
+        source: ""
     }
 }
 
@@ -222,7 +225,7 @@ test("addToEditList, expect a UnauthorizedError because user is not an admin", a
     expect(editListRepo.callsToUpdate).toBe(0)
     await expect(
         Effect.runPromise(
-            service.addToEditlist(makeTokenUserRole(), Email("test@test.com") ,TaskId("1")),
+            service.addToEditlist(makeTokenRole(), Email("test@test.com") ,TaskId("1")),
         )
     ).rejects.toThrow("UnauthorizedError");
     expect(editListRepo.callsToUpdate).toBe(0)
@@ -265,7 +268,7 @@ test("removeFromEditList, expect UnauthorizedError", async () => {
     expect(editListRepo.callsToUpdate).toBe(1)
     await expect(
         Effect.runPromise(
-            service.removeFromEditlist(makeTokenUserRole(), Email("test@test.com") ,TaskId("1")),
+            service.removeFromEditlist(makeTokenRole(), Email("test@test.com") ,TaskId("1")),
         )
     ).rejects.toThrow("UnauthorizedError");
 })
@@ -306,7 +309,7 @@ test("addToWhiteList, expect UnauthorizedError", async () => {
     expect(taskListsRepo.callsToUpdate).toBe(0)
     await expect(
         Effect.runPromise(
-            service.addToWhitelist(makeTokenUserRole(), Email("test@test.com") , TaskId("1")),    
+            service.addToWhitelist(makeTokenRole(), Email("test@test.com") , TaskId("1")),    
         )
     ).rejects.toThrow("UnauthorizedError");
 })
@@ -371,7 +374,7 @@ test("removeToWhiteList, expect UnauthorizedError", async () => {
     expect(taskListsRepo.callsToUpdate).toBe(1)
     await expect(
         Effect.runPromise(
-            service.removeFromWhitelist(makeTokenUserRole(), Email("test@test.com") , TaskId("1")),
+            service.removeFromWhitelist(makeTokenRole(), Email("test@test.com") , TaskId("1")),
         )
     ).rejects.toThrow("UnauthorizedError");
 })
@@ -421,7 +424,7 @@ test("addToBlackList, expect UnauthorizedError", async () => {
     expect(taskListsRepo.callsToUpdate).toBe(0)
     await expect(
         Effect.runPromise(
-            service.addToBlacklist(makeTokenUserRole(), Email("test@test.com") , TaskId("1")),
+            service.addToBlacklist(makeTokenRole(), Email("test@test.com") , TaskId("1")),
         )
     ).rejects.toThrow("UnauthorizedError");
 })
@@ -474,7 +477,7 @@ test("removeFromBlackList, expect UnauthorizedError", async () => {
     );
     await expect(
         Effect.runPromise(
-            service.removeFromBlacklist(makeTokenUserRole(), Email("test@test.com") , TaskId("1")),
+            service.removeFromBlacklist(makeTokenRole(), Email("test@test.com") , TaskId("1")),
         )
     ).rejects.toThrow("UnauthorizedError");
 })

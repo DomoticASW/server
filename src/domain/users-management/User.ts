@@ -8,7 +8,6 @@ export function Email(email: string): Email { return email as Email }
 export function Nickname(nickname: string): Nickname { return nickname as Nickname }
 export function PasswordHash(passwordHash: string): PasswordHash { return passwordHash as PasswordHash }
 
-
 export enum Role {
     Admin = "Admin",
     User = "User"
