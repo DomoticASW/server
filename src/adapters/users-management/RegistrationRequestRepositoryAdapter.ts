@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 import { Effect, pipe } from "effect";
 import { flatMap, orDie, succeed, tryPromise, fail } from "effect/Effect";
-import { RegistrationRequestRepository } from "../../../src/ports/users-management/RegistrationRequestRepository.js";
+import { RegistrationRequestRepository } from "../../ports/users-management/RegistrationRequestRepository.js";
 import { Email, Nickname, PasswordHash } from "../../domain/users-management/User.js";
 import { RegistrationRequest } from "../../domain/users-management/RegistrationRequest.js";
 import { DuplicateIdError, NotFoundError } from "../../ports/Repository.js";
