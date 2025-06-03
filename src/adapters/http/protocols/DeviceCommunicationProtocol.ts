@@ -1,10 +1,11 @@
-import { Effect, succeed, fail, tryPromise, flatMap, catchAll, timeout } from "effect/Effect";
+import { Effect, succeed, fail, tryPromise, flatMap, catchAll, timeout, map } from "effect/Effect";
 import { DeviceCommunicationProtocol } from "../../../ports/devices-management/DeviceCommunicationProtocol.js";
 import { DevicesService } from "../../../ports/devices-management/DevicesService.js";
 import { CommunicationError, DeviceUnreachableError, DeviceActionError } from "../../../ports/devices-management/Errors.js";
-import { Device, DeviceActionId, DeviceId, DeviceStatus } from "../../../domain/devices-management/Device.js";
+import { Device, DeviceAction, DeviceActionId, DeviceEvent, DeviceId, DeviceProperty, DeviceStatus } from "../../../domain/devices-management/Device.js";
 import { pipe } from "effect";
 import { millis } from "effect/Duration";
+import { TimeoutException } from "effect/Cause";
 
 class TimeoutError {
     constructor() {
@@ -24,9 +25,8 @@ export class DeviceCommunicationProtocolImpl implements DeviceCommunicationProto
 
   checkDeviceStatus(deviceAddress: URL): Effect<DeviceStatus, CommunicationError> {
     const promise = async () => {
-      const response = await fetch(deviceAddress.toString(), {
+      const response = await fetch(deviceAddress.toString() + `/check-status`, {
         method: "GET",
-        signal: AbortSignal.timeout(5000)
       });
       return response;
     };
@@ -61,13 +61,12 @@ export class DeviceCommunicationProtocolImpl implements DeviceCommunicationProto
 
   executeDeviceAction(deviceAddress: URL, deviceActionId: DeviceActionId, input: unknown): Effect<void, DeviceUnreachableError | CommunicationError | DeviceActionError> {
     const promise = async () => {
-      const completeUrl = new URL(deviceAddress.toString() + `/${deviceActionId.toString()}`);
+      const completeUrl = new URL(deviceAddress.toString() + `/execute/${deviceActionId.toString()}`);
       const response = await fetch(completeUrl.toString(), {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
         },
-        signal: AbortSignal.timeout(5000),
         body: JSON.stringify(input)
       });
       return response;
@@ -105,6 +104,61 @@ export class DeviceCommunicationProtocolImpl implements DeviceCommunicationProto
   }
 
   register(deviceAddress: URL): Effect<Device, DeviceUnreachableError | CommunicationError> {
-    throw new Error("Method not implemented.");
-  }
+    const promise = async () => {
+      const response = await fetch(deviceAddress.toString() + `/register`, {
+        method: "GET",
+      });
+      return response;
+    };
+
+    return pipe(
+      tryPromise({
+        try: promise,
+        catch: () => CommunicationError()
+      }),
+      timeout(millis(5000)),
+      flatMap(response => {
+        if (response.ok) {
+          return tryPromise({
+            try: () => response.json(),
+            catch: () => {
+              return CommunicationError();
+            }
+          }).pipe(
+            map((data) => {
+              const properties = data.properties.map((property: DeviceProperty<unknown>) => 
+                  DeviceProperty(
+                    property.id,
+                    property.name,
+                    property.value,
+                    property.setter ?? property.typeConstraints
+                  )
+                );
+              const actions = data.actions.map((action: DeviceAction<unknown>) => 
+                  DeviceAction(
+                    action.id,
+                    action.name,
+                    action.inputTypeConstraints,
+                    action.description
+                  )
+                );
+              const events = data.events.map((eventName: string) => 
+                DeviceEvent(eventName) 
+              );
+              return Device(this.deviceId, data.name, this.deviceUrl, DeviceStatus.Online, properties, actions, events);
+            })
+          );
+        } else {
+          return fail(CommunicationError());
+        }
+      }),
+      catchAll((e): Effect<Device, DeviceUnreachableError | CommunicationError> => {
+        if (e instanceof TimeoutException) {
+          return fail(DeviceUnreachableError());
+        } else {
+          return fail(CommunicationError());
+        }
+      })
+    )
+  };
 }
