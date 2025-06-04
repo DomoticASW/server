@@ -11,13 +11,20 @@ import { RegistrationRequestRepository } from "../../ports/users-management/Regi
 import { UserRepository } from "../../ports/users-management/UserRepository.js";
 
 export class UsersServiceImpl implements UsersService {
-    
+
     constructor(
         private userRepository: UserRepository,
         private regReqRepository: RegistrationRequestRepository,
         private secret: string,
     ) { }
-    
+
+    getAllRegistrationRequests(token: Token): Effect<Iterable<RegistrationRequest>, InvalidTokenError> {
+        return pipe(
+            this.verifyToken(token),
+            Eff.flatMap(() => this.regReqRepository.getAll())
+        )
+    }
+
     publishRegistrationRequest(
         nickname: Nickname,
         email: Email,
@@ -27,9 +34,9 @@ export class UsersServiceImpl implements UsersService {
         return pipe(
             this.regReqRepository.add(newRegReq),
             Eff.mapError(() => EmailAlreadyInUseError()
-        ))
+            ))
     }
-    
+
     approveRegistrationRequest(token: Token, email: Email): Effect<void, EmailAlreadyInUseError | RegistrationRequestNotFoundError | TokenError> {
         return pipe(
             Eff.if(token.role == Role.Admin, {
@@ -53,7 +60,7 @@ export class UsersServiceImpl implements UsersService {
             }),
         )
     }
-    
+
     rejectRegistrationRequest(token: Token, email: Email): Effect<void, RegistrationRequestNotFoundError | TokenError> {
         return pipe(
             Eff.if(token.role == Role.Admin, {
@@ -115,7 +122,7 @@ export class UsersServiceImpl implements UsersService {
             }),
         )
     }
-    
+
     getAllUsers(token: Token): Effect<Iterable<User>, InvalidTokenError> {
         return pipe(
             this.verifyToken(token),
@@ -138,7 +145,7 @@ export class UsersServiceImpl implements UsersService {
             Eff.mapError(() => UserNotFoundError())
         );
     }
-    
+
     login(email: Email, password: PasswordHash): Effect<Token, InvalidCredentialsError> {
         return pipe(
             this.userRepository.find(email),
@@ -146,13 +153,13 @@ export class UsersServiceImpl implements UsersService {
                 if (user.passwordHash !== password) {
                     return Eff.fail(InvalidCredentialsError())
                 }
-                const source = jwt.sign({ email: user.email, role: user.role}, this.secret, { expiresIn: '1h' });
+                const source = jwt.sign({ email: user.email, role: user.role }, this.secret, { expiresIn: '1h' });
                 return Eff.succeed(Token(user.email, user.role, source));
             }),
             Eff.mapError(() => InvalidCredentialsError())
         );
     }
-    
+
     verifyToken(token: Token): Effect<void, InvalidTokenError> {
         return pipe(
             Eff.try({
@@ -166,19 +173,19 @@ export class UsersServiceImpl implements UsersService {
                     return Eff.fail(InvalidTokenError())
                 }
             }
-        ));
+            ));
     }
 
     makeToken(value: string): Effect<Token, InvalidTokenFormatError> {
         return pipe(
             Eff.try({
-                try: () => jwt.decode(value) as {email: string, role: Role},
+                try: () => jwt.decode(value) as { email: string, role: Role },
                 catch: () => InvalidTokenFormatError(),
             }),
-            Eff.flatMap((decoded) => 
+            Eff.flatMap((decoded) =>
                 decoded
-                ? Eff.succeed(Token(Email(decoded.email), decoded.role, value))
-                : Eff.fail(InvalidTokenFormatError())
+                    ? Eff.succeed(Token(Email(decoded.email), decoded.role, value))
+                    : Eff.fail(InvalidTokenFormatError())
             )
         );
     }

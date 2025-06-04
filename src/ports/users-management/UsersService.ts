@@ -2,8 +2,10 @@ import { Effect } from "effect/Effect";
 import { User, Nickname, Email, PasswordHash } from "../../domain/users-management/User.js";
 import { Token } from "../../domain/users-management/Token.js";
 import { EmailAlreadyInUseError, UserNotFoundError, TokenError, InvalidTokenError, InvalidCredentialsError, InvalidTokenFormatError, RegistrationRequestNotFoundError } from "./Errors.js";
+import { RegistrationRequest } from "../../domain/users-management/RegistrationRequest.js";
 
 export interface UsersService {
+    getAllRegistrationRequests(token: Token): Effect<Iterable<RegistrationRequest>, InvalidTokenError>;
     publishRegistrationRequest(nickname: Nickname, email: Email, password: PasswordHash): Effect<void, EmailAlreadyInUseError>;
     approveRegistrationRequest(token: Token, email: Email): Effect<void, EmailAlreadyInUseError | RegistrationRequestNotFoundError | TokenError>;
     rejectRegistrationRequest(token: Token, email: Email): Effect<void, RegistrationRequestNotFoundError | TokenError>;

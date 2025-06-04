@@ -324,42 +324,15 @@ export function UsersServiceSpy(user: User = UserMock()): Spy<UsersService> {
     call: () => call,
     get: function (): UsersService {
       return {
-        publishRegistrationRequest: function (nickname: Nickname, email: Email, password: PasswordHash): Effect<void, EmailAlreadyInUseError> {
-          throw new Error("Function not implemented.");
-        },
-        approveRegistrationRequest: function (token: Token, email: Email): Effect<void, RegistrationRequestNotFoundError | TokenError> {
-          throw new Error("Function not implemented.");
-        },
-        rejectRegistrationRequest: function (token: Token, email: Email): Effect<void, RegistrationRequestNotFoundError | TokenError> {
-          throw new Error("Function not implemented.");
-        },
-        removeUser: function (token: Token, email: Email): Effect<void, UserNotFoundError | TokenError> {
-          throw new Error("Function not implemented.");
-        },
-        updateUserData: function (token: Token, nickname?: Nickname, password?: PasswordHash): Effect<void, UserNotFoundError | TokenError> {
-          throw new Error("Function not implemented.");
-        },
-        getAllUsers: function (token: Token): Effect<Iterable<User>, InvalidTokenError> {
-          throw new Error("Function not implemented.");
-        },
-        getUserData: function (token: Token): Effect<User, InvalidTokenError> {
-          throw new Error("Function not implemented.");
-        },
         getUserDataUnsafe: function (email: Email): Effect<User, UserNotFoundError> {
           call++
           return email == user.email ? succeed(user) : fail(UserNotFoundErrorMock())
         },
-        login: function (email: Email, password: PasswordHash): Effect<Token, InvalidCredentialsError> {
-          throw new Error("Function not implemented.");
-        },
         verifyToken: function (token: Token): Effect<void, InvalidTokenError> {
           call++
           return succeed(null)
-        },
-        makeToken: function (value: string): Effect<Token, InvalidTokenFormatError> {
-          throw new Error("Function not implemented.");
         }
-      }
+      } as UsersService
     }
   }
 }

@@ -7,6 +7,18 @@ import { Email, Nickname, PasswordHash } from "../../../domain/users-management/
 
 export function registerUsersServiceRoutes(app: express.Application, service: UsersService) {
 
+    // get all registration requests
+    app.get('/api/registrationRequests', async (req, res) => {
+        const response = await Effect.Do.pipe(
+            Effect.bind("token", () => deserializeToken(req, service)),
+            Effect.bind("requests", ({ token }) => service.getAllRegistrationRequests(token)),
+            Effect.map(({ requests }) => Response(StatusCodes.OK, Array.from(requests))),
+            handleCommonErrors,
+            Effect.runPromise
+        )
+        sendResponse(res, response)
+    });
+
     // create registration request
     app.post('/api/registrationRequests', async (req, res) => {
         const response = await Effect.Do.pipe(
@@ -129,7 +141,7 @@ export function registerUsersServiceRoutes(app: express.Application, service: Us
             Effect.catch("__brand", {
                 failure: "UserNotFoundError",
                 onFailure: (err) => Effect.succeed(Response(StatusCodes.NOT_FOUND, err))
-            }),            
+            }),
             handleCommonErrors,
             Effect.runPromise
         )
@@ -154,7 +166,7 @@ export function registerUsersServiceRoutes(app: express.Application, service: Us
             Effect.bind("token", () => deserializeToken(req, service)),
             Effect.bind("user", ({ token }) => service.getUserData(token)),
             Effect.map(({ user }) => Response(StatusCodes.OK, user)),
-            
+
             handleCommonErrors,
             Effect.runPromise
         )
