@@ -6,15 +6,15 @@ import { Effect as Eff } from "effect";
 import { RegistrationRequest } from "./RegistrationRequest.js";
 import { User, Nickname, Email, PasswordHash, Role } from "./User.js";
 import { UsersService } from "../../ports/users-management/UsersService.js";
-import { UserRepositoryAdapter } from "../../adapters/users-management/UserRepositoryAdapter.js";
-import { RegistrationRequestRepositoryAdapter } from "../../adapters/users-management/RegistrationRequestRepositoryAdapter.js";
 import { EmailAlreadyInUseError, UserNotFoundError, TokenError, InvalidTokenError, InvalidCredentialsError, InvalidTokenFormatError, UnauthorizedError, } from "../../ports/users-management/Errors.js";
+import { RegistrationRequestRepository } from "../../ports/users-management/RegistrationRequestRepository.js";
+import { UserRepository } from "../../ports/users-management/UserRepository.js";
 
 export class UsersServiceImpl implements UsersService {
     
     constructor(
-        private userRepository: UserRepositoryAdapter,
-        private regReqRepository: RegistrationRequestRepositoryAdapter,
+        private userRepository: UserRepository,
+        private regReqRepository: RegistrationRequestRepository,
         private secret: string,
     ) { }
     
