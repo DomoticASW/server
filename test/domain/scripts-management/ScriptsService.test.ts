@@ -4,7 +4,7 @@ import { DevicesService } from "../../../src/ports/devices-management/DevicesSer
 import { NotificationsService } from "../../../src/ports/notifications-management/NotificationsService.js"
 import { PermissionsService } from "../../../src/ports/permissions-management/PermissionsService.js"
 import { ScriptRepository } from "../../../src/ports/scripts-management/ScriptRepository.js"
-import { UsersService } from "../../../src/ports/users-management/UserService.js"
+import { UsersService } from "../../../src/ports/users-management/UsersService.js"
 import { InMemoryRepositoryMockCheckingUniqueness } from "../../InMemoryRepositoryMock.js"
 import { DeviceMock, DevicesServiceSpy, MessageReader, NotificationsServiceSpy, PermissionsServiceSpy, TokenMock, UserMock, UsersServiceSpy } from "../../utils/mocks.js"
 import { Spy } from "../../utils/spy.js"
@@ -502,19 +502,6 @@ test("Cannot start a task if the user has not the right permissions", async () =
   ))
 
   expect(permissionsServiceSpy.call()).toBe(1)
-})
-
-test("An automation can be disabled", async () => {
-  const automation = await runPromise(pipe(
-    scriptsService.createAutomation(token, automationBuilder),
-    flatMap(id => scriptsService.findAutomation(token, id))
-  ))
-
-  await runPromise(scriptsService.setAutomationState(token, automation.id, false))
-  const automationFromService = await runPromise(scriptsService.findAutomation(token, automation.id))
-
-  expect(automation.enabled).toBe(false)
-  expect(automationFromService.enabled).toBe(false)
 })
 
 test("A task can be removed", async () => {

@@ -10,7 +10,7 @@ import { ScriptRepository } from "../../ports/scripts-management/ScriptRepositor
 import { DevicesService } from "../../ports/devices-management/DevicesService.js";
 import { NotificationsService } from "../../ports/notifications-management/NotificationsService.js";
 import { PermissionsService } from "../../ports/permissions-management/PermissionsService.js";
-import { UsersService } from "../../ports/users-management/UserService.js";
+import { UsersService } from "../../ports/users-management/UsersService.js";
 import { Fiber, pipe } from "effect";
 import { DuplicateIdError, NotFoundError, UniquenessConstraintViolatedError } from "../../ports/Repository.js";
 import { DeviceEventsService, DeviceEventsSubscriber } from "../../ports/devices-management/DeviceEventsService.js";

@@ -1,6 +1,5 @@
 import express from "express";
 import { ScriptsService } from "../../../ports/scripts-management/ScriptsService.js";
-import { UsersService } from "../../../ports/users-management/UserService.js";
 import { Effect } from "effect";
 import { BadRequest, deserializeToken, handleCommonErrors, sendResponse, Response } from "./HttpUtils.js";
 import { AutomationBuilder, AutomationBuilderWithDeviceEventTrigger, AutomationBuilderWithPeriodtrigger, ScriptBuilder, TaskBuilder } from "../../../domain/scripts-management/ScriptBuilder.js";
@@ -16,6 +15,7 @@ import { InvalidScriptError, ScriptNotFoundError } from "../../../ports/scripts-
 import { Token } from "../../../domain/users-management/Token.js";
 import { InvalidTokenError } from "../../../ports/users-management/Errors.js";
 import { PermissionError } from "../../../ports/permissions-management/Errors.js";
+import { UsersService } from "../../../ports/users-management/UsersService.js";
 
 enum InstructionType {
     SendNotificationInstruction = "SendNotificationInstruction",
