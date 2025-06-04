@@ -33,12 +33,28 @@ describe("UsersServiceImpl", () => {
     const adminToken = Token(testEmail, Role.Admin, jwt.sign({ email: testEmail, role: Role.Admin }, secret));
     const userToken = Token(testEmail, Role.User, jwt.sign({ email: testEmail, role: Role.User }, secret));
 
+    test("getAllRegistrationRequests - should return no registration requests initially", async () => {
+        const requests = await Effect.runPromise(usersService.getAllRegistrationRequests(adminToken));
+        expect(requests).toHaveLength(0);
+    });
+
     test("publishRegistrationRequest - should add new registration request", async () => {
         await Effect.runPromise(usersService.publishRegistrationRequest(testNickname, testEmail, testPassword));
         
         const regReqs = await Effect.runPromise(regReqRepo.getAll());
         expect(regReqs).toHaveLength(1);
         expect(Array.from(regReqs)[0].email).toEqual(testEmail);
+    });
+
+    test("getAllRegistrationRequests - should return all registration requests", async () => {
+        await Effect.runPromise(usersService.publishRegistrationRequest(testNickname, testEmail, testPassword));
+
+        const requests = await Effect.runPromise(usersService.getAllRegistrationRequests(adminToken));
+        const request = Array.from(requests)[0]
+        expect(requests).toHaveLength(1);
+        expect(request.nickname).toEqual(testNickname);
+        expect(request.email).toEqual(testEmail);
+        expect(request.passwordHash).toEqual(testPassword);
     });
 
     test("publishRegistrationRequest - should fail if email already in use", async () => {
