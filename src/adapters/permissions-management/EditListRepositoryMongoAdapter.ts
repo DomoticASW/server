@@ -100,7 +100,7 @@ export class EditListRepositoryMongoAdapter implements EditListRepository {
         return editList;
       },
       catch: () => NotFoundError(),
-    }).pipe(orDie);
+    });
   }
 
   addListToUsers(id: ScriptId, users: Email[]): Effect.Effect<EditList, NotFoundError> {
@@ -116,7 +116,7 @@ export class EditListRepositoryMongoAdapter implements EditListRepository {
         return editList;
       },
       catch: () => NotFoundError(),
-    }).pipe(orDie);
+    });
   }
 
   removeUserToUsers(id: ScriptId, user: Email): Effect.Effect<EditList, NotFoundError> {
@@ -132,7 +132,7 @@ export class EditListRepositoryMongoAdapter implements EditListRepository {
         return editList;
       },
       catch: () => NotFoundError(),
-    }).pipe(orDie);
+    });
   }
 
   toEntity(editList: EditListSchema): EditList {

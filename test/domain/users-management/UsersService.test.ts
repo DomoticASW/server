@@ -114,12 +114,12 @@ describe("UsersServiceImpl", () => {
         expect(regReqs).toHaveLength(0);
     });
 
-    test("rejectRegistrationRequest - should fail if user does not exist", async () => {
+    test("rejectRegistrationRequest - should fail if request does not exist", async () => {
         await Effect.runPromise(usersService.publishRegistrationRequest(testNickname, testEmail, testPassword));
         
         await expect(
             Effect.runPromise(usersService.rejectRegistrationRequest(adminToken, Email("")))
-        ).rejects.toThrow("NotFoundError");
+        ).rejects.toThrow("RegistrationRequestNotFoundError");
     });
 
     test("rejectRegistrationRequest - should fail for non-admin token", async () => {
@@ -151,7 +151,7 @@ describe("UsersServiceImpl", () => {
         
         await expect(
             Effect.runPromise(usersService.removeUser(adminToken, Email("")))
-        ).rejects.toThrow("NotFoundError");
+        ).rejects.toThrow("UserNotFoundError");
     });
 
     test("updateUserData - should update user information", async () => {
