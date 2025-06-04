@@ -1,4 +1,8 @@
-import { Repository } from "../Repository.js";
+import { DuplicateIdError, NotFoundError, Repository } from "../Repository.js";
 import { Email, User } from "../../domain/users-management/User.js";
- 
-export type UserRepository = Repository<Email, User>;
+import { Effect } from "effect/Effect";
+
+export interface UserRepository extends Repository<Email, User> {
+    add(entity: User): Effect<void, DuplicateIdError>
+    update(entity: User): Effect<void, NotFoundError>
+}
