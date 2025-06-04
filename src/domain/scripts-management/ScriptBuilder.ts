@@ -152,7 +152,9 @@ class TaskBuilderImpl extends ScriptBuilderImpl<Task> {
   buildWithId(id: TaskId): Effect<Task, InvalidScriptError> {
     const instructions: Array<Instruction> = this.buildInstructions();
 
-    return this.errors.length == 0 ? succeed(Task(id, this.name, instructions)) : fail(InvalidScriptError(this.errors.reduce((err1, err2) => InvalidScriptError(err1.cause + ", " + err2.cause)).cause))
+    return this.errors.length == 0
+      ? succeed(Task(id, this.name, instructions))
+      : fail(InvalidScriptError(this.errors.map(err => err.cause).join(", ")));
   }
 
   protected copy(
