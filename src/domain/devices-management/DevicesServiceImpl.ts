@@ -3,11 +3,12 @@ import { DevicePropertyUpdatesSubscriber, DevicesService } from "../../ports/dev
 import { DeviceUnreachableError, DeviceNotFoundError, InvalidInputError, DeviceActionError, DeviceActionNotFound, DevicePropertyNotFound, DeviceAlreadyRegisteredError } from "../../ports/devices-management/Errors.js";
 import { PermissionError } from "../../ports/permissions-management/Errors.js";
 import { TokenError, InvalidTokenError, UnauthorizedError } from "../../ports/users-management/Errors.js";
-import { Token, UserRole } from "../users-management/Token.js";
+import { Token } from "../users-management/Token.js";
+import { Role } from "../users-management/User.js";
 import { DeviceId, Device, DeviceActionId, DevicePropertyId } from "./Device.js";
 import { DeviceFactory } from "../../ports/devices-management/DeviceFactory.js";
 import { DeviceRepository } from "../../ports/devices-management/DeviceRepository.js";
-import { UsersService } from "../../ports/users-management/UserService.js";
+import { UsersService } from "../../ports/users-management/UsersService.js";
 import { PermissionsService } from "../../ports/permissions-management/PermissionsService.js";
 
 export class DevicesServiceImpl implements DevicesService {
@@ -26,7 +27,7 @@ export class DevicesServiceImpl implements DevicesService {
     add(token: Token, deviceUrl: URL): Effect.Effect<DeviceId, DeviceAlreadyRegisteredError | DeviceUnreachableError | TokenError> {
         return Effect.Do.pipe(
             Effect.bind("_", () =>
-                Effect.if(token.role == UserRole.Admin, {
+                Effect.if(token.role == Role.Admin, {
                     onTrue: () => this.usersService.verifyToken(token),
                     onFalse: () => Effect.fail(UnauthorizedError())
                 })),
@@ -46,7 +47,7 @@ export class DevicesServiceImpl implements DevicesService {
     remove(token: Token, deviceId: DeviceId): Effect.Effect<void, DeviceNotFoundError | TokenError> {
         return Effect.Do.pipe(
             Effect.bind("_", () =>
-                Effect.if(token.role == UserRole.Admin, {
+                Effect.if(token.role == Role.Admin, {
                     onTrue: () => this.usersService.verifyToken(token),
                     onFalse: () => Effect.fail(UnauthorizedError())
                 })),
@@ -65,7 +66,7 @@ export class DevicesServiceImpl implements DevicesService {
     rename(token: Token, deviceId: DeviceId, name: string): Effect.Effect<void, DeviceNotFoundError | TokenError> {
         return Effect.Do.pipe(
             Effect.bind("_", () =>
-                Effect.if(token.role == UserRole.Admin, {
+                Effect.if(token.role == Role.Admin, {
                     onTrue: () => this.usersService.verifyToken(token),
                     onFalse: () => Effect.fail(UnauthorizedError())
                 })),

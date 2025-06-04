@@ -6,7 +6,7 @@ import { DeviceId, DeviceStatus } from "../devices-management/Device.js";
 import { Email } from "../users-management/User.js";
 import { DeviceStatusesService } from "../../ports/devices-management/DeviceStatusesService.js";
 import { DevicesService } from "../../ports/devices-management/DevicesService.js";
-import { UsersService } from "../../ports/users-management/UserService.js";
+import { UsersService } from "../../ports/users-management/UsersService.js";
 import { DeviceOfflineNotificationSubscriptionRepository } from "../../ports/notifications-management/DeviceOfflineNotificationSubscriptionRepository.js";
 import { pipe } from "effect";
 import { DeviceOfflineNotificationSubscription } from "./DeviceOfflineNotificationSubscription.js";

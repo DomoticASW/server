@@ -2,10 +2,10 @@ import { DeviceNotFoundError } from "../../ports/devices-management/Errors.js";
 import { InvalidOperationError, PermissionError } from "../../ports/permissions-management/Errors.js";
 import { PermissionsService } from "../../ports/permissions-management/PermissionsService.js";
 import { DeviceId } from "../devices-management/Device.js";
-import { Token, UserRole } from "../users-management/Token.js";
-import { Email } from "../users-management/User.js";
+import { Token } from "../users-management/Token.js";
+import { Email, Role } from "../users-management/User.js";
 import { UserDevicePermissionRepository } from "../../ports/permissions-management/UserDevicePermissionRepository.js";
-import { UsersService } from "../../ports/users-management/UserService.js";
+import { UsersService } from "../../ports/users-management/UsersService.js";
 import { Effect, pipe } from "effect";
 import { DevicesService } from "../../ports/devices-management/DevicesService.js";
 import { InvalidTokenError, TokenError, UnauthorizedError, UserNotFoundError } from "../../ports/users-management/Errors.js";
@@ -37,7 +37,7 @@ export class PermissionsServiceImpl implements PermissionsService {
 
   addUserDevicePermission(token: Token, email: Email, deviceId: DeviceId): Effect.Effect<void, UserNotFoundError | DeviceNotFoundError | TokenError> {
     return pipe(
-      Effect.if(token.role == UserRole.Admin, {
+      Effect.if(token.role == Role.Admin, {
         onTrue: () => this.usersService.verifyToken(token),
         onFalse: () => Effect.fail(UnauthorizedError())
       }),
@@ -60,7 +60,7 @@ export class PermissionsServiceImpl implements PermissionsService {
   }
   removeUserDevicePermission(token: Token, email: Email, deviceId: DeviceId): Effect.Effect<void, UserNotFoundError | DeviceNotFoundError | TokenError> {
     return pipe(
-      Effect.if(token.role == UserRole.Admin, {
+      Effect.if(token.role == Role.Admin, {
         onTrue: () => this.usersService.verifyToken(token),
         onFalse: () => Effect.fail(UnauthorizedError())
       }),
@@ -139,7 +139,7 @@ export class PermissionsServiceImpl implements PermissionsService {
 
   addToEditlist(token: Token, email: Email, scriptId: ScriptId): Effect.Effect<void, TokenError | UserNotFoundError | ScriptNotFoundError> {
     return pipe(
-      Effect.if(token.role == UserRole.Admin, {
+      Effect.if(token.role == Role.Admin, {
         onTrue: () => this.usersService.verifyToken(token),
         onFalse: () => Effect.fail(UnauthorizedError())
       }),
@@ -165,7 +165,7 @@ export class PermissionsServiceImpl implements PermissionsService {
   }
   removeFromEditlist(token: Token, email: Email, scriptId: ScriptId): Effect.Effect<void, TokenError | UserNotFoundError | ScriptNotFoundError> {
     return pipe(
-      Effect.if(token.role == UserRole.Admin, {
+      Effect.if(token.role == Role.Admin, {
         onTrue: () => this.usersService.verifyToken(token),
         onFalse: () => Effect.fail(UnauthorizedError())
       }),
@@ -192,7 +192,7 @@ export class PermissionsServiceImpl implements PermissionsService {
 
   addToWhitelist(token: Token, email: Email, taskId: TaskId): Effect.Effect<void, TokenError | UserNotFoundError | ScriptNotFoundError | InvalidOperationError> {
     return pipe(
-      Effect.if(token.role == UserRole.Admin, {
+      Effect.if(token.role == Role.Admin, {
         onTrue: () => this.usersService.verifyToken(token),
         onFalse: () => Effect.fail(UnauthorizedError())
       }),
@@ -223,7 +223,7 @@ export class PermissionsServiceImpl implements PermissionsService {
   }
   removeFromWhitelist(token: Token, email: Email, taskId: TaskId): Effect.Effect<void, TokenError | UserNotFoundError | ScriptNotFoundError> {
     return pipe(
-      Effect.if(token.role == UserRole.Admin, {
+      Effect.if(token.role == Role.Admin, {
         onTrue: () => this.usersService.verifyToken(token),
         onFalse: () => Effect.fail(UnauthorizedError())
       }),
@@ -249,7 +249,7 @@ export class PermissionsServiceImpl implements PermissionsService {
   }
   addToBlacklist(token: Token, email: Email, taskId: TaskId): Effect.Effect<void, TokenError | UserNotFoundError | ScriptNotFoundError | InvalidOperationError> {
     return pipe(
-      Effect.if(token.role == UserRole.Admin, {
+      Effect.if(token.role == Role.Admin, {
         onTrue: () => this.usersService.verifyToken(token),
         onFalse: () => Effect.fail(UnauthorizedError())
       }),
@@ -280,7 +280,7 @@ export class PermissionsServiceImpl implements PermissionsService {
   }
   removeFromBlacklist(token: Token, email: Email, taskId: TaskId): Effect.Effect<void, TokenError | UserNotFoundError | ScriptNotFoundError> {
     return pipe(
-      Effect.if(token.role == UserRole.Admin, {
+      Effect.if(token.role == Role.Admin, {
         onTrue: () => this.usersService.verifyToken(token),
         onFalse: () => Effect.fail(UnauthorizedError())
       }),
