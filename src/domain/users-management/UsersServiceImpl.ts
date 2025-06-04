@@ -6,7 +6,7 @@ import { Effect as Eff } from "effect";
 import { RegistrationRequest } from "./RegistrationRequest.js";
 import { User, Nickname, Email, PasswordHash, Role } from "./User.js";
 import { UsersService } from "../../ports/users-management/UsersService.js";
-import { EmailAlreadyInUseError, UserNotFoundError, TokenError, InvalidTokenError, InvalidCredentialsError, InvalidTokenFormatError, UnauthorizedError, } from "../../ports/users-management/Errors.js";
+import { EmailAlreadyInUseError, UserNotFoundError, TokenError, InvalidTokenError, InvalidCredentialsError, InvalidTokenFormatError, UnauthorizedError, RegistrationRequestNotFoundError, } from "../../ports/users-management/Errors.js";
 import { RegistrationRequestRepository } from "../../ports/users-management/RegistrationRequestRepository.js";
 import { UserRepository } from "../../ports/users-management/UserRepository.js";
 
@@ -30,7 +30,7 @@ export class UsersServiceImpl implements UsersService {
         ))
     }
     
-    approveRegistrationRequest(token: Token, email: Email): Effect<void, UserNotFoundError | TokenError> {
+    approveRegistrationRequest(token: Token, email: Email): Effect<void, EmailAlreadyInUseError | RegistrationRequestNotFoundError | TokenError> {
         return pipe(
             Eff.if(token.role == Role.Admin, {
                 onTrue: () => this.verifyToken(token),
@@ -44,17 +44,17 @@ export class UsersServiceImpl implements UsersService {
             Eff.mapError(e => {
                 switch (e.__brand) {
                     case "NotFoundError":
-                        return UserNotFoundError(e.cause)
-                    case "UnauthorizedError":
-                        return UnauthorizedError()
+                        return RegistrationRequestNotFoundError()
+                    case "DuplicateIdError":
+                        return EmailAlreadyInUseError("It was not possible to approve this request as the email is already used by a user")
                     default:
-                        return InvalidTokenError()
+                        return e
                 }
             }),
         )
     }
     
-    rejectRegistrationRequest(token: Token, email: Email): Effect<void, UserNotFoundError | TokenError> {
+    rejectRegistrationRequest(token: Token, email: Email): Effect<void, RegistrationRequestNotFoundError | TokenError> {
         return pipe(
             Eff.if(token.role == Role.Admin, {
                 onTrue: () => this.verifyToken(token),
@@ -64,9 +64,7 @@ export class UsersServiceImpl implements UsersService {
             Eff.mapError(e => {
                 switch (e.__brand) {
                     case "NotFoundError":
-                        return UserNotFoundError(e.cause)
-                    case "UnauthorizedError":
-                        return UnauthorizedError()
+                        return RegistrationRequestNotFoundError()
                     default:
                         return e
                 }

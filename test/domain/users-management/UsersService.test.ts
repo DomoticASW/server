@@ -75,7 +75,7 @@ describe("UsersServiceImpl", () => {
         
         await expect(
             Effect.runPromise(usersService.approveRegistrationRequest(adminToken, testEmail))
-        ).rejects.toThrow("UserNotFoundError");
+        ).rejects.toThrow("RegistrationRequestNotFoundError");
     });
 
     test("rejectRegistrationRequest - should remove registration request", async () => {

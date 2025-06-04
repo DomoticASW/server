@@ -16,7 +16,7 @@ import { PermissionError } from "../../src/ports/permissions-management/Errors.j
 import { PermissionsService } from "../../src/ports/permissions-management/PermissionsService.js";
 import { ScriptError, ScriptNotFoundError, TaskNameAlreadyInUse, InvalidTaskError, AutomationNameAlreadyInUse, InvalidAutomationError } from "../../src/ports/scripts-management/Errors.js";
 import { ScriptsService } from "../../src/ports/scripts-management/ScriptsService.js";
-import { UserNotFoundError, InvalidTokenError, TokenError, EmailAlreadyInUseError, InvalidCredentialsError, InvalidTokenFormatError } from "../../src/ports/users-management/Errors.js";
+import { UserNotFoundError, InvalidTokenError, TokenError, EmailAlreadyInUseError, InvalidCredentialsError, InvalidTokenFormatError, RegistrationRequestNotFoundError } from "../../src/ports/users-management/Errors.js";
 import { Spy } from "./spy.js";
 import { UsersService } from "../../src/ports/users-management/UsersService.js";
 import { DeviceOfflineNotificationSubscriptionRepository } from "../../src/ports/notifications-management/DeviceOfflineNotificationSubscriptionRepository.js";
@@ -327,10 +327,10 @@ export function UsersServiceSpy(user: User = UserMock()): Spy<UsersService> {
         publishRegistrationRequest: function (nickname: Nickname, email: Email, password: PasswordHash): Effect<void, EmailAlreadyInUseError> {
           throw new Error("Function not implemented.");
         },
-        approveRegistrationRequest: function (token: Token, email: Email): Effect<void, UserNotFoundError | TokenError> {
+        approveRegistrationRequest: function (token: Token, email: Email): Effect<void, RegistrationRequestNotFoundError | TokenError> {
           throw new Error("Function not implemented.");
         },
-        rejectRegistrationRequest: function (token: Token, email: Email): Effect<void, UserNotFoundError | TokenError> {
+        rejectRegistrationRequest: function (token: Token, email: Email): Effect<void, RegistrationRequestNotFoundError | TokenError> {
           throw new Error("Function not implemented.");
         },
         removeUser: function (token: Token, email: Email): Effect<void, UserNotFoundError | TokenError> {

@@ -67,8 +67,12 @@ export function registerUsersServiceRoutes(app: express.Application, service: Us
             Effect.bind("_", ({ token, email }) => service.approveRegistrationRequest(token, email)),
             Effect.map(() => Response(StatusCodes.OK)),
             Effect.catch("__brand", {
-                failure: "UserNotFoundError",
+                failure: "RegistrationRequestNotFoundError",
                 onFailure: (err) => Effect.succeed(Response(StatusCodes.NOT_FOUND, err))
+            }),
+            Effect.catch("__brand", {
+                failure: "EmailAlreadyInUseError",
+                onFailure: (err) => Effect.succeed(Response(StatusCodes.CONFLICT, err))
             }),
             handleCommonErrors,
             Effect.runPromise
@@ -93,7 +97,7 @@ export function registerUsersServiceRoutes(app: express.Application, service: Us
             Effect.bind("_", ({ token, email }) => service.rejectRegistrationRequest(token, email)),
             Effect.map(() => Response(StatusCodes.OK)),
             Effect.catch("__brand", {
-                failure: "UserNotFoundError",
+                failure: "RegistrationRequestNotFoundError",
                 onFailure: (err) => Effect.succeed(Response(StatusCodes.NOT_FOUND, err))
             }),
             handleCommonErrors,

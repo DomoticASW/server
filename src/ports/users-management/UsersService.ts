@@ -1,12 +1,12 @@
 import { Effect } from "effect/Effect";
 import { User, Nickname, Email, PasswordHash } from "../../domain/users-management/User.js";
 import { Token } from "../../domain/users-management/Token.js";
-import { EmailAlreadyInUseError, UserNotFoundError, TokenError, InvalidTokenError, InvalidCredentialsError, InvalidTokenFormatError } from "./Errors.js";
+import { EmailAlreadyInUseError, UserNotFoundError, TokenError, InvalidTokenError, InvalidCredentialsError, InvalidTokenFormatError, RegistrationRequestNotFoundError } from "./Errors.js";
 
 export interface UsersService {
     publishRegistrationRequest(nickname: Nickname, email: Email, password: PasswordHash): Effect<void, EmailAlreadyInUseError>;
-    approveRegistrationRequest(token: Token, email: Email): Effect<void, UserNotFoundError | TokenError>;
-    rejectRegistrationRequest(token: Token, email: Email): Effect<void, UserNotFoundError | TokenError>;
+    approveRegistrationRequest(token: Token, email: Email): Effect<void, EmailAlreadyInUseError | RegistrationRequestNotFoundError | TokenError>;
+    rejectRegistrationRequest(token: Token, email: Email): Effect<void, RegistrationRequestNotFoundError | TokenError>;
     removeUser(token: Token, email: Email): Effect<void, UserNotFoundError | TokenError>;
     updateUserData(token: Token, nickname?: Nickname, password?: PasswordHash): Effect<void, UserNotFoundError | TokenError>;
     getAllUsers(token: Token): Effect<Iterable<User>, InvalidTokenError>;
