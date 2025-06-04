@@ -1,34 +1,19 @@
-import { Email } from "./User.js";
-import { createHash } from "crypto";
-import { InvalidTokenFormatError } from "../../ports/users-management/Errors.js";
-import { Brand } from "../../utils/Brand.js";
-
-export enum UserRole {
-    Admin = "Admin",
-    User = "User"
-}
+import { Email, Role } from "./User.js";
 
 export interface Token {
     readonly userEmail: Email;
-    readonly role: UserRole;
-    
-    newToken(string: string): Brand<string, "Token" | InvalidTokenFormatError>;
+    readonly role: Role;
+    readonly source: string;
 }
 
-export function Token(userEmail: Email, role: UserRole): Token {
-    return new TokenImpl(userEmail, role);
+export function Token(userEmail: Email, role: Role, source: string): Token {
+    return new TokenImpl(userEmail, role, source);
 }
 
-class TokenImpl implements Token {
+class TokenImpl implements Token {    
     constructor(
         public readonly userEmail: Email,
-        public readonly role: UserRole
+        public readonly role: Role,
+        public readonly source: string,
     ) {}
-    
-    newToken(value: string): Brand<string, "Token" | InvalidTokenFormatError> {
-        if (!value) {
-            throw new Error("Not implemented yet");
-        }
-        return createHash("sha256").update(value).digest("hex") as Brand<string, "Token">;
-    }
 }

@@ -7,7 +7,7 @@ import { Token } from "../../../src/domain/users-management/Token.js";
 import mongoose from "mongoose";
 import jwt from "jsonwebtoken";
 
-const dbName: string = "userServiceTests"
+const dbName: string = "usersServiceTests"
 let dbConnection: mongoose.Connection;
 let usersRepo: UserRepositoryAdapter;
 let regReqRepo: RegistrationRequestRepositoryAdapter;

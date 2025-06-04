@@ -25,7 +25,6 @@ export interface Script<Id extends ScriptId> {
 
 export type Task = Script<TaskId>
 
-
 export interface Automation extends Script<AutomationId> {
   enabled: boolean
   trigger: Trigger
