@@ -19,19 +19,3 @@ export function UserNotFoundError(cause?: string): UserNotFoundError {
 export function UnauthorizedError(cause?: string): UnauthorizedError {
     return { message: "You are not authorized to perform this operation", cause: cause, __brand: "UnauthorizedError" }
 }
-
-export function EmailAlreadyInUseError(cause?: string): EmailAlreadyInUseError {
-    return { message: "Email already in use", cause: cause, __brand: "EmailAlreadyInUseError" }
-}
-
-export function InvalidCredentialsError(cause?: string): InvalidCredentialsError {
-    return { message: "Invalid credentials", cause: cause, __brand: "InvalidCredentialsError" }
-}
-
-export function InvalidTokenFormatError(cause?: string): InvalidTokenFormatError {
-    return { message: "Invalid token format", cause: cause, __brand: "InvalidTokenFormatError" }
-}
-
-export function invalidTokenFormatError(cause?: string): invalidTokenFormatError {
-    return { message: "Invalid token format", cause: cause, __brand: "invalidTokenFormatError" }
-}
