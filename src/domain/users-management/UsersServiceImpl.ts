@@ -48,6 +48,7 @@ export class UsersServiceImpl implements UsersService {
                 const newUser = User(regReq.nickname, regReq.email, regReq.passwordHash, Role.User);
                 return this.userRepository.add(newUser)
             }),
+            Eff.flatMap(() => this.regReqRepository.remove(email)),
             Eff.mapError(e => {
                 switch (e.__brand) {
                     case "NotFoundError":

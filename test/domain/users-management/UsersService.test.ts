@@ -70,12 +70,14 @@ describe("UsersServiceImpl", () => {
         )
     });
 
-    test("approveRegistrationRequest - should create user from registration request", async () => {
+    test("approveRegistrationRequest - should create user from registration request and remove the request", async () => {
         await Effect.runPromise(usersService.publishRegistrationRequest(testNickname, testEmail, testPassword));
         await Effect.runPromise(usersService.approveRegistrationRequest(adminToken, testEmail));
         
         const users = await Effect.runPromise(usersRepo.getAll());
+        const requests = await Effect.runPromise(regReqRepo.getAll());
         expect(users).toHaveLength(1);
+        expect(requests).toHaveLength(0);
         expect(Array.from(users)[0].email).toEqual(testEmail);
     });
 
@@ -92,6 +94,16 @@ describe("UsersServiceImpl", () => {
         await expect(
             Effect.runPromise(usersService.approveRegistrationRequest(adminToken, testEmail))
         ).rejects.toThrow("RegistrationRequestNotFoundError");
+    });
+
+    test("approveRegistrationRequest - should fail if the email is already used by a user", async () => {
+        await Effect.runPromise(usersService.publishRegistrationRequest(testNickname, testEmail, testPassword));
+        await Effect.runPromise(usersService.approveRegistrationRequest(adminToken, testEmail));
+        await Effect.runPromise(usersService.publishRegistrationRequest(testNickname, testEmail, testPassword));
+        
+        await expect(
+            Effect.runPromise(usersService.approveRegistrationRequest(adminToken, testEmail))
+        ).rejects.toThrow("EmailAlreadyInUseError");
     });
 
     test("rejectRegistrationRequest - should remove registration request", async () => {
