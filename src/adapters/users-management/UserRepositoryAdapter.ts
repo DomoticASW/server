@@ -65,7 +65,7 @@ export class UserRepositoryAdapter implements UserRepository {
                 }
             },
             catch: () => NotFoundError(),
-        }).pipe(orDie);
+        });
     }
 
     remove(id: Email): Effect.Effect<void, NotFoundError> {
@@ -77,7 +77,7 @@ export class UserRepositoryAdapter implements UserRepository {
                 }
             },
             catch: () => NotFoundError(),
-        }).pipe(orDie);
+        });
     }
 
     getAll(): Effect.Effect<Iterable<User>, never> {
