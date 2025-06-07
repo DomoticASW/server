@@ -8,11 +8,6 @@ import { NotificationsService } from "../../ports/notifications-management/Notif
 import { PermissionsService } from "../../ports/permissions-management/PermissionsService.js"
 import { ScriptsService } from "../../ports/scripts-management/ScriptsService.js"
 import { Trigger } from "./Trigger.js"
-// import { andThen, flatMap, runFork, sleep, succeed, sync } from "effect/Effect"
-// import { DeviceEventTrigger, DeviceEventTriggerImpl, PeriodTrigger, PeriodTriggerImpl } from "./Trigger.js"
-// import { millis, seconds } from "effect/Duration"
-// import { DeviceEventsSubscriber } from "../../ports/devices-management/DeviceEventsService.js"
-// import { DeviceId, DeviceEvent } from "../devices-management/Device.js"
 
 export interface Script<Id extends ScriptId> {
   readonly id: Id

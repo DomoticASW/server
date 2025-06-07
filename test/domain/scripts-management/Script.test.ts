@@ -109,7 +109,7 @@ test("An automation can be created", async () => {
   const name = "automationName"
   const automation = Automation(automationId, name, periodTrigger, [])
   
-  expect(automation.enabled).toBe(false)
+  expect(automation.enabled).toBe(true)
   expect(automation.id).toBe(automationId)
   expect(automation.trigger).toBe(periodTrigger)
   expect(automation.name).toBe(name)

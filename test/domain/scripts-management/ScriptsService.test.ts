@@ -528,4 +528,5 @@ test("An automation can be removed", async () => {
 
   expect(automations).toHaveLength(0)
   expect(repoAutomations).toHaveLength(0)
+
 })

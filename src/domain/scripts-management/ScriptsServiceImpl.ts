@@ -32,6 +32,7 @@ export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscribe
     deviceEventsService.subscribeForDeviceEvents(this)
     runPromise(this.scriptRepository.getAll())
       .then(scripts => this.startAutomationsHandler(Array.from(scripts).filter(e => e instanceof AutomationImpl)))
+
   }
 
   findTask(token: Token, taskId: TaskId): Effect<Task, InvalidTokenError | ScriptNotFoundError> {
@@ -101,7 +102,6 @@ export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscribe
   removeTask(token: Token, taskId: TaskId): Effect<void, InvalidTokenError | ScriptNotFoundError | PermissionError> {
     return this.removeScript(token, taskId)
   }
-
   findAutomation(token: Token, automationId: AutomationId): Effect<Automation, InvalidTokenError | ScriptNotFoundError> {
     return pipe(
       this.findScript(token, automationId),
@@ -246,7 +246,6 @@ export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscribe
   removeAutomation(token: Token, automationId: AutomationId): Effect<void, InvalidTokenError | ScriptNotFoundError | PermissionError> {
     return this.removeScript(token, automationId)
   }
-
   private getAllScripts(token: Token): Effect<Iterable<Script<ScriptId>>, InvalidTokenError> {
     return pipe(
       this.usersService.verifyToken(token),
