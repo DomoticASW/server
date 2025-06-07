@@ -7,8 +7,20 @@ import { Email, Nickname, PasswordHash } from "../../../domain/users-management/
 
 export function registerUsersServiceRoutes(app: express.Application, service: UsersService) {
 
+    // get all registration requests
+    app.get('/api/registrationRequests', async (req, res) => {
+        const response = await Effect.Do.pipe(
+            Effect.bind("token", () => deserializeToken(req, service)),
+            Effect.bind("requests", ({ token }) => service.getAllRegistrationRequests(token)),
+            Effect.map(({ requests }) => Response(StatusCodes.OK, Array.from(requests))),
+            handleCommonErrors,
+            Effect.runPromise
+        )
+        sendResponse(res, response)
+    });
+
     // create registration request
-    app.post('/api/users', async (req, res) => {
+    app.post('/api/registrationRequests', async (req, res) => {
         const response = await Effect.Do.pipe(
             Effect.bind("nicknameVal", () => {
                 if (req.body && "nickname" in req.body) { return Effect.succeed(req.body["nickname"]) }
@@ -51,24 +63,18 @@ export function registerUsersServiceRoutes(app: express.Application, service: Us
     });
 
     // approve registration request
-    app.post('/api/users/approve', async (req, res) => {
-        const key = "email"
+    app.post('/api/registrationRequests/:id/approve', async (req, res) => {
         const response = await Effect.Do.pipe(
             Effect.bind("token", () => deserializeToken(req, service)),
-            Effect.bind("emailVal", () => {
-                if (req.body && key in req.body) { return Effect.succeed(req.body[key]) }
-                else { return Effect.fail(BadRequest(`Expected body format is: {${key}: ???}`)) }
-            }),
-            Effect.bind("emailString", ({ emailVal }) => {
-                if (typeof emailVal == "string") { return Effect.succeed(emailVal) }
-                else { return Effect.fail(BadRequest(`Expected ${key} of type string but found ${typeof emailVal}`)) }
-            }),
-            Effect.bind("email", ({ emailString }) => Effect.succeed(Email(emailString))),
-            Effect.bind("_", ({ token, email }) => service.approveRegistrationRequest(token, email)),
+            Effect.bind("_", ({ token }) => service.approveRegistrationRequest(token, Email(req.params.id))),
             Effect.map(() => Response(StatusCodes.OK)),
             Effect.catch("__brand", {
-                failure: "UserNotFoundError",
+                failure: "RegistrationRequestNotFoundError",
                 onFailure: (err) => Effect.succeed(Response(StatusCodes.NOT_FOUND, err))
+            }),
+            Effect.catch("__brand", {
+                failure: "EmailAlreadyInUseError",
+                onFailure: (err) => Effect.succeed(Response(StatusCodes.CONFLICT, err))
             }),
             handleCommonErrors,
             Effect.runPromise
@@ -77,23 +83,13 @@ export function registerUsersServiceRoutes(app: express.Application, service: Us
     });
 
     // reject registration request
-    app.post('/api/users/reject', async (req, res) => {
-        const key = "email"
+    app.post('/api/registrationRequests/:id/reject', async (req, res) => {
         const response = await Effect.Do.pipe(
             Effect.bind("token", () => deserializeToken(req, service)),
-            Effect.bind("emailVal", () => {
-                if (req.body && key in req.body) { return Effect.succeed(req.body[key]) }
-                else { return Effect.fail(BadRequest(`Expected body format is: {${key}: ???}`)) }
-            }),
-            Effect.bind("emailString", ({ emailVal }) => {
-                if (typeof emailVal == "string") { return Effect.succeed(emailVal) }
-                else { return Effect.fail(BadRequest(`Expected ${key} of type string but found ${typeof emailVal}`)) }
-            }),
-            Effect.bind("email", ({ emailString }) => Effect.succeed(Email(emailString))),
-            Effect.bind("_", ({ token, email }) => service.rejectRegistrationRequest(token, email)),
+            Effect.bind("_", ({ token }) => service.rejectRegistrationRequest(token, Email(req.params.id))),
             Effect.map(() => Response(StatusCodes.OK)),
             Effect.catch("__brand", {
-                failure: "UserNotFoundError",
+                failure: "RegistrationRequestNotFoundError",
                 onFailure: (err) => Effect.succeed(Response(StatusCodes.NOT_FOUND, err))
             }),
             handleCommonErrors,
@@ -145,7 +141,7 @@ export function registerUsersServiceRoutes(app: express.Application, service: Us
             Effect.catch("__brand", {
                 failure: "UserNotFoundError",
                 onFailure: (err) => Effect.succeed(Response(StatusCodes.NOT_FOUND, err))
-            }),            
+            }),
             handleCommonErrors,
             Effect.runPromise
         )
@@ -170,7 +166,7 @@ export function registerUsersServiceRoutes(app: express.Application, service: Us
             Effect.bind("token", () => deserializeToken(req, service)),
             Effect.bind("user", ({ token }) => service.getUserData(token)),
             Effect.map(({ user }) => Response(StatusCodes.OK, user)),
-            
+
             handleCommonErrors,
             Effect.runPromise
         )

@@ -44,7 +44,7 @@ export class UserDevicePermissionRepositoryMongoAdapter implements UserDevicePer
         }
       },
       catch: () => NotFoundError(),
-    }).pipe(orDie);
+    });
   }
 
   remove(id: [Email, DeviceId]): Effect.Effect<void, NotFoundError> {

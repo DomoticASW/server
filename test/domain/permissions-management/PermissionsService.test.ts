@@ -1,5 +1,5 @@
 import { Effect, pipe } from "effect"
-import { InMemoryRepositoryMock, InMemoryRepositoryMockCheckingUniqueness } from "../../InMemoryRepositoryMock.js"
+import { InMemoryRepositoryMock } from "../../InMemoryRepositoryMock.js"
 import { Email, Nickname, PasswordHash, Role, User } from "../../../src/domain/users-management/User.js"
 import { Token } from "../../../src/domain/users-management/Token.js"
 import { DevicesService } from "../../../src/ports/devices-management/DevicesService.js"
@@ -19,7 +19,7 @@ let devicesService: DevicesService
 let userDevicePermissionRepo: InMemoryRepositoryMock<[Email, DeviceId], UserDevicePermission>
 let taskListsRepo: InMemoryRepositoryMock<TaskId, TaskLists>
 let editListRepo: InMemoryRepositoryMock<ScriptId, EditList>
-let userRepo: InMemoryRepositoryMockCheckingUniqueness<Email, User>
+let userRepo: InMemoryRepositoryMock<Email, User>
 
 function makeToken(role: Role = Role.Admin): Token {
     return {
@@ -52,10 +52,9 @@ beforeEach(async () => {
         (p) => [p.email, p.deviceId],
         (id) => id[0].toString() + id[1].toString(),
     );
-    userRepo = new InMemoryRepositoryMockCheckingUniqueness(
+    userRepo = new InMemoryRepositoryMock(
         (u) => u.email,
-        (id) => id.toString(),
-        (u1, u2) => u1.email != u2.email
+        (id) => id.toString()
     )
     devicesService = {
         add: () => Effect.succeed(DeviceId("1")),
