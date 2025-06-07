@@ -54,7 +54,7 @@ export class RegistrationRequestRepositoryAdapter implements RegistrationRequest
                 }
             },
             catch: () => NotFoundError(),
-        }).pipe(orDie);
+        });
     }
     
     remove(id: Email): Effect.Effect<void, NotFoundError> {
@@ -66,7 +66,7 @@ export class RegistrationRequestRepositoryAdapter implements RegistrationRequest
                 }
             },
             catch: () => NotFoundError(),
-        }).pipe(orDie);
+        });
     }
     
     getAll(): Effect.Effect<Iterable<RegistrationRequest>, never> {
