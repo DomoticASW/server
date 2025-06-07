@@ -5,7 +5,7 @@ import { Email } from "../users-management/User.js";
 import { Condition, ConstantValue, CreateConstantInstruction, CreateDevicePropertyConstantInstruction, DeviceActionInstruction, IfElseInstruction, ExecutionEnvironment, ExecutionEnvironmentCopy, IfInstruction, Instruction, SendNotificationInstruction, StartTaskInstruction, WaitInstruction } from "./Instruction.js";
 import { TaskId } from "./Script.js";
 import { andThen, map, mapError, sleep, succeed, orDie, flatMap, sync, reduce, fail, fromNullable, Effect, void as voidEffect } from "effect/Effect";
-import { InvalidConstantType, ScriptError } from "../../ports/scripts-management/Errors.js";
+import { InvalidConstantTypeError, ScriptError } from "../../ports/scripts-management/Errors.js";
 import { isColor } from "../devices-management/Types.js";
 import { DevicePropertyNotFound } from "../../ports/devices-management/Errors.js";
 
@@ -132,7 +132,7 @@ class CreateConstantInstructionImpl<T> implements CreateConstantInstruction<T> {
       flatMap(isValid =>
         isValid
           ? succeed(ExecutionEnvironmentCopy(env))
-          : fail(InvalidConstantType(this.type))
+          : fail(InvalidConstantTypeError(this.type))
       ),
       flatMap(newEnv => {
         newEnv.constants.set(this, ConstantValue(this.value))
@@ -172,7 +172,7 @@ class CreateDevicePropertyConstantInstructionImpl<T> implements CreateDeviceProp
           ),
           flatMap(prop =>
             this.type !== prop.typeConstraints.type
-              ? fail(InvalidConstantType(`${this.type} is not ${prop.typeConstraints.type}`))
+              ? fail(InvalidConstantTypeError(`${this.type} is not ${prop.typeConstraints.type}`))
               : succeed(prop)
           ),
           map(prop => {

@@ -4,17 +4,17 @@ import { DeviceId, DeviceStatus, Device, DeviceProperty, DevicePropertyId, Devic
 import { NoneInt } from "../../src/domain/devices-management/Types.js";
 import { ExecutionEnvironment, Instruction } from "../../src/domain/scripts-management/Instruction.js";
 import { TaskId, AutomationId, Automation, ScriptId, Task } from "../../src/domain/scripts-management/Script.js";
-import { TaskBuilder } from "../../src/domain/scripts-management/ScriptBuilder.js";
+import { AutomationBuilder, TaskBuilder } from "../../src/domain/scripts-management/ScriptBuilder.js";
 import { Token } from "../../src/domain/users-management/Token.js";
 import { Email, Nickname, PasswordHash, Role, User } from "../../src/domain/users-management/User.js";
 import { DevicesService, DevicePropertyUpdatesSubscriber } from "../../src/ports/devices-management/DevicesService.js";
 import { DeviceStatusesService, DeviceStatusChangesSubscriber } from "../../src/ports/devices-management/DeviceStatusesService.js";
-import { DeviceNotFoundError, InvalidInputError, DeviceActionError, DeviceUnreachableError, DeviceActionNotFound, DevicePropertyNotFound, DeviceAlreadyRegisteredError } from "../../src/ports/devices-management/Errors.js";
+import { DeviceNotFoundError, InvalidInputError, DeviceActionError, DeviceUnreachableError, DeviceActionNotFound, DevicePropertyNotFound, DeviceAlreadyRegisteredError, NotDeviceEventError } from "../../src/ports/devices-management/Errors.js";
 import { NotificationProtocol } from "../../src/ports/notifications-management/NotificationProtocol.js";
 import { NotificationsService } from "../../src/ports/notifications-management/NotificationsService.js";
 import { PermissionError } from "../../src/ports/permissions-management/Errors.js";
 import { PermissionsService } from "../../src/ports/permissions-management/PermissionsService.js";
-import { ScriptError, ScriptNotFoundError, TaskNameAlreadyInUse, InvalidTaskError, AutomationNameAlreadyInUse, InvalidAutomationError } from "../../src/ports/scripts-management/Errors.js";
+import { ScriptError, ScriptNotFoundError, TaskNameAlreadyInUseError, InvalidScriptError, AutomationNameAlreadyInUseError } from "../../src/ports/scripts-management/Errors.js";
 import { ScriptsService } from "../../src/ports/scripts-management/ScriptsService.js";
 import { UserNotFoundError, InvalidTokenError, TokenError, EmailAlreadyInUseError, InvalidCredentialsError, InvalidTokenFormatError, RegistrationRequestNotFoundError } from "../../src/ports/users-management/Errors.js";
 import { Spy } from "./spy.js";
@@ -22,6 +22,7 @@ import { UsersService } from "../../src/ports/users-management/UsersService.js";
 import { DeviceOfflineNotificationSubscriptionRepository } from "../../src/ports/notifications-management/DeviceOfflineNotificationSubscriptionRepository.js";
 import { DeviceOfflineNotificationSubscription } from "../../src/domain/notifications-management/DeviceOfflineNotificationSubscription.js";
 import { DuplicateIdError, NotFoundError } from "../../src/ports/Repository.js";
+import { DeviceEventsService, DeviceEventsSubscriber } from "../../src/ports/devices-management/DeviceEventsService.js";
 
 export function UserNotFoundErrorMock(cause?: string): UserNotFoundError {
   return { message: "The user has not been found", cause: cause, __brand: "UserNotFoundError" }
@@ -35,7 +36,7 @@ export function TokenMock(email: string): Token {
   }
 }
 
-interface MessageReader {
+export interface MessageReader {
   getMessages(): Array<string>
 }
 
@@ -104,10 +105,10 @@ export function ScriptsServiceSpy(task: Task = SpyTaskMock().get(), isTask: bool
         getAllTasks: function (token: Token): Effect<Iterable<Task>, InvalidTokenError> {
           throw new Error("Function not implemented.");
         },
-        createTask: function (token: Token, task: TaskBuilder): Effect<TaskId, InvalidTokenError | TaskNameAlreadyInUse | InvalidTaskError> {
+        createTask: function (token: Token, task: TaskBuilder): Effect<TaskId, InvalidTokenError | TaskNameAlreadyInUseError | Array<InvalidScriptError>> {
           throw new Error("Function not implemented.");
         },
-        editTask: function (token: Token, taskId: TaskId, task: TaskBuilder): Effect<void, InvalidTokenError | PermissionError | ScriptNotFoundError | TaskNameAlreadyInUse | InvalidTaskError> {
+        editTask: function (token: Token, taskId: TaskId, task: TaskBuilder): Effect<void, InvalidTokenError | PermissionError | ScriptNotFoundError | TaskNameAlreadyInUseError | Array<InvalidScriptError>> {
           throw new Error("Function not implemented.");
         },
         startTask: function (token: Token, taskId: TaskId): Effect<void, InvalidTokenError | ScriptNotFoundError | PermissionError> {
@@ -119,10 +120,10 @@ export function ScriptsServiceSpy(task: Task = SpyTaskMock().get(), isTask: bool
         getAllAutomations: function (token: Token): Effect<Iterable<Automation>, InvalidTokenError> {
           throw new Error("Function not implemented.");
         },
-        createAutomation: function (token: Token, automation: TaskBuilder): Effect<AutomationId, InvalidTokenError | ScriptNotFoundError | AutomationNameAlreadyInUse | InvalidAutomationError> {
+        createAutomation: function (token: Token, automation: AutomationBuilder): Effect<AutomationId, InvalidTokenError | ScriptNotFoundError | AutomationNameAlreadyInUseError | Array<InvalidScriptError>> {
           throw new Error("Function not implemented.");
         },
-        editAutomation: function (token: Token, automationId: AutomationId, automation: TaskBuilder): Effect<void, InvalidTokenError | PermissionError | ScriptNotFoundError | AutomationNameAlreadyInUse | InvalidAutomationError> {
+        editAutomation: function (token: Token, automationId: AutomationId, automation: AutomationBuilder): Effect<void, InvalidTokenError | PermissionError | ScriptNotFoundError | AutomationNameAlreadyInUseError | Array<InvalidScriptError>> {
           throw new Error("Function not implemented.");
         },
         setAutomationState: function (token: Token, automationId: AutomationId, enable: boolean): Effect<void, InvalidTokenError | ScriptNotFoundError> {
@@ -133,7 +134,7 @@ export function ScriptsServiceSpy(task: Task = SpyTaskMock().get(), isTask: bool
   }
 }
 
-export function PermissionsServiceSpy(userToken: Token = TokenMock("email")): Spy<PermissionsService> {
+export function PermissionsServiceSpy(userToken: Token = TokenMock("email"), testEdit: boolean = false, testInvalidToken: boolean = false): Spy<PermissionsService> {
   let call = 0
   return {
     call: () => call,
@@ -148,12 +149,13 @@ export function PermissionsServiceSpy(userToken: Token = TokenMock("email")): Sp
         canExecuteActionOnDevice: function (token: Token, deviceId: DeviceId): Effect<void, PermissionError | InvalidTokenError> {
           throw new Error("Function not implemented.");
         },
-        canExecuteTask: function (token: Token, taskId: TaskId): Effect<void, PermissionError | InvalidTokenError> {
-          call++
-          return token == userToken ? succeed(true) : fail(PermissionError())
+        canExecuteTask: function (token: Token, taskId: TaskId): Effect<void, PermissionError | InvalidTokenError | ScriptNotFoundError> {
+          if (!testEdit) call++
+          return token == userToken ? succeed(true) : fail(testInvalidToken ? InvalidTokenError() :  PermissionError())
         },
         canEdit: function (token: Token, scriptId: ScriptId): Effect<void, PermissionError | InvalidTokenError> {
-          throw new Error("Function not implemented.");
+          if (testEdit) call++
+          return token == userToken ? succeed(true) : fail(testInvalidToken ? InvalidTokenError() :  PermissionError())
         },
         addToEditlist: function (token: Token, email: Email, scriptId: ScriptId): Effect<void, TokenError | UserNotFoundError | ScriptNotFoundError> {
           throw new Error("Function not implemented.");
@@ -318,7 +320,7 @@ export function UserMock(email: Email = Email("test")): User {
   } as unknown as User
 }
 
-export function UsersServiceSpy(user: User = UserMock()): Spy<UsersService> {
+export function UsersServiceSpy(user: User = UserMock(), usedToken: Token = TokenMock(user.email)): Spy<UsersService> {
   let call = 0
   return {
     call: () => call,
@@ -330,7 +332,10 @@ export function UsersServiceSpy(user: User = UserMock()): Spy<UsersService> {
         },
         verifyToken: function (token: Token): Effect<void, InvalidTokenError> {
           call++
-          return succeed(null)
+          return usedToken == token ? succeed(null) : fail(InvalidTokenError())
+        },
+        makeToken: function (value: string): Effect<Token, InvalidTokenFormatError> {
+          throw new Error("Function not implemented.");
         }
       } as UsersService
     }
@@ -384,6 +389,26 @@ export function NotificationProtocolSpy(): Spy<NotificationProtocol> {
       return {
         sendNotification: function (email: Email, message: string): void {
           call++
+        }
+      }
+    }
+  }
+}
+
+export function DeviceEventsServiceSpy(): Spy<DeviceEventsService> {
+  let call = 0
+  return {
+    call: () => call,
+    get: function (): DeviceEventsService {
+      return {
+        publishEvent: function (deviceId: DeviceId, eventName: string): Effect<void, DeviceNotFoundError | NotDeviceEventError> {
+          throw new Error("Function not implemented.");
+        },
+        subscribeForDeviceEvents: function (subscriber: DeviceEventsSubscriber): void {
+          call++
+        },
+        unsubscribeForDeviceEvents: function (subscriber: DeviceEventsSubscriber): void {
+          throw new Error("Function not implemented.");
         }
       }
     }

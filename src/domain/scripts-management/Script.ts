@@ -8,11 +8,6 @@ import { NotificationsService } from "../../ports/notifications-management/Notif
 import { PermissionsService } from "../../ports/permissions-management/PermissionsService.js"
 import { ScriptsService } from "../../ports/scripts-management/ScriptsService.js"
 import { Trigger } from "./Trigger.js"
-// import { andThen, flatMap, runFork, sleep, succeed, sync } from "effect/Effect"
-// import { DeviceEventTrigger, DeviceEventTriggerImpl, PeriodTrigger, PeriodTriggerImpl } from "./Trigger.js"
-// import { millis, seconds } from "effect/Duration"
-// import { DeviceEventsSubscriber } from "../../ports/devices-management/DeviceEventsService.js"
-// import { DeviceId, DeviceEvent } from "../devices-management/Device.js"
 
 export interface Script<Id extends ScriptId> {
   readonly id: Id
@@ -42,7 +37,7 @@ export function Task(id: TaskId, name: string, instructions: Array<Instruction>)
   return new TaskImpl(id, name, instructions)
 }
 
-class TaskImpl implements Task {
+export class TaskImpl implements Task {
   id: TaskId
   name: string
   instructions: Array<Instruction>
@@ -58,8 +53,8 @@ class TaskImpl implements Task {
   }
 }
 
-class AutomationImpl implements Automation {
-  enabled: boolean = false
+export class AutomationImpl implements Automation {
+  enabled: boolean
   trigger: Trigger
   id: AutomationId
   name: string
@@ -70,58 +65,8 @@ class AutomationImpl implements Automation {
     this.name = name
     this.trigger = trigger
     this.instructions = instructions
+    this.enabled = true
   }
-
-  // deviceEventPublished(deviceId: DeviceId, event: DeviceEvent): void {
-  //   if (this.trigger instanceof DeviceEventTriggerImpl && this.enabled) {
-  //     const deviceEventTrigger = this.trigger as DeviceEventTrigger
-
-  //     if (deviceId == deviceEventTrigger.deviceId && event.name == deviceEventTrigger.eventName) {
-  //       runFork(this.execute())
-  //     }
-  //   }
-  // }
-
-  // enable(): void {
-  //   if (!this.enabled) {
-  //     this.enabled = true
-  //     // if (this.trigger instanceof PeriodTriggerImpl) {
-  //     //   runFork(this.checkTrigger())
-  //     // }
-  //   }
-  // }
-
-  // disable(): void {
-  //   this.enabled = false
-  // }
-
-  // private checkTrigger(): Effect<undefined, ScriptError> {
-  //   const periodTrigger = this.trigger as PeriodTrigger
-  //   return pipe(
-  //     this.waitToStart(periodTrigger),
-  //     andThen(() => this.periodLoop(periodTrigger))
-  //   )
-  // }
-
-  // private waitToStart(periodTrigger: PeriodTrigger): Effect<void, never, never> {
-  //   const delay = periodTrigger.start.getMilliseconds() - new Date().getMilliseconds()
-  //   return delay > 0 ? sleep(millis(delay)) : succeed(null)
-  // }
-
-  // private periodLoop(periodTrigger: PeriodTrigger): Effect<undefined, ScriptError> {
-  //   return pipe(
-  //     sync(() => this.enabled),
-  //     flatMap(enabled =>
-  //       enabled
-  //         ? pipe(
-  //           this.execute(),
-  //           andThen(() => sleep(seconds(periodTrigger.periodSeconds))),
-  //           andThen(() => this.periodLoop(periodTrigger))
-  //         )
-  //         : succeed(undefined)
-  //     )
-  //   )
-  // }
 
   execute(notificationsService: NotificationsService, scriptsService: ScriptsService, permissionsService: PermissionsService, devicesService: DevicesService): Effect<ExecutionEnvironment, ScriptError> {
     return reduce(this.instructions, ExecutionEnvironment(notificationsService, scriptsService, permissionsService, devicesService), (env, instr) => instr.execute(env))

@@ -2,7 +2,7 @@ import { Effect, succeed, fail } from "effect/Effect";
 import { DeviceActionId, DeviceId, DevicePropertyId } from "../devices-management/Device.js";
 import { Condition, ConditionOperator, ConstantInstruction, Instruction } from "./Instruction.js";
 import { ConstantRef, ElseNodeRef, NodeRef, RootNodeRef, ThenNodeRef } from "./Refs.js";
-import { Automation, AutomationId, Task, TaskId } from "./Script.js";
+import { Automation, AutomationId, ScriptId, Task, TaskId } from "./Script.js";
 import { Email } from "../users-management/User.js";
 import { Type } from "../../ports/devices-management/Types.js";
 import { InvalidScriptError } from "../../ports/scripts-management/Errors.js";
@@ -10,7 +10,7 @@ import { DeviceEventTrigger, PeriodTrigger, Trigger } from "./Trigger.js";
 import * as uuid from "uuid";
 import { CreateConstantInstruction, CreateDevicePropertyConstantInstruction, DeviceActionInstruction, IfElseInstruction, IfInstruction, SendNotificationInstruction, StartTaskInstruction, WaitInstruction } from "./InstructionImpl.js";
 
-interface ScriptBuilder<S = Task | Automation> {
+export interface ScriptBuilder<S = Task | Automation> {
   addIf<T>(ref: NodeRef, left: ConstantRef, right: ConstantRef, operator: ConditionOperator<T>, negate: boolean): [ScriptBuilder<S>, NodeRef];
   addIfElse<T>(ref: NodeRef, left: ConstantRef, right: ConstantRef, operator: ConditionOperator<T>, negate: boolean): [ScriptBuilder<S>, NodeRef, NodeRef];
   addWait(ref: NodeRef, seconds: number): ScriptBuilder<S>;
@@ -21,6 +21,7 @@ interface ScriptBuilder<S = Task | Automation> {
   addCreateDevicePropertyConstant(ref: NodeRef, name: string, type: Type, deviceId: DeviceId, propertyId: DevicePropertyId): [ScriptBuilder<S>, ConstantRef];
 
   build(): Effect<S, Array<InvalidScriptError>>
+  buildWithId(id: ScriptId): Effect<S, Array<InvalidScriptError>>
 }
 
 export type AutomationBuilder = ScriptBuilder<Automation>
@@ -136,6 +137,7 @@ abstract class ScriptBuilderImpl<S = Task | Automation> implements ScriptBuilder
   }
 
   abstract build(): Effect<S, Array<InvalidScriptError>>
+  abstract buildWithId(id: ScriptId): Effect<S, InvalidScriptError[], never>
   protected abstract copy(
     nodeRefs: Array<[NodeRef, Instruction]>,
     errors: Array<InvalidScriptError>
@@ -144,9 +146,13 @@ abstract class ScriptBuilderImpl<S = Task | Automation> implements ScriptBuilder
 
 class TaskBuilderImpl extends ScriptBuilderImpl<Task> {
   build(): Effect<Task, Array<InvalidScriptError>> {
+    return this.buildWithId(TaskId(uuid.v4()))
+  }
+
+  buildWithId(id: TaskId): Effect<Task, Array<InvalidScriptError>> {
     const instructions: Array<Instruction> = this.buildInstructions();
 
-    return this.errors.length == 0 ? succeed(Task(TaskId(uuid.v4()), this.name, instructions)) : fail(this.errors)
+    return this.errors.length == 0 ? succeed(Task(id, this.name, instructions)) : fail(this.errors)
   }
 
   protected copy(
@@ -168,9 +174,13 @@ class AutomationBuilderImpl extends ScriptBuilderImpl<Automation> {
   }
 
   build(): Effect<Automation, Array<InvalidScriptError>> {
+    return this.buildWithId(AutomationId(uuid.v4()))
+  }
+
+  buildWithId(id: AutomationId): Effect<Automation, Array<InvalidScriptError>> {
     const instructions: Array<Instruction> = this.buildInstructions();
-    
-    return this.errors.length == 0 ? succeed(Automation(AutomationId(uuid.v4()), this.name, this.trigger, instructions)) : fail(this.errors)
+
+    return this.errors.length == 0 ? succeed(Automation(id, this.name, this.trigger, instructions)) : fail(this.errors)
   }
 
   protected copy(
