@@ -67,7 +67,7 @@ export class DeviceCommunicationProtocolImpl implements DeviceCommunicationProto
         headers: {
           "Content-Type": "application/json"
         },
-        body: JSON.stringify(input)
+        body: JSON.stringify({ input: input })
       });
       return response;
     }
