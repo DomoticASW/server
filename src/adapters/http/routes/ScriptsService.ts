@@ -67,12 +67,12 @@ interface CreateDevicePropertyConstantInstructionSchema extends ConstantInstruct
 }
 
 interface IfInstructionSchema {
-  thenId: string,
+  thenInstructions: InstructionSchema[],
   condition: ConditionSchema
 }
 
 interface IfElseInstructionSchema extends IfInstructionSchema {
-  elseId: string
+  elseInstructions: InstructionSchema[]
 }
 
 interface ConditionSchema {
@@ -91,19 +91,6 @@ enum ConditionOperatorType {
     StringEOperator = "StringEOperator",
     ColorEOperator = "ColorEOperator",
     BooleanEOperator = "BooleanEOperator"
-}
-
-enum NodeRefType {
-  RootNodeRef = "RootNodeRef",
-  BranchNodeRef = "BranchNodeRef"
-}
-
-interface NodeRefSchema {
-  type: NodeRefType
-}
-
-interface BranchNodeRefSchema extends NodeRefSchema {
-  id: string
 }
 
 interface PeriodTriggerSchema {
@@ -186,14 +173,14 @@ function isCreateDevicePropertyConstantInstruction(o: any): o is CreateDevicePro
 function isIfInstruction(o: any): o is IfInstructionSchema {
   return o &&
     typeof o === 'object' &&
-    'thenId' in o && typeof o.thenId === 'string' &&
+    'thenInstructions' in o && Array.isArray(o.thenInstructions) &&
     'condition' in o && isCondition(o.condition)
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function isIfElseInstruction(o: any): o is IfElseInstructionSchema {
   return isIfInstruction(o) &&
-    'elseId' in o && typeof o.elseId === 'string'
+    'elseInstructions' in o && Array.isArray(o.elseInstructions)
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -220,19 +207,6 @@ function isInstruction(instruction: any): instruction is InstructionSchema {
       || isIfElseInstruction(instruction.instruction)
       || isCreateConstantInstruction(instruction.instruction)
       || isCreateDevicePropertyConstantInstruction(instruction.instruction)) 
-}
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function isNodeRef(nodeRef: any): nodeRef is NodeRefSchema {
-  return nodeRef &&
-    typeof nodeRef === 'object' &&
-    'type' in nodeRef && typeof nodeRef.type === 'string'
-}
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function isBranchNodeRef(nodeRef: any): nodeRef is BranchNodeRefSchema {
-  return isNodeRef(nodeRef) &&
-    'id' in nodeRef && typeof nodeRef.id === 'string'
 }
 
 function deserializeConditionOperator(type: ConditionOperatorType): ConditionOperator<unknown> {
@@ -477,7 +451,10 @@ function completeBuilder(req: express.Request, type: "task" | "automation"): Eff
     }),
     Effect.bind("trigger", () => Effect.if(type == "automation" && "trigger" in req.body, {
       onTrue: () => Effect.succeed(req.body.trigger),
-      onFalse: () => Effect.fail(BadRequest("Missing trigger for the automation"))
+      onFalse: () => Effect.if(type == "task", {
+        onTrue: () => Effect.succeed(undefined),
+        onFalse: () => Effect.fail(BadRequest("Missing trigger for the automation"))
+      })
     })),
     Effect.bind("builderAndRef", ({ scriptName, trigger }) => 
       Effect.if(type == "task", {
@@ -493,11 +470,11 @@ function completeBuilder(req: express.Request, type: "task" | "automation"): Eff
           })
       })
     ),
-    Effect.bind("instructionsAndRefsVal", () => Effect.if("instructions" in req.body, {
+    Effect.bind("instructions", () => Effect.if("instructions" in req.body, {
       onTrue: () => Effect.succeed(req.body.instructions),
       onFalse: () => Effect.succeed([])
     })),
-    Effect.bind("instructionsSchemas", ({ instructionsAndRefsVal }) => createInstructionsSchemas(instructionsAndRefsVal)),
+    Effect.bind("instructionsSchemas", ({ instructions }) => createInstructionsSchemas(instructions)),
     Effect.flatMap(({ instructionsSchemas, builderAndRef }) => Effect.if(type == "task", {
       onTrue: () => createBuilderWithInstructions(builderAndRef as unknown as [TaskBuilder, NodeRef], instructionsSchemas),
       onFalse: () => createBuilderWithInstructions(builderAndRef as unknown as [AutomationBuilder, NodeRef], instructionsSchemas)
@@ -505,22 +482,14 @@ function completeBuilder(req: express.Request, type: "task" | "automation"): Eff
   )
 }
 
-function createBuilderWithInstructions<S = Task | Automation>(builderAndRef: [ScriptBuilder<S>, NodeRef], instructionsSchemas: Array<[InstructionSchema, NodeRefSchema]>) {
+function createBuilderWithInstructions<S = Task | Automation>(builderAndRef: [ScriptBuilder<S>, NodeRef], instructionsSchemas: Array<InstructionSchema>) {
   let taskBuilderAndErr: [ScriptBuilder<S>, InvalidScriptError | undefined] = [builderAndRef[0], undefined]
   const root = builderAndRef[1]
-  const branchRefs: Map<string, NodeRef> = new Map()
   const constRefs: Array<ConstantRef> = []
 
-  for (const schema of instructionsSchemas) {
-    const instructionSchema = schema[0]
-    const nodeRefSchema = schema[1]
-    if (isBranchNodeRef(nodeRefSchema) && !branchRefs.get(nodeRefSchema.id)) {
-      return Effect.fail(InvalidScriptError("The node with the id " + nodeRefSchema.id + " does not exists in the task"))
-    }
-    const nodeRef: NodeRef = isBranchNodeRef(nodeRefSchema) ? branchRefs.get(nodeRefSchema.id)! : root
-
-    taskBuilderAndErr = createBuilderFromInstructionAndRef(taskBuilderAndErr[0]!, instructionSchema, nodeRef, constRefs, branchRefs);
-    if (taskBuilderAndErr[1]) {
+  for (const instructionSchema of instructionsSchemas) {
+    taskBuilderAndErr = createBuilderFromInstructionAndRef(taskBuilderAndErr[0]!, instructionSchema, root, constRefs);
+    if (taskBuilderAndErr[1] != undefined) {
       return Effect.fail(taskBuilderAndErr[1])
     }
   }
@@ -528,11 +497,13 @@ function createBuilderWithInstructions<S = Task | Automation>(builderAndRef: [Sc
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function createInstructionsSchemas(instructionsAndRefsVal: any) {
-  const instructions: Array<[InstructionSchema, NodeRefSchema]> = []
-  if (Array.isArray(instructionsAndRefsVal)) {
-    for (const instructionAndRef of instructionsAndRefsVal) {
-      if (!pushInstructionAndRef(instructionAndRef, instructions)) {
+function createInstructionsSchemas(instructions: any) {
+  const instructionsSchema: Array<InstructionSchema> = []
+  if (Array.isArray(instructions)) {
+    for (const instruction of instructions) {
+      if (isInstruction(instruction)) {
+        instructionsSchema.push(instruction);
+      } else {
         return Effect.fail(BadRequest("One or more instructions have invalid shape"))
       }
     }
@@ -542,50 +513,40 @@ function createInstructionsSchemas(instructionsAndRefsVal: any) {
   return Effect.succeed(instructions)
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function pushInstructionAndRef(instructionAndRef: any, instructions: [InstructionSchema, NodeRefSchema][]) {
-  if (isInstruction(instructionAndRef[0]) && (isNodeRef(instructionAndRef[1]) || isBranchNodeRef(instructionAndRef[1]))) {
-    instructions.push(instructionAndRef);
-    return true
-  }
-
-  return false
-}
-
-function createBuilderFromInstructionAndRef<S = Task | Automation>(taskBuilder: ScriptBuilder<S>, instructionSchema: InstructionSchema, nodeRef: NodeRef, constRefs: ConstantRef[], branchRefs: Map<string, NodeRef>): [ScriptBuilder<S>, InvalidScriptError | undefined] {
+function createBuilderFromInstructionAndRef<S = Task | Automation>(builder: ScriptBuilder<S>, instructionSchema: InstructionSchema, nodeRef: NodeRef, constRefs: ConstantRef[]): [ScriptBuilder<S>, InvalidScriptError | undefined] {
   let err: InvalidScriptError | undefined
   switch (instructionSchema.type) {
     case InstructionType.SendNotificationInstruction: {
       const instruction = instructionSchema.instruction as unknown as SendNotificationInstructionSchema;
-      taskBuilder = taskBuilder.addSendNotification(nodeRef, Email(instruction.email), instruction.message);
+      builder = builder.addSendNotification(nodeRef, Email(instruction.email), instruction.message);
       break;
     }
     case InstructionType.WaitInstruction: {
       const instruction = instructionSchema.instruction as unknown as WaitInstructionSchema;
-      taskBuilder = taskBuilder.addWait(nodeRef, instruction.seconds);
+      builder = builder.addWait(nodeRef, instruction.seconds);
       break;
     }
     case InstructionType.StartTaskInstruction: {
       const instruction = instructionSchema.instruction as unknown as StartTaskInstructionSchema;
-      taskBuilder = taskBuilder.addStartTask(nodeRef, TaskId(instruction.taskId));
+      builder = builder.addStartTask(nodeRef, TaskId(instruction.taskId));
       break;
     }
     case InstructionType.DeviceActionInstruction: {
       const instruction = instructionSchema.instruction as unknown as DeviceActionInstructionSchema;
-      taskBuilder = taskBuilder.addDeviceAction(nodeRef, DeviceId(instruction.deviceId), DeviceActionId(instruction.deviceActionId), instruction.input);
+      builder = builder.addDeviceAction(nodeRef, DeviceId(instruction.deviceId), DeviceActionId(instruction.deviceActionId), instruction.input);
       break;
     }
     case InstructionType.CreateConstantInstruction: {
       const instruction = instructionSchema.instruction as unknown as CreateConstantInstructionSchema;
-      const builderAndRef = taskBuilder.addCreateConstant(nodeRef, instruction.name, instruction.type, instruction.value);
-      taskBuilder = builderAndRef[0];
+      const builderAndRef = builder.addCreateConstant(nodeRef, instruction.name, instruction.type, instruction.value);
+      builder = builderAndRef[0];
       constRefs.push(builderAndRef[1]);
       break;
     }
     case InstructionType.CreateDevicePropertyConstantInstruction: {
       const instruction = instructionSchema.instruction as unknown as CreateDevicePropertyConstantInstructionSchema;
-      const builderAndRef = taskBuilder.addCreateDevicePropertyConstant(nodeRef, instruction.name, instruction.type, DeviceId(instruction.deviceId), DevicePropertyId(instruction.devicePropertyId));
-      taskBuilder = builderAndRef[0];
+      const builderAndRef = builder.addCreateDevicePropertyConstant(nodeRef, instruction.name, instruction.type, DeviceId(instruction.deviceId), DevicePropertyId(instruction.devicePropertyId));
+      builder = builderAndRef[0];
       constRefs.push(builderAndRef[1]);
       break;
     }
@@ -594,11 +555,14 @@ function createBuilderFromInstructionAndRef<S = Task | Automation>(taskBuilder: 
       const left = constRefs.find(ref => ref.constantInstruction.name == ifInstructionSchema.condition.leftConstantName);
       const right = constRefs.find(ref => ref.constantInstruction.name == ifInstructionSchema.condition.rightConstantName);
       if (!left || !right) {
-        return [taskBuilder, InvalidScriptError("One or two of the two constants " + ifInstructionSchema.condition.leftConstantName + " and " + ifInstructionSchema.condition.rightConstantName + " are not declared before the If" )]
+        return [builder, InvalidScriptError("One or two of the two constants " + ifInstructionSchema.condition.leftConstantName + " and " + ifInstructionSchema.condition.rightConstantName + " are not declared before the If" )]
       }
-      const builderAndRef = taskBuilder.addIf(nodeRef, left, right, deserializeConditionOperator(ifInstructionSchema.condition.conditionOperatorType), ifInstructionSchema.condition.negate);
-      taskBuilder = builderAndRef[0];
-      branchRefs.set(ifInstructionSchema.thenId, builderAndRef[1]);
+      const builderAndRef = builder.addIf(nodeRef, left, right, deserializeConditionOperator(ifInstructionSchema.condition.conditionOperatorType), ifInstructionSchema.condition.negate);
+      builder = builderAndRef[0];
+      const then = builderAndRef[1]
+      const thenBuilderAndErr = putBranchInstructionsToBuilder(ifInstructionSchema.thenInstructions, builder, then, constRefs)
+      builder = thenBuilderAndErr[0]
+      err = thenBuilderAndErr[1]
       break;
     }
     case InstructionType.IfElseInstruction: {
@@ -606,14 +570,39 @@ function createBuilderFromInstructionAndRef<S = Task | Automation>(taskBuilder: 
       const left = constRefs.find(ref => ref.constantInstruction.name == ifInstructionSchema.condition.leftConstantName);
       const right = constRefs.find(ref => ref.constantInstruction.name == ifInstructionSchema.condition.rightConstantName);
       if (!left || !right) {
-        return [taskBuilder, InvalidScriptError("One or two of the two constants " + ifInstructionSchema.condition.leftConstantName + " and " + ifInstructionSchema.condition.rightConstantName + " are not declared before the If" )]
+        return [builder, InvalidScriptError("One or two of the two constants " + ifInstructionSchema.condition.leftConstantName + " and " + ifInstructionSchema.condition.rightConstantName + " are not declared before the If" )]
       }
-      const builderAndRef = taskBuilder.addIfElse(nodeRef, left, right, deserializeConditionOperator(ifInstructionSchema.condition.conditionOperatorType), ifInstructionSchema.condition.negate);
-      taskBuilder = builderAndRef[0];
-      branchRefs.set(ifInstructionSchema.thenId, builderAndRef[1]);
-      branchRefs.set(ifInstructionSchema.elseId, builderAndRef[2]);
+      const builderAndRef = builder.addIfElse(nodeRef, left, right, deserializeConditionOperator(ifInstructionSchema.condition.conditionOperatorType), ifInstructionSchema.condition.negate);
+      builder = builderAndRef[0];
+      const then = builderAndRef[1];
+      const elseRef = builderAndRef[2]
+  
+      const thenBuilderAndErr = putBranchInstructionsToBuilder(ifInstructionSchema.thenInstructions, builder, then, constRefs)
+      //Return immediatly the error in case there is one
+      if (thenBuilderAndErr[1] != undefined) {
+        return thenBuilderAndErr
+      } else {
+        builder = thenBuilderAndErr[0]
+      }
+
+      const elseBuilderAndErr = putBranchInstructionsToBuilder(ifInstructionSchema.elseInstructions, builder, elseRef, constRefs)
+      builder = elseBuilderAndErr[0]
+      err = elseBuilderAndErr[1]
       break;
     }
   }
-  return [taskBuilder, err];
+  return [builder, err];
+}
+
+function putBranchInstructionsToBuilder<S = Task | Automation>(instructions: InstructionSchema[], builder: ScriptBuilder<S>, nodeRef: NodeRef, constRefs: ConstantRef[]): [ScriptBuilder<S>, InvalidScriptError | undefined] {
+  let newBuilder = builder
+  for (const instruction of instructions) {
+    const newBuilderAndErr = createBuilderFromInstructionAndRef(newBuilder, instruction, nodeRef, constRefs)
+    newBuilder = newBuilderAndErr[0]
+    const err = newBuilderAndErr[1]
+    if (err != undefined) {
+      return [newBuilder, err]
+    }
+  }
+  return [newBuilder, undefined]
 }
