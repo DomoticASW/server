@@ -25,7 +25,8 @@ interface TaskSchema {
 }
 
 interface AutomationSchema extends TaskSchema {
-  trigger: DeviceEventTriggerSchema | PeriodTriggerSchema
+  trigger: DeviceEventTriggerSchema | PeriodTriggerSchema,
+  enabled: boolean
 }
 
 enum InstructionType {
@@ -391,6 +392,7 @@ function serializeScript(script: Script<ScriptId>): TaskSchema | AutomationSchem
     return {
       name: script.name,
       id: script.id,
+      enabled: script.enabled,
       trigger: serializeTrigger(script.trigger),
       instructions: serializeInstructions(script.instructions)
     }
