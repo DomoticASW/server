@@ -9,13 +9,24 @@ import { Email } from "../../../domain/users-management/User.js";
 import { Automation, AutomationId, Script, ScriptId, Task, TaskId } from "../../../domain/scripts-management/Script.js";
 import { DeviceActionId, DeviceId, DevicePropertyId } from "../../../domain/devices-management/Device.js";
 import { Type } from "../../../ports/devices-management/Types.js";
-import { ConditionOperator } from "../../../domain/scripts-management/Instruction.js";
-import { NumberEOperator, NumberGEOperator, NumberGOperator, NumberLEOperator, NumberLOperator, BooleanEOperator, StringEOperator, ColorEOperator } from "../../../domain/scripts-management/Operators.js";
+import { Condition, ConditionOperator, Instruction, isCreateConstantInstruction, isCreateDevicePropertyConstantInstruction, isDeviceActionInstruction, isIfElseInstruction, isIfInstruction, isSendNotificationInstruction, isStartTaskInstruction, isWaitInstruction } from "../../../domain/scripts-management/Instruction.js";
+import { NumberEOperator, NumberGEOperator, NumberGOperator, NumberLEOperator, NumberLOperator, BooleanEOperator, StringEOperator, ColorEOperator, isBooleanEOperator, isColorEOperator, isNumberEOperator, isNumberGEOperator, isNumberGOperator, isNumberLEOperator, isNumberLOperator, isStringEOperator } from "../../../domain/scripts-management/Operators.js";
 import { InvalidScriptError, ScriptNotFoundError } from "../../../ports/scripts-management/Errors.js";
 import { Token } from "../../../domain/users-management/Token.js";
 import { InvalidTokenError } from "../../../ports/users-management/Errors.js";
 import { PermissionError } from "../../../ports/permissions-management/Errors.js";
 import { UsersService } from "../../../ports/users-management/UsersService.js";
+import { PeriodTrigger, Trigger } from "../../../domain/scripts-management/Trigger.js";
+
+interface TaskSchema {
+  id: string,
+  name: string,
+  instructions: InstructionSchema[]
+}
+
+interface AutomationSchema extends TaskSchema {
+  trigger: DeviceEventTriggerSchema | PeriodTriggerSchema
+}
 
 enum InstructionType {
     SendNotificationInstruction = "SendNotificationInstruction",
@@ -120,7 +131,7 @@ function isDeviceEventTrigger(o: any): o is DeviceEventTriggerSchema {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function isSendNotificationInstruction(o: any): o is SendNotificationInstructionSchema {
+function isSendNotificationInstructionSchema(o: any): o is SendNotificationInstructionSchema {
   return o &&
     typeof o === 'object' &&
     'email' in o && typeof o.email === 'string' &&
@@ -128,21 +139,21 @@ function isSendNotificationInstruction(o: any): o is SendNotificationInstruction
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function isWaitInstruction(o: any): o is WaitInstructionSchema {
+function isWaitInstructionSchema(o: any): o is WaitInstructionSchema {
   return o &&
     typeof o === 'object' &&
     'seconds' in o && typeof o.seconds === 'number'
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function isStartTaskInstruction(o: any): o is StartTaskInstructionSchema {
+function isStartTaskInstructionSchema(o: any): o is StartTaskInstructionSchema {
   return o &&
     typeof o === 'object' &&
     'taskId' in o && typeof o.taskId === 'string'
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function isDeviceActionInstruction(o: any): o is DeviceActionInstructionSchema {
+function isDeviceActionInstructionSchema(o: any): o is DeviceActionInstructionSchema {
   return o &&
     typeof o === 'object' &&
     'deviceId' in o && typeof o.deviceId === 'string' &&
@@ -151,7 +162,7 @@ function isDeviceActionInstruction(o: any): o is DeviceActionInstructionSchema {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function isCreateConstantInstruction(o: any): o is CreateConstantInstructionSchema {
+function isCreateConstantInstructionSchema(o: any): o is CreateConstantInstructionSchema {
   return o &&
     typeof o === 'object' &&
     'name' in o && typeof o.name === 'string' &&
@@ -160,7 +171,7 @@ function isCreateConstantInstruction(o: any): o is CreateConstantInstructionSche
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function isCreateDevicePropertyConstantInstruction(o: any): o is CreateDevicePropertyConstantInstructionSchema {
+function isCreateDevicePropertyConstantInstructionSchema(o: any): o is CreateDevicePropertyConstantInstructionSchema {
   return o &&
     typeof o === 'object' &&
     'name' in o && typeof o.name === 'string' &&
@@ -170,7 +181,7 @@ function isCreateDevicePropertyConstantInstruction(o: any): o is CreateDevicePro
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function isIfInstruction(o: any): o is IfInstructionSchema {
+function isIfInstructionSchema(o: any): o is IfInstructionSchema {
   return o &&
     typeof o === 'object' &&
     'thenInstructions' in o && Array.isArray(o.thenInstructions) &&
@@ -178,8 +189,8 @@ function isIfInstruction(o: any): o is IfInstructionSchema {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function isIfElseInstruction(o: any): o is IfElseInstructionSchema {
-  return isIfInstruction(o) &&
+function isIfElseInstructionSchema(o: any): o is IfElseInstructionSchema {
+  return isIfInstructionSchema(o) &&
     'elseInstructions' in o && Array.isArray(o.elseInstructions)
 }
 
@@ -199,14 +210,14 @@ function isInstruction(instruction: any): instruction is InstructionSchema {
     && typeof instruction === 'object'
     && 'type' in instruction
     && typeof instruction.type === 'string'
-    && "instruction" in instruction && (isSendNotificationInstruction(instruction.instruction)
-      || isWaitInstruction(instruction.instruction)
-      || isStartTaskInstruction(instruction.instruction)
-      || isDeviceActionInstruction(instruction.instruction)
-      || isIfInstruction(instruction.instruction)
-      || isIfElseInstruction(instruction.instruction)
-      || isCreateConstantInstruction(instruction.instruction)
-      || isCreateDevicePropertyConstantInstruction(instruction.instruction)) 
+    && "instruction" in instruction && (isSendNotificationInstructionSchema(instruction.instruction)
+      || isWaitInstructionSchema(instruction.instruction)
+      || isStartTaskInstructionSchema(instruction.instruction)
+      || isDeviceActionInstructionSchema(instruction.instruction)
+      || isIfInstructionSchema(instruction.instruction)
+      || isIfElseInstructionSchema(instruction.instruction)
+      || isCreateConstantInstructionSchema(instruction.instruction)
+      || isCreateDevicePropertyConstantInstructionSchema(instruction.instruction)) 
 }
 
 function deserializeConditionOperator(type: ConditionOperatorType): ConditionOperator<unknown> {
@@ -227,6 +238,168 @@ function deserializeConditionOperator(type: ConditionOperatorType): ConditionOpe
       return StringEOperator()
     case ConditionOperatorType.ColorEOperator:
       return ColorEOperator()
+  }
+}
+
+function serializeInstruction(instruction: Instruction): InstructionSchema {
+  if (isSendNotificationInstruction(instruction)) {
+    return {
+      "type": InstructionType.SendNotificationInstruction,
+      "instruction": {
+        "email": instruction.email,
+        "message": instruction.message
+      }
+    }
+  }
+
+  if (isWaitInstruction(instruction)) {
+    return {
+      "type": InstructionType.WaitInstruction,
+      "instruction": {
+        "seconds": instruction.seconds
+      }
+    }
+  }
+
+  if (isDeviceActionInstruction(instruction)) {
+    return {
+      "type": InstructionType.DeviceActionInstruction,
+      "instruction": {
+        "deviceId": instruction.deviceId,
+        "deviceActionId": instruction.deviceActionId,
+        "input": instruction.input
+      }
+    }
+  }
+
+  if (isStartTaskInstruction(instruction)) {
+    return {
+      "type": InstructionType.StartTaskInstruction,
+      "instruction": {
+        "taskId": instruction.taskId
+      }
+    }
+  }
+
+  if (isCreateConstantInstruction(instruction)) {
+    return {
+      "type": InstructionType.CreateConstantInstruction,
+      "instruction": {
+        "name": instruction.name,
+        "type": instruction.type,
+        "value": instruction.value
+      }
+    }
+  }
+
+  if (isCreateDevicePropertyConstantInstruction(instruction)) {
+    return {
+      "type": InstructionType.CreateDevicePropertyConstantInstruction,
+      "instruction": {
+        "deviceId": instruction.deviceId,
+        "devicePropertyId": instruction.devicePropertyId,
+        "name": instruction.name,
+        "type": instruction.type
+      }
+    }
+  }
+
+  if (isIfInstruction(instruction)) {
+    return {
+      "type": InstructionType.IfInstruction,
+      "instruction": {
+        "thenInstructions": serializeInstructions(instruction.then),
+        "condition": serializeCondition(instruction.condition)
+      }
+    }
+  }
+
+  if (isIfElseInstruction(instruction)) {
+    return {
+      "type": InstructionType.IfElseInstruction,
+      "instruction": {
+        "thenInstructions": serializeInstructions(instruction.then),
+        "elseInstructions": serializeInstructions(instruction.else),
+        "condition": serializeCondition(instruction.condition)
+      }
+    }
+  }
+
+  throw new Error("It was not possible to serialize the following instruction into a known type of instruction:\n" + JSON.stringify(instruction))
+}
+
+function serializeInstructions(instructions: Instruction[]): InstructionSchema[] {
+  return instructions.map(instruction => serializeInstruction(instruction))
+}
+
+function serializeCondition(condition: Condition<never>): ConditionSchema {
+  return {
+    "conditionOperatorType": serializeConditionOperator(condition.operator),
+    "leftConstantName": condition.leftConstant.name,
+    "rightConstantName": condition.rightConstant.name,
+    "negate": condition.negate
+  }
+}
+
+function serializeConditionOperator(operator: ConditionOperator<unknown>): ConditionOperatorType {
+  if (isNumberEOperator(operator)) {
+      return ConditionOperatorType.NumberEOperator
+  } else if (isNumberGEOperator(operator)) {
+      return ConditionOperatorType.NumberGEOperator
+  } else if (isNumberGOperator(operator)) {
+      return ConditionOperatorType.NumberGOperator
+  } else if (isNumberLEOperator(operator)) {
+      return ConditionOperatorType.NumberLEOperator
+  } else if (isNumberLOperator(operator)) {
+      return ConditionOperatorType.NumberLOperator
+  } else if (isBooleanEOperator(operator)) {
+      return ConditionOperatorType.BooleanEOperator
+  } else if (isStringEOperator(operator)) {
+      return ConditionOperatorType.StringEOperator
+  } else if (isColorEOperator(operator)) {
+      return ConditionOperatorType.ColorEOperator
+  } else {
+      throw new Error("It was not possible to serialize the following operator into a known type of operator:\n" + JSON.stringify(operator))
+  }
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function isAutomation(obj: any): obj is Automation {
+  return typeof obj == "object" && "enabled" in obj && "trigger" in obj
+}
+
+function serializeTrigger(trigger: Trigger): PeriodTriggerSchema | DeviceEventTriggerSchema {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  function isPeriodTrigger(obj: any): obj is PeriodTrigger {
+    return typeof obj == "object" && "start" in obj && "periodSeconds" in obj
+  }
+  if (isPeriodTrigger(trigger)) {
+    return {
+      start: trigger.start.toDateString(),
+      periodSeconds: trigger.periodSeconds
+    }
+  } else {
+    return {
+      deviceId: trigger.deviceId,
+      eventName: trigger.eventName
+    }
+  }
+}
+
+function serializeScript(script: Script<ScriptId>): TaskSchema | AutomationSchema {
+  if (isAutomation(script)) {
+    return {
+      name: script.name,
+      id: script.id,
+      trigger: serializeTrigger(script.trigger),
+      instructions: serializeInstructions(script.instructions)
+    }
+  } else {
+    return {
+      name: script.name,
+      id: script.id,
+      instructions: serializeInstructions(script.instructions)
+    }
   }
 }
 
@@ -559,8 +732,8 @@ function deleteScript(req: express.Request, usersService: UsersService, fun: (to
 function getScript(req: express.Request, usersService: UsersService, fun: (token: Token) => Effect.Effect<Script<ScriptId>, InvalidTokenError | ScriptNotFoundError>) {
   return Effect.Do.pipe(
     Effect.bind("token", () => deserializeToken(req, usersService)),
-    Effect.bind("task", ({ token }) => fun(token)),
-    Effect.map(({ task }) => Response(StatusCodes.OK, task)),
+    Effect.bind("script", ({ token }) => fun(token)),
+    Effect.map(({ script }) => Response(StatusCodes.OK, serializeScript(script))),
     Effect.catch("__brand", {
       failure: "ScriptNotFoundError",
       onFailure: (err) => Effect.succeed(Response(StatusCodes.NOT_FOUND, err))
@@ -573,8 +746,8 @@ function getScript(req: express.Request, usersService: UsersService, fun: (token
 function getAllScripts(req: express.Request, usersService: UsersService, fun: (token: Token) => Effect.Effect<Iterable<Script<ScriptId>>, InvalidTokenError>) {
   return Effect.Do.pipe(
     Effect.bind("token", () => deserializeToken(req, usersService)),
-    Effect.bind("automations", ({ token }) => fun(token)),
-    Effect.map(({ automations }) => Response(StatusCodes.CREATED, Array.from(automations))),
+    Effect.bind("scripts", ({ token }) => fun(token)),
+    Effect.map(({ scripts }) => Response(StatusCodes.CREATED, Array.from(scripts).map(automation => serializeScript(automation)))),
     handleCommonErrors,
     Effect.runPromise
   )
@@ -658,7 +831,7 @@ function createBuilderFromInstructionAndRef<S = Task | Automation>(builder: Scri
   let err: BadRequest | InvalidScriptError | undefined
   switch (instructionSchema.type) {
     case InstructionType.SendNotificationInstruction: {
-      if (!isSendNotificationInstruction(instructionSchema.instruction)) {
+      if (!isSendNotificationInstructionSchema(instructionSchema.instruction)) {
         return [builder, BadRequest("It has been tried to create a send notification instruction, but the shape is not the right one")]
       }
       const instruction = instructionSchema.instruction as unknown as SendNotificationInstructionSchema;
@@ -666,7 +839,7 @@ function createBuilderFromInstructionAndRef<S = Task | Automation>(builder: Scri
       break;
     }
     case InstructionType.WaitInstruction: {
-      if (!isWaitInstruction(instructionSchema.instruction)) {
+      if (!isWaitInstructionSchema(instructionSchema.instruction)) {
         return [builder, BadRequest("It has been tried to create a wait instruction, but the shape is not the right one")]
       }
       const instruction = instructionSchema.instruction as unknown as WaitInstructionSchema;
@@ -674,7 +847,7 @@ function createBuilderFromInstructionAndRef<S = Task | Automation>(builder: Scri
       break;
     }
     case InstructionType.StartTaskInstruction: {
-      if (!isStartTaskInstruction(instructionSchema.instruction)) {
+      if (!isStartTaskInstructionSchema(instructionSchema.instruction)) {
         return [builder, BadRequest("It has been tried to create a start task instruction, but the shape is not the right one")]
       }
       const instruction = instructionSchema.instruction as unknown as StartTaskInstructionSchema;
@@ -682,7 +855,7 @@ function createBuilderFromInstructionAndRef<S = Task | Automation>(builder: Scri
       break;
     }
     case InstructionType.DeviceActionInstruction: {
-      if (!isDeviceActionInstruction(instructionSchema.instruction)) {
+      if (!isDeviceActionInstructionSchema(instructionSchema.instruction)) {
         return [builder, BadRequest("It has been tried to create a device action instruction, but the shape is not the right one")]
       }
       const instruction = instructionSchema.instruction as unknown as DeviceActionInstructionSchema;
@@ -690,7 +863,7 @@ function createBuilderFromInstructionAndRef<S = Task | Automation>(builder: Scri
       break;
     }
     case InstructionType.CreateConstantInstruction: {
-      if (!isCreateConstantInstruction(instructionSchema.instruction)) {
+      if (!isCreateConstantInstructionSchema(instructionSchema.instruction)) {
         return [builder, BadRequest("It has been tried to create a create constant instruction, but the shape is not the right one")]
       }
       const instruction = instructionSchema.instruction as unknown as CreateConstantInstructionSchema;
@@ -700,7 +873,7 @@ function createBuilderFromInstructionAndRef<S = Task | Automation>(builder: Scri
       break;
     }
     case InstructionType.CreateDevicePropertyConstantInstruction: {
-      if (!isCreateDevicePropertyConstantInstruction(instructionSchema.instruction)) {
+      if (!isCreateDevicePropertyConstantInstructionSchema(instructionSchema.instruction)) {
         return [builder, BadRequest("It has been tried to create a create device property constant instruction, but the shape is not the right one")]
       }
       const instruction = instructionSchema.instruction as unknown as CreateDevicePropertyConstantInstructionSchema;
@@ -710,7 +883,7 @@ function createBuilderFromInstructionAndRef<S = Task | Automation>(builder: Scri
       break;
     }
     case InstructionType.IfInstruction: {
-      if (!isIfInstruction(instructionSchema.instruction)) {
+      if (!isIfInstructionSchema(instructionSchema.instruction)) {
         return [builder, BadRequest("It has been tried to create an if instruction, but the shape is not the right one")]
       }
       const ifInstructionSchema = instructionSchema.instruction as unknown as IfInstructionSchema;
@@ -728,7 +901,7 @@ function createBuilderFromInstructionAndRef<S = Task | Automation>(builder: Scri
       break;
     }
     case InstructionType.IfElseInstruction: {
-      if (!isIfElseInstruction(instructionSchema.instruction)) {
+      if (!isIfElseInstructionSchema(instructionSchema.instruction)) {
         return [builder, BadRequest("It has been tried to create an if else instruction, but the shape is not the right one")]
       }
       const ifInstructionSchema = instructionSchema.instruction as unknown as IfElseInstructionSchema;
