@@ -482,8 +482,8 @@ function completeBuilder(req: express.Request, type: "task" | "automation"): Eff
   )
 }
 
-function createBuilderWithInstructions<S = Task | Automation>(builderAndRef: [ScriptBuilder<S>, NodeRef], instructionsSchemas: Array<InstructionSchema>) {
-  let taskBuilderAndErr: [ScriptBuilder<S>, InvalidScriptError | undefined] = [builderAndRef[0], undefined]
+function createBuilderWithInstructions<S = Task | Automation>(builderAndRef: [ScriptBuilder<S>, NodeRef], instructionsSchemas: Array<InstructionSchema>): Effect.Effect<ScriptBuilder<S>, BadRequest | InvalidScriptError> {
+  let taskBuilderAndErr: [ScriptBuilder<S>, BadRequest | InvalidScriptError | undefined] = [builderAndRef[0], undefined]
   const root = builderAndRef[1]
   const constRefs: Array<ConstantRef> = []
 
@@ -513,30 +513,45 @@ function createInstructionsSchemas(instructions: any) {
   return Effect.succeed(instructions)
 }
 
-function createBuilderFromInstructionAndRef<S = Task | Automation>(builder: ScriptBuilder<S>, instructionSchema: InstructionSchema, nodeRef: NodeRef, constRefs: ConstantRef[]): [ScriptBuilder<S>, InvalidScriptError | undefined] {
-  let err: InvalidScriptError | undefined
+function createBuilderFromInstructionAndRef<S = Task | Automation>(builder: ScriptBuilder<S>, instructionSchema: InstructionSchema, nodeRef: NodeRef, constRefs: ConstantRef[]): [ScriptBuilder<S>, BadRequest | InvalidScriptError | undefined] {
+  let err: BadRequest | InvalidScriptError | undefined
   switch (instructionSchema.type) {
     case InstructionType.SendNotificationInstruction: {
+      if (!isSendNotificationInstruction(instructionSchema.instruction)) {
+        return [builder, BadRequest("It has been tried to create a send notification instruction, but the shape is not the right one")]
+      }
       const instruction = instructionSchema.instruction as unknown as SendNotificationInstructionSchema;
       builder = builder.addSendNotification(nodeRef, Email(instruction.email), instruction.message);
       break;
     }
     case InstructionType.WaitInstruction: {
+      if (!isWaitInstruction(instructionSchema.instruction)) {
+        return [builder, BadRequest("It has been tried to create a wait instruction, but the shape is not the right one")]
+      }
       const instruction = instructionSchema.instruction as unknown as WaitInstructionSchema;
       builder = builder.addWait(nodeRef, instruction.seconds);
       break;
     }
     case InstructionType.StartTaskInstruction: {
+      if (!isStartTaskInstruction(instructionSchema.instruction)) {
+        return [builder, BadRequest("It has been tried to create a start task instruction, but the shape is not the right one")]
+      }
       const instruction = instructionSchema.instruction as unknown as StartTaskInstructionSchema;
       builder = builder.addStartTask(nodeRef, TaskId(instruction.taskId));
       break;
     }
     case InstructionType.DeviceActionInstruction: {
+      if (!isDeviceActionInstruction(instructionSchema.instruction)) {
+        return [builder, BadRequest("It has been tried to create a device action instruction, but the shape is not the right one")]
+      }
       const instruction = instructionSchema.instruction as unknown as DeviceActionInstructionSchema;
       builder = builder.addDeviceAction(nodeRef, DeviceId(instruction.deviceId), DeviceActionId(instruction.deviceActionId), instruction.input);
       break;
     }
     case InstructionType.CreateConstantInstruction: {
+      if (!isCreateConstantInstruction(instructionSchema.instruction)) {
+        return [builder, BadRequest("It has been tried to create a create constant instruction, but the shape is not the right one")]
+      }
       const instruction = instructionSchema.instruction as unknown as CreateConstantInstructionSchema;
       const builderAndRef = builder.addCreateConstant(nodeRef, instruction.name, instruction.type, instruction.value);
       builder = builderAndRef[0];
@@ -544,6 +559,9 @@ function createBuilderFromInstructionAndRef<S = Task | Automation>(builder: Scri
       break;
     }
     case InstructionType.CreateDevicePropertyConstantInstruction: {
+      if (!isCreateDevicePropertyConstantInstruction(instructionSchema.instruction)) {
+        return [builder, BadRequest("It has been tried to create a create device property constant instruction, but the shape is not the right one")]
+      }
       const instruction = instructionSchema.instruction as unknown as CreateDevicePropertyConstantInstructionSchema;
       const builderAndRef = builder.addCreateDevicePropertyConstant(nodeRef, instruction.name, instruction.type, DeviceId(instruction.deviceId), DevicePropertyId(instruction.devicePropertyId));
       builder = builderAndRef[0];
@@ -551,6 +569,9 @@ function createBuilderFromInstructionAndRef<S = Task | Automation>(builder: Scri
       break;
     }
     case InstructionType.IfInstruction: {
+      if (!isIfInstruction(instructionSchema.instruction)) {
+        return [builder, BadRequest("It has been tried to create an if instruction, but the shape is not the right one")]
+      }
       const ifInstructionSchema = instructionSchema.instruction as unknown as IfInstructionSchema;
       const left = constRefs.find(ref => ref.constantInstruction.name == ifInstructionSchema.condition.leftConstantName);
       const right = constRefs.find(ref => ref.constantInstruction.name == ifInstructionSchema.condition.rightConstantName);
@@ -566,6 +587,9 @@ function createBuilderFromInstructionAndRef<S = Task | Automation>(builder: Scri
       break;
     }
     case InstructionType.IfElseInstruction: {
+      if (!isIfElseInstruction(instructionSchema.instruction)) {
+        return [builder, BadRequest("It has been tried to create an if else instruction, but the shape is not the right one")]
+      }
       const ifInstructionSchema = instructionSchema.instruction as unknown as IfElseInstructionSchema;
       const left = constRefs.find(ref => ref.constantInstruction.name == ifInstructionSchema.condition.leftConstantName);
       const right = constRefs.find(ref => ref.constantInstruction.name == ifInstructionSchema.condition.rightConstantName);
@@ -594,7 +618,7 @@ function createBuilderFromInstructionAndRef<S = Task | Automation>(builder: Scri
   return [builder, err];
 }
 
-function putBranchInstructionsToBuilder<S = Task | Automation>(instructions: InstructionSchema[], builder: ScriptBuilder<S>, nodeRef: NodeRef, constRefs: ConstantRef[]): [ScriptBuilder<S>, InvalidScriptError | undefined] {
+function putBranchInstructionsToBuilder<S = Task | Automation>(instructions: InstructionSchema[], builder: ScriptBuilder<S>, nodeRef: NodeRef, constRefs: ConstantRef[]): [ScriptBuilder<S>, BadRequest | InvalidScriptError | undefined] {
   let newBuilder = builder
   for (const instruction of instructions) {
     const newBuilderAndErr = createBuilderFromInstructionAndRef(newBuilder, instruction, nodeRef, constRefs)
