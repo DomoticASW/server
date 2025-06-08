@@ -127,7 +127,7 @@ function isDeviceEventTrigger(o: any): o is DeviceEventTriggerSchema {
   return o &&
     typeof o === 'object' &&
     'deviceId' in o && typeof o.deviceId === "string" &&
-    'eventName' in o && typeof o.eventName === "number"
+    'eventName' in o && typeof o.eventName === "string"
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -375,7 +375,7 @@ function serializeTrigger(trigger: Trigger): PeriodTriggerSchema | DeviceEventTr
   }
   if (isPeriodTrigger(trigger)) {
     return {
-      start: trigger.start.toDateString(),
+      start: trigger.start.toISOString(),
       periodSeconds: trigger.periodSeconds
     }
   } else {
@@ -561,14 +561,14 @@ export function registerScriptsServiceRoutes(app: express.Express, service: Scri
    *    - "instructions": ActualInstructions to be executed when the automation starts
    * 
    * Remember: the date should be expressed as wanted from JavaScript Date, so something like
-   * yyyy-mm-ddTh:m:s+02:00
-   * The part after the '+', 02:00 in this case, is used to tell the time zone, so +02:00 means GMT+2
+   * yyyy-mm-ddTh:m:s
+   * This is automatically translated to the local time of the server
    * 
    * An example of a complete and successfull request could be this one:
    * {
    *    "name": "automationName",
    *    "trigger": {
-   *      "start": "2025-06-02T15:00:00.000Z",
+   *      "start": "2025-06-02T15:00:00.000",
    *      "periodSeconds": 1
    *    },
    *    "instructions": [
