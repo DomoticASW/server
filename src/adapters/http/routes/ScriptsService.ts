@@ -232,6 +232,72 @@ function deserializeConditionOperator(type: ConditionOperatorType): ConditionOpe
 
 export function registerScriptsServiceRoutes(app: express.Express, service: ScriptsService, usersService: UsersService) {
   //create
+  /**
+   * API to create a task.
+   * 
+   * The json body of the request must have 3 main elements:
+   *    - "name": the name of the task
+   *    - "instructions": ActualInstructions to be executed when the task starts
+   * 
+   * An example of a complete and successfull request could be this one:
+   * {
+   *    "name": "taskName",
+   *    "instructions": [
+   *      {
+   *        "type": "CreateConstantInstruction",
+   *        "instruction": {
+   *          "name": "C1",
+   *          "type": "IntType",
+   *          "value": 10
+   *        }
+   *      },
+   *      {
+   *        "type": "CreateConstantInstruction",
+   *        "instruction": {
+   *          "type": "IntType",
+   *          "name": "C2",
+   *          "value": 10
+   *        }
+   *      },
+   *      {
+   *        "type": "IfElseInstruction",
+   *        "instruction": {
+   *          "thenInstructions": [
+   *              {
+   *                "type": "SendNotificationInstruction",
+   *                "instruction": {
+   *                  "email": "a@email.com",
+   *                  "message" : "thenMessage1"
+   *                }
+   *              },
+   *              {
+   *                "type": "SendNotificationInstruction",
+   *                "instruction": {
+   *                  "email": "a@email.com",
+   *                  "message" : "thenMessage2"
+   *                }
+   *              }
+   *          ],
+   *          "elseInstructions": [
+   *              {
+   *                "type": "SendNotificationInstruction",
+   *                "instruction": {
+   *                  "email": "a@email.com",
+   *                  "message" : "elseMessage"
+   *                }
+   *              }
+   *          ],
+   *          "condition": {
+   *            "leftConstantName": "C1",
+   *            "rightConstantName": "C2",
+   *            "negate": false,
+   *            "conditionOperatorType": "NumberEOperator"
+   *          }
+   *        }
+   *      }
+   *    ]
+   * }
+   */
   app.post('/api/tasks', async (req, res) => {
     const response = await Effect.Do.pipe(
       Effect.bind("token", () => deserializeToken(req, usersService)),
@@ -313,6 +379,81 @@ export function registerScriptsServiceRoutes(app: express.Express, service: Scri
   });
 
   //create
+  /**
+   * API to create an automation.
+   * 
+   * The json body of the request must have 3 main elements:
+   *    - "name": the name of the automation
+   *    - "trigger": PeriodTrigger OR DeviceEventTrigger
+   *    - "instructions": ActualInstructions to be executed when the automation starts
+   * 
+   * Remember: the date should be expressed as wanted from JavaScript Date, so something like
+   * yyyy-mm-ddTh:m:s+02:00
+   * The part after the '+', 02:00 in this case, is used to tell the time zone, so +02:00 means GMT+2
+   * 
+   * An example of a complete and successfull request could be this one:
+   * {
+   *    "name": "automationName",
+   *    "trigger": {
+   *      "start": "2025-06-02T15:00:00.000Z",
+   *      "periodSeconds": 1
+   *    },
+   *    "instructions": [
+   *      {
+   *        "type": "CreateConstantInstruction",
+   *        "instruction": {
+   *          "name": "C1",
+   *          "type": "IntType",
+   *          "value": 10
+   *        }
+   *      },
+   *      {
+   *        "type": "CreateConstantInstruction",
+   *        "instruction": {
+   *          "type": "IntType",
+   *          "name": "C2",
+   *          "value": 10
+   *        }
+   *      },
+   *      {
+   *        "type": "IfElseInstruction",
+   *        "instruction": {
+   *          "thenInstructions": [
+   *              {
+   *                "type": "SendNotificationInstruction",
+   *                "instruction": {
+   *                  "email": "a@email.com",
+   *                  "message" : "thenMessage1"
+   *                }
+   *              },
+   *              {
+   *                "type": "SendNotificationInstruction",
+   *                "instruction": {
+   *                  "email": "a@email.com",
+   *                  "message" : "thenMessage2"
+   *                }
+   *              }
+   *          ],
+   *          "elseInstructions": [
+   *              {
+   *                "type": "SendNotificationInstruction",
+   *                "instruction": {
+   *                  "email": "a@email.com",
+   *                  "message" : "elseMessage"
+   *                }
+   *              }
+   *          ],
+   *          "condition": {
+   *            "leftConstantName": "C1",
+   *            "rightConstantName": "C2",
+   *            "negate": false,
+   *            "conditionOperatorType": "NumberEOperator"
+   *          }
+   *        }
+   *      }
+   *    ]
+   * }
+   */
   app.post('/api/automations', async (req, res) => {
     const response = await Effect.Do.pipe(
       Effect.bind("token", () => deserializeToken(req, usersService)),
