@@ -1,11 +1,11 @@
 import { Effect, succeed, fail, tryPromise, flatMap, timeout, bind, catchIf, Do, all } from "effect/Effect";
-import { DeviceCommunicationProtocol } from "../../../ports/devices-management/DeviceCommunicationProtocol.js";
-import { CommunicationError, DeviceUnreachableError, DeviceActionError } from "../../../ports/devices-management/Errors.js";
-import { Device, DeviceAction, DeviceActionId, DeviceAddress, DeviceEvent, DeviceId, DeviceProperty, DevicePropertyId, DeviceStatus } from "../../../domain/devices-management/Device.js";
+import { DeviceCommunicationProtocol } from "../../ports/devices-management/DeviceCommunicationProtocol.js";
+import { CommunicationError, DeviceUnreachableError, DeviceActionError } from "../../ports/devices-management/Errors.js";
+import { Device, DeviceAction, DeviceActionId, DeviceAddress, DeviceEvent, DeviceId, DeviceProperty, DevicePropertyId, DeviceStatus } from "../../domain/devices-management/Device.js";
 import { pipe } from "effect";
 import { millis } from "effect/Duration";
 import { TimeoutException } from "effect/Cause";
-import { DoubleRange, Enum, IntRange, NoneBoolean, NoneColor, NoneDouble, NoneInt, NoneString, NoneVoid, TypeConstraints } from "../../../domain/devices-management/Types.js";
+import { DoubleRange, Enum, IntRange, NoneBoolean, NoneColor, NoneDouble, NoneInt, NoneString, NoneVoid, TypeConstraints } from "../../domain/devices-management/Types.js";
 
 export class DeviceCommunicationProtocolHttpAdapter implements DeviceCommunicationProtocol {
 

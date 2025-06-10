@@ -15,7 +15,7 @@ import { DeviceOfflineNotificationSubscriptionRepositoryMongoAdapter } from "./a
 import { NotificationsService } from "./domain/notifications-management/NotificationsServiceImpl.js";
 import { DeviceCommunicationProtocol } from "./ports/devices-management/DeviceCommunicationProtocol.js";
 import { DeviceFactoryImpl } from "./domain/devices-management/DeviceFactoryImpl.js";
-import { DeviceCommunicationProtocolHttpAdapter } from "./adapters/http/protocols/DeviceCommunicationProtocolHttpAdapter.js";
+import { DeviceCommunicationProtocolHttpAdapter } from "./adapters/devices-management/DeviceCommunicationProtocolHttpAdapter.js";
 
 const mongoDBConnection = mongoose.createConnection("mongodb://localhost:27017/DomoticASW")
 // TODO: replace with production impl
