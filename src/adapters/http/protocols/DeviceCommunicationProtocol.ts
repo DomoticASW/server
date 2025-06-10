@@ -129,8 +129,7 @@ export class DeviceCommunicationProtocolImpl implements DeviceCommunicationProto
           all(properties),
           flatMap((properties) => succeed(Device(DeviceId(d.id), d.name, deviceAddress, DeviceStatus.Online, properties, actions, events)))
         )
-      }),
-      tap(d => console.log(d))
+      })
     )
   };
 }
