@@ -9,9 +9,6 @@ import { DeviceGroupsServiceImpl } from "./domain/devices-management/DeviceGroup
 import { DeviceRepositoryMongoAdapter } from "./adapters/devices-management/DeviceRepositoryMongoAdapter.js";
 import { DevicesServiceImpl } from "./domain/devices-management/DevicesServiceImpl.js";
 import { PermissionsService } from "./ports/permissions-management/PermissionsService.js";
-import { Device, DeviceAction, DeviceActionId, DeviceEvent, DeviceId, DeviceProperty, DevicePropertyId, DeviceStatus } from "./domain/devices-management/Device.js";
-import * as uuid from "uuid";
-import { NoneInt } from "./domain/devices-management/Types.js";
 import { DeviceEventsServiceImpl } from "./domain/devices-management/DeviceEventsServiceImpl.js";
 import { DeviceStatusChangesSubscriber, DeviceStatusesService } from "./ports/devices-management/DeviceStatusesService.js";
 import { DeviceOfflineNotificationSubscriptionRepositoryMongoAdapter } from "./adapters/notifications-management/DeviceOfflineNotificationSubscription.js";
