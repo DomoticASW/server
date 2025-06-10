@@ -9,7 +9,7 @@ import { DeviceEventsService } from '../../ports/devices-management/DeviceEvents
 import { registerDeviceEventsServiceRoutes } from './routes/DeviceEventsService.js';
 import { createServer, Server } from 'node:http';
 import { NotificationsService } from '../../ports/notifications-management/NotificationsService.js';
-import { NotificationProtocolSocketIOAdapter } from './protocols/NotificationProtocolSocketIOAdapter.js';
+import { NotificationProtocolSocketIOAdapter } from '../notifications-management/NotificationProtocolSocketIOAdapter.js';
 
 export class HTTPServerAdapter {
 
