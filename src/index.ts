@@ -18,6 +18,7 @@ import { DeviceOfflineNotificationSubscriptionRepositoryMongoAdapter } from "./a
 import { NotificationsService } from "./domain/notifications-management/NotificationsServiceImpl.js";
 import { DeviceCommunicationProtocol } from "./ports/devices-management/DeviceCommunicationProtocol.js";
 import { DeviceFactoryImpl } from "./domain/devices-management/DeviceFactoryImpl.js";
+import { DeviceCommunicationProtocolImpl } from "./adapters/http/protocols/DeviceCommunicationProtocol.js";
 
 const mongoDBConnection = mongoose.createConnection("mongodb://localhost:27017/DomoticASW")
 // TODO: replace with production impl
@@ -31,17 +32,7 @@ const permissionsService: PermissionsService = {
     canExecuteActionOnDevice: () => Effect.succeed(undefined)
 } as unknown as PermissionsService
 // TODO: replace with production impl
-const deviceCommunicationProtocol: DeviceCommunicationProtocol = {
-    checkDeviceStatus: () => Effect.succeed(DeviceStatus.Online),
-    executeDeviceAction: () => Effect.succeed(undefined),
-    register(deviceAddress) {
-        const action = DeviceAction(DeviceActionId("1"), "Action", NoneInt())
-        const property = DeviceProperty(DevicePropertyId("1"), "Name", 3, NoneInt())
-        const event1 = DeviceEvent("event1")
-        const event2 = DeviceEvent("event2")
-        return Effect.succeed(Device(DeviceId(uuid.v4()), deviceAddress.hostname, deviceAddress, DeviceStatus.Online, [property], [action], [event1, event2]))
-    },
-}
+const deviceCommunicationProtocol: DeviceCommunicationProtocol = new DeviceCommunicationProtocolImpl()
 
 const deviceStatusesService: DeviceStatusesService = {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
