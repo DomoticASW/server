@@ -1,5 +1,5 @@
 import { Effect } from "effect"
-import { Device, DeviceEvent, DeviceId, DeviceStatus, DeviceProperty, DeviceAction, DeviceActionId, DevicePropertyId } from "../../../src/domain/devices-management/Device.js"
+import { Device, DeviceEvent, DeviceId, DeviceStatus, DeviceProperty, DeviceAction, DeviceActionId, DevicePropertyId, DeviceAddress } from "../../../src/domain/devices-management/Device.js"
 import { Enum, IntRange, NoneBoolean, NoneColor, NoneDouble, NoneInt, NoneString, NoneVoid, TypeConstraints } from "../../../src/domain/devices-management/Types.js"
 import { DeviceCommunicationProtocol } from "../../../src/ports/devices-management/DeviceCommunicationProtocol.js"
 import { CommunicationError, DeviceUnreachableError } from "../../../src/ports/devices-management/Errors.js"
@@ -7,7 +7,8 @@ import { CommunicationError, DeviceUnreachableError } from "../../../src/ports/d
 interface MakeDeviceParameters {
     id?: string,
     name?: string,
-    address?: string,
+    host?: string,
+    port?: number,
     status?: DeviceStatus,
     properties?: DeviceProperty<unknown>[],
     actions?: DeviceAction<unknown>[],
@@ -16,13 +17,14 @@ interface MakeDeviceParameters {
 function makeDevice({
     id = "1",
     name = "Lamp",
-    address = "https://192.168.0.2:8080",
+    host = "192.168.0.2",
+    port = 8080,
     status = DeviceStatus.Online,
     properties = [],
     actions = [],
     events = []
 }: MakeDeviceParameters) {
-    return Device(DeviceId(id), name, new URL(address), status, properties, actions, events)
+    return Device(DeviceId(id), name, DeviceAddress(host, port), status, properties, actions, events)
 }
 
 interface MakeDevicePropertyParameters<T> {
@@ -58,10 +60,10 @@ function makeDeviceAction<T>({
 let communicationProtocol: DeviceCommunicationProtocolSpy
 class DeviceCommunicationProtocolSpy implements DeviceCommunicationProtocol {
     callsToExecuteDeviceAction: number = 0
-    deviceAddress?: URL
+    deviceAddress?: DeviceAddress
     deviceActionId?: DeviceActionId
     input?: unknown
-    executeDeviceAction(deviceAddress: URL, deviceActionId: DeviceActionId, input: unknown) {
+    executeDeviceAction(deviceAddress: DeviceAddress, deviceActionId: DeviceActionId, input: unknown) {
         this.deviceAddress = deviceAddress
         this.deviceActionId = deviceActionId
         this.input = input
@@ -89,15 +91,17 @@ test("DeviceId creation", () => {
 test("Device creation", () => {
     const id = "1"
     const name = "Lamp"
-    const address = "https://192.168.0.2:8080"
+    const host = "192.168.0.2"
+    const port = 8080
     const status = DeviceStatus.Online
     const actions = [makeDeviceAction({ name: "set brightness", inputTypeConstraints: IntRange(0, 100) })]
     const properties = [makeDeviceProperty({ name: "brightness", value: 50, setterOrTypeConstraints: actions[0] })]
     const events = [DeviceEvent("low battery"), DeviceEvent("full battery")]
-    const d = makeDevice({ id, name, address, status, properties, actions, events })
+    const d = makeDevice({ id, name, host, port, status, properties, actions, events })
     expect(d.id).toBe(id)
     expect(d.name).toBe(name)
-    expect(d.address).toEqual(new URL(address))
+    expect(d.address.host).toEqual(host)
+    expect(d.address.port).toEqual(port)
     expect(d.status).toBe(status)
     expect(d.properties).toEqual(properties)
     expect(d.actions).toEqual(actions)

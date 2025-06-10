@@ -13,6 +13,15 @@ export function DeviceId(id: string): DeviceId { return id as DeviceId }
 export function DeviceActionId(id: string): DeviceActionId { return id as DeviceActionId }
 export function DevicePropertyId(id: string): DevicePropertyId { return id as DevicePropertyId }
 
+export interface DeviceAddress {
+    readonly host: string
+    readonly port: number
+}
+/** If a non-int port is passed it will be truncated */
+export function DeviceAddress(host: string, port: number): DeviceAddress {
+    return { host: host, port: Math.trunc(port) }
+}
+
 export enum DeviceStatus {
     Online = "Online",
     Offline = "Offline"
@@ -21,7 +30,7 @@ export enum DeviceStatus {
 export interface Device {
     readonly id: DeviceId;
     name: string;
-    readonly address: URL;
+    readonly address: DeviceAddress;
 
     status: DeviceStatus;
     readonly properties: DeviceProperty<unknown>[];
@@ -34,7 +43,7 @@ export interface Device {
 class DeviceImpl implements Device {
     id: DeviceId;
     name: string;
-    address: URL;
+    address: DeviceAddress;
     status: DeviceStatus;
     properties: DeviceProperty<unknown>[];
     actions: DeviceAction<unknown>[];
@@ -43,7 +52,7 @@ class DeviceImpl implements Device {
     constructor(
         id: DeviceId,
         name: string,
-        address: URL,
+        address: DeviceAddress,
         status: DeviceStatus,
         properties: DeviceProperty<unknown>[],
         actions: DeviceAction<unknown>[],
@@ -114,7 +123,7 @@ class DeviceImpl implements Device {
 export function Device(
     id: DeviceId,
     name: string,
-    address: URL,
+    address: DeviceAddress,
     status: DeviceStatus,
     properties: DeviceProperty<unknown>[],
     actions: DeviceAction<unknown>[],

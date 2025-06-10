@@ -4,7 +4,7 @@ import { DeviceUnreachableError, DeviceNotFoundError, InvalidInputError, DeviceA
 import { PermissionError } from "../../ports/permissions-management/Errors.js";
 import { TokenError, InvalidTokenError, UnauthorizedError } from "../../ports/users-management/Errors.js";
 import { Token, UserRole } from "../users-management/Token.js";
-import { DeviceId, Device, DeviceActionId, DevicePropertyId } from "./Device.js";
+import { DeviceId, Device, DeviceActionId, DevicePropertyId, DeviceAddress } from "./Device.js";
 import { DeviceFactory } from "../../ports/devices-management/DeviceFactory.js";
 import { DeviceRepository } from "../../ports/devices-management/DeviceRepository.js";
 import { UsersService } from "../../ports/users-management/UserService.js";
@@ -21,14 +21,14 @@ export class DevicesServiceImpl implements DevicesService {
         private deviceCommunicationProtocol: DeviceCommunicationProtocol) {
     }
 
-    add(token: Token, deviceUrl: URL): Effect.Effect<DeviceId, DeviceAlreadyRegisteredError | DeviceUnreachableError | TokenError> {
+    add(token: Token, deviceAddress: DeviceAddress): Effect.Effect<DeviceId, DeviceAlreadyRegisteredError | DeviceUnreachableError | TokenError> {
         return Effect.Do.pipe(
             Effect.bind("_", () =>
                 Effect.if(token.role == UserRole.Admin, {
                     onTrue: () => this.usersService.verifyToken(token),
                     onFalse: () => Effect.fail(UnauthorizedError())
                 })),
-            Effect.bind("device", () => this.deviceFactory.create(deviceUrl)),
+            Effect.bind("device", () => this.deviceFactory.create(deviceAddress)),
             Effect.bind("__", ({ device }) => this.repo.add(device)),
             Effect.map(({ device }) => device.id),
             Effect.mapError((e) => {

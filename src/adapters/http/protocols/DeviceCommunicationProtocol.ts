@@ -2,7 +2,7 @@ import { Effect, succeed, fail, tryPromise, flatMap, catchAll, timeout, map } fr
 import { DeviceCommunicationProtocol } from "../../../ports/devices-management/DeviceCommunicationProtocol.js";
 import { DevicesService } from "../../../ports/devices-management/DevicesService.js";
 import { CommunicationError, DeviceUnreachableError, DeviceActionError } from "../../../ports/devices-management/Errors.js";
-import { Device, DeviceAction, DeviceActionId, DeviceEvent, DeviceId, DeviceProperty, DeviceStatus } from "../../../domain/devices-management/Device.js";
+import { Device, DeviceAction, DeviceActionId, DeviceAddress, DeviceEvent, DeviceId, DeviceProperty, DeviceStatus } from "../../../domain/devices-management/Device.js";
 import { pipe } from "effect";
 import { millis } from "effect/Duration";
 import { TimeoutException } from "effect/Cause";
@@ -23,7 +23,7 @@ export class DeviceCommunicationProtocolImpl implements DeviceCommunicationProto
         this.devicesService = devicesService;
     }
 
-  checkDeviceStatus(deviceAddress: URL): Effect<DeviceStatus, CommunicationError> {
+  checkDeviceStatus(deviceAddress: DeviceAddress): Effect<DeviceStatus, CommunicationError> {
     const promise = async () => {
       const response = await fetch(deviceAddress.toString() + `/check-status`, {
         method: "GET",
@@ -59,7 +59,7 @@ export class DeviceCommunicationProtocolImpl implements DeviceCommunicationProto
     );
   }
 
-  executeDeviceAction(deviceAddress: URL, deviceActionId: DeviceActionId, input: unknown): Effect<void, DeviceUnreachableError | CommunicationError | DeviceActionError> {
+  executeDeviceAction(deviceAddress: DeviceAddress, deviceActionId: DeviceActionId, input: unknown): Effect<void, DeviceUnreachableError | CommunicationError | DeviceActionError> {
     const promise = async () => {
       const completeUrl = new URL(deviceAddress.toString() + `/execute/${deviceActionId.toString()}`);
       const response = await fetch(completeUrl.toString(), {
@@ -103,7 +103,7 @@ export class DeviceCommunicationProtocolImpl implements DeviceCommunicationProto
     );
   }
 
-  register(deviceAddress: URL): Effect<Device, DeviceUnreachableError | CommunicationError> {
+  register(deviceAddress: DeviceAddress): Effect<Device, DeviceUnreachableError | CommunicationError> {
     const promise = async () => {
       const response = await fetch(deviceAddress.toString() + `/register`, {
         method: "GET",

@@ -1,5 +1,5 @@
 import { Effect } from "effect/Effect";
-import { Device, DeviceActionId, DeviceStatus } from "../../domain/devices-management/Device.js";
+import { Device, DeviceActionId, DeviceAddress, DeviceStatus } from "../../domain/devices-management/Device.js";
 import { CommunicationError, DeviceActionError, DeviceUnreachableError } from "./Errors.js";
 
 /**
@@ -15,11 +15,11 @@ export interface DeviceCommunicationProtocol {
     /** 
      * Reaches for a device at the given address and checks whether it is "Online" (reachable and working correctly)
     */
-    checkDeviceStatus(deviceAddress: URL): Effect<DeviceStatus, CommunicationError>
+    checkDeviceStatus(deviceAddress: DeviceAddress): Effect<DeviceStatus, CommunicationError>
     /**
       * Reaches for a device at the given address and tells it to execute one of it's actions.
     */
-    executeDeviceAction(deviceAddress: URL, deviceActionId: DeviceActionId, input: unknown): Effect<void, DeviceUnreachableError | CommunicationError | DeviceActionError>
+    executeDeviceAction(deviceAddress: DeviceAddress, deviceActionId: DeviceActionId, input: unknown): Effect<void, DeviceUnreachableError | CommunicationError | DeviceActionError>
     /**
       * Reaches for a device at the given address and performs a registration.
       * 
@@ -27,5 +27,5 @@ export interface DeviceCommunicationProtocol {
       * 1. The device should describe himself to the server (this will result in the produced Device).
       * 2. The device should remember from now on that he is registered to this specific server.
     */
-    register(deviceAddress: URL): Effect<Device, DeviceUnreachableError | CommunicationError>
+    register(deviceAddress: DeviceAddress): Effect<Device, DeviceUnreachableError | CommunicationError>
 }

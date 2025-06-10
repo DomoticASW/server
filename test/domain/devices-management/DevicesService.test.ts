@@ -1,5 +1,5 @@
 import { Effect, pipe } from "effect"
-import { DeviceId, Device, DeviceStatus, DevicePropertyId, DeviceProperty, DeviceAction, DeviceEvent, DeviceActionId } from "../../../src/domain/devices-management/Device.js"
+import { DeviceId, Device, DeviceStatus, DevicePropertyId, DeviceProperty, DeviceAction, DeviceEvent, DeviceActionId, DeviceAddress } from "../../../src/domain/devices-management/Device.js"
 import { UserRole, Token } from "../../../src/domain/users-management/Token.js"
 import { Email } from "../../../src/domain/users-management/User.js"
 import { DevicePropertyUpdatesSubscriber, DevicesService } from "../../../src/ports/devices-management/DevicesService.js"
@@ -42,11 +42,11 @@ function makeToken(role: UserRole = UserRole.Admin): Token {
 beforeEach(() => {
     repo = new InMemoryRepositoryMock((d) => d.id, (id) => id)
     deviceFactory = {
-        create(deviceUrl: URL): Effect.Effect<Device, DeviceUnreachableError> {
+        create(deviceAddress: DeviceAddress): Effect.Effect<Device, DeviceUnreachableError> {
             const properties = [DeviceProperty(DevicePropertyId("prop"), "prop", 0, NoneInt())]
             const actions: DeviceAction<unknown>[] = []
             const events: DeviceEvent[] = []
-            return Effect.succeed(Device(DeviceId(deviceUrl.toString()), "device", deviceUrl, DeviceStatus.Online, properties, actions, events))
+            return Effect.succeed(Device(DeviceId(deviceAddress.toString()), "device", deviceAddress, DeviceStatus.Online, properties, actions, events))
         }
     }
     service = new DevicesServiceImpl(repo, deviceFactory, alwaysValidTokenUsersService, freePermissionsService, deviceCommunicationProtocol)
@@ -60,7 +60,7 @@ test("has 0 devices initially", () => {
 test("adding a device adds it to all devices", () => {
     const devices = pipe(
         Effect.gen(function* () {
-            yield* service.add(makeToken(), new URL("http://localhost"))
+            yield* service.add(makeToken(), DeviceAddress("localhost", 8080))
             return yield* service.getAllDevices(makeToken())
         }),
         Effect.runSync
@@ -71,7 +71,7 @@ test("adding a device adds it to all devices", () => {
 test("adding a device persists it to the repository", () => {
     const devices = pipe(
         Effect.gen(function* () {
-            yield* service.add(makeToken(), new URL("http://localhost"))
+            yield* service.add(makeToken(), DeviceAddress("localhost", 8080))
             return yield* repo.getAll()
         }),
         Effect.runSync
@@ -80,7 +80,7 @@ test("adding a device persists it to the repository", () => {
 })
 
 test("uses DeviceFactory to construct devices", () => {
-    const deviceUrl = new URL("http://localhost")
+    const deviceUrl = DeviceAddress("localhost", 8080)
     const device = pipe(
         Effect.gen(function* () {
             yield* service.add(makeToken(), deviceUrl)
@@ -95,7 +95,7 @@ test("uses DeviceFactory to construct devices", () => {
 test("getAllDevicesUnsafe retrieves all devices", () => {
     const devices = pipe(
         Effect.gen(function* () {
-            yield* service.add(makeToken(), new URL("http://localhost"))
+            yield* service.add(makeToken(), DeviceAddress("localhost", 8080))
             return yield* service.getAllDevicesUnsafe()
         }),
         Effect.runSync
@@ -106,7 +106,7 @@ test("getAllDevicesUnsafe retrieves all devices", () => {
 test("find retrieves devices by id", () => {
     const [id, device] = pipe(
         Effect.gen(function* () {
-            const id = yield* service.add(makeToken(), new URL("http://localhost"))
+            const id = yield* service.add(makeToken(), DeviceAddress("localhost", 8080))
             const device = yield* service.find(makeToken(), id)
             return [id, device] as [DeviceId, Device]
         }),
@@ -117,7 +117,7 @@ test("find retrieves devices by id", () => {
 
 test("find returns an error in case device is not found", () => {
     expect(() => pipe(
-        service.find(makeToken(), DeviceId(new URL("http://localhost").toString())),
+        service.find(makeToken(), DeviceId(DeviceAddress("localhost", 8080).toString())),
         Effect.runSync
     )).toThrow("DeviceNotFoundError")
 })
@@ -125,7 +125,7 @@ test("find returns an error in case device is not found", () => {
 test("findUnsafe retrieves devices by id", () => {
     const [id, device] = pipe(
         Effect.gen(function* () {
-            const id = yield* service.add(makeToken(), new URL("http://localhost"))
+            const id = yield* service.add(makeToken(), DeviceAddress("localhost", 8080))
             const device = yield* service.findUnsafe(id)
             return [id, device] as [DeviceId, Device]
         }),
@@ -137,7 +137,7 @@ test("findUnsafe retrieves devices by id", () => {
 test("remove removes devices by id", () => {
     const devices = pipe(
         Effect.gen(function* () {
-            const id = yield* service.add(makeToken(), new URL("http://localhost"))
+            const id = yield* service.add(makeToken(), DeviceAddress("localhost", 8080))
             yield* service.remove(makeToken(), id)
             return yield* service.getAllDevices(makeToken())
         }),
@@ -148,7 +148,7 @@ test("remove removes devices by id", () => {
 
 test("remove returns an error in case device is not found", () => {
     expect(() => pipe(
-        service.remove(makeToken(), DeviceId(new URL("http://localhost").toString())),
+        service.remove(makeToken(), DeviceId(DeviceAddress("localhost", 8080).toString())),
         Effect.runSync
     )).toThrow("DeviceNotFoundError")
 })
@@ -157,7 +157,7 @@ test("rename renames device with given id", () => {
     const newName = "newName"
     const device = pipe(
         Effect.gen(function* () {
-            const id = yield* service.add(makeToken(), new URL("http://localhost"))
+            const id = yield* service.add(makeToken(), DeviceAddress("localhost", 8080))
             yield* service.rename(makeToken(), id, newName)
             return yield* service.find(makeToken(), id)
         }),
@@ -168,7 +168,7 @@ test("rename renames device with given id", () => {
 
 test("rename returns an error in case device is not found", () => {
     expect(() => pipe(
-        service.rename(makeToken(), DeviceId(new URL("http://localhost").toString()), "newName"),
+        service.rename(makeToken(), DeviceId(DeviceAddress("localhost", 8080).toString()), "newName"),
         Effect.runSync
     )).toThrow("DeviceNotFoundError")
 })
@@ -176,7 +176,7 @@ test("rename returns an error in case device is not found", () => {
 test("updateDeviceProperty updates the value of a device property", () => {
     pipe(
         Effect.gen(function* () {
-            const id = yield* service.add(makeToken(), new URL("http://localhost"))
+            const id = yield* service.add(makeToken(), DeviceAddress("localhost", 8080))
             const device = yield* service.find(makeToken(), id)
             const property = device.properties[0]
             const oldValue = property.value
@@ -192,7 +192,7 @@ test("updateDeviceProperty updates the value of a device property", () => {
 })
 
 test("updateDeviceProperty returns an error in case device is not found", () => {
-    const deviceId = DeviceId(new URL("http://localhost").toString())
+    const deviceId = DeviceId(DeviceAddress("localhost", 8080).toString())
     const propertyId = DevicePropertyId("property")
     expect(() => pipe(
         service.updateDeviceProperty(deviceId, propertyId, 3),
@@ -203,7 +203,7 @@ test("updateDeviceProperty returns an error in case device is not found", () => 
 test("updateDeviceProperty returns an error in case device property is not found", () => {
     expect(() => pipe(
         Effect.gen(function* () {
-            const id = yield* service.add(makeToken(), new URL("http://localhost"))
+            const id = yield* service.add(makeToken(), DeviceAddress("localhost", 8080))
             yield* service.updateDeviceProperty(id, DevicePropertyId("property"), 3)
         }),
         Effect.runSync
@@ -223,7 +223,7 @@ test("subscribeForDevicePropertyUpdates lets subscriber receive updates", () => 
     }
     pipe(
         Effect.gen(function* () {
-            const id = yield* service.add(makeToken(), new URL("http://localhost"))
+            const id = yield* service.add(makeToken(), DeviceAddress("localhost", 8080))
             const device = yield* service.find(makeToken(), id)
             const property = device.properties[0]
             const newValue = 3
@@ -251,7 +251,7 @@ test("subscribeForDevicePropertyUpdates registers multiple subscribers", () => {
     }
     pipe(
         Effect.gen(function* () {
-            const id = yield* service.add(makeToken(), new URL("http://localhost"))
+            const id = yield* service.add(makeToken(), DeviceAddress("localhost", 8080))
             const device = yield* service.find(makeToken(), id)
             const property = device.properties[0]
             const newValue = 3
@@ -273,7 +273,7 @@ test("unsubscribeForDevicePropertyUpdates unregisters subscribers", () => {
     }
     pipe(
         Effect.gen(function* () {
-            const id = yield* service.add(makeToken(), new URL("http://localhost"))
+            const id = yield* service.add(makeToken(), DeviceAddress("localhost", 8080))
             const device = yield* service.find(makeToken(), id)
             const property = device.properties[0]
             const newValue = 3
@@ -294,9 +294,9 @@ describe("executeAction", () => {
     let receivedInput: unknown
     beforeEach(() => {
         deviceFactory = {
-            create(deviceUrl: URL): Effect.Effect<Device, DeviceUnreachableError> {
+            create(deviceAddress: DeviceAddress): Effect.Effect<Device, DeviceUnreachableError> {
                 const action = DeviceAction(actionId, "action", IntRange(0, 100))
-                const d = Device(deviceId, "device", deviceUrl, DeviceStatus.Online, [], [action], [])
+                const d = Device(deviceId, "device", deviceAddress, DeviceStatus.Online, [], [action], [])
                 return Effect.succeed({
                     id: d.id,
                     name: d.name,
@@ -325,7 +325,7 @@ describe("executeAction", () => {
         const input = 4
         pipe(
             Effect.gen(function* () {
-                yield* service.add(makeToken(), new URL("http://localhost"))
+                yield* service.add(makeToken(), DeviceAddress("localhost", 8080))
                 yield* service.executeAction(makeToken(), deviceId, actionId, input)
                 expect(receivedInput).toEqual(input)
             }),
@@ -336,7 +336,7 @@ describe("executeAction", () => {
     test("throws if the action is not found on the device", () => {
         expect(() => pipe(
             Effect.gen(function* () {
-                yield* service.add(makeToken(), new URL("http://localhost"))
+                yield* service.add(makeToken(), DeviceAddress("localhost", 8080))
                 yield* service.executeAction(makeToken(), deviceId, DeviceActionId("nope"), 5)
             }),
             Effect.runSync
@@ -350,7 +350,7 @@ describe("executeAction", () => {
         }
         expect(() => pipe(
             Effect.gen(function* () {
-                yield* service.add(token, new URL("http://localhost"))
+                yield* service.add(token, DeviceAddress("localhost", 8080))
                 yield* service.executeAction(token, deviceId, actionId, 5)
             }),
             Effect.runSync
@@ -364,9 +364,9 @@ describe("executeAutomationAction", () => {
     let receivedInput: unknown
     beforeEach(() => {
         deviceFactory = {
-            create(deviceUrl: URL): Effect.Effect<Device, DeviceUnreachableError> {
+            create(deviceAddress: DeviceAddress): Effect.Effect<Device, DeviceUnreachableError> {
                 const action = DeviceAction(actionId, "action", IntRange(0, 100))
-                const d = Device(deviceId, "device", deviceUrl, DeviceStatus.Online, [], [action], [])
+                const d = Device(deviceId, "device", deviceAddress, DeviceStatus.Online, [], [action], [])
                 return Effect.succeed({
                     id: d.id,
                     name: d.name,
@@ -389,7 +389,7 @@ describe("executeAutomationAction", () => {
         const input = 4
         pipe(
             Effect.gen(function* () {
-                yield* service.add(makeToken(), new URL("http://localhost"))
+                yield* service.add(makeToken(), DeviceAddress("localhost", 8080))
                 yield* service.executeAutomationAction(deviceId, actionId, input)
                 expect(receivedInput).toEqual(input)
             }),
@@ -400,7 +400,7 @@ describe("executeAutomationAction", () => {
     test("throws if the action is not found on the device", () => {
         expect(() => pipe(
             Effect.gen(function* () {
-                yield* service.add(makeToken(), new URL("http://localhost"))
+                yield* service.add(makeToken(), DeviceAddress("localhost", 8080))
                 yield* service.executeAutomationAction(deviceId, DeviceActionId("nope"), 5)
             }),
             Effect.runSync
@@ -412,7 +412,7 @@ describe("all methods requiring a token fail if the token is invalid", () => {
     const deviceId = DeviceId("1")
     const token = makeToken()
     const allMethods: Array<(s: DevicesService) => Effect.Effect<unknown, unknown>> = [
-        (s) => s.add(token, new URL("http://localhost")),
+        (s) => s.add(token, DeviceAddress("localhost", 8080)),
         (s) => s.remove(token, deviceId),
         (s) => s.rename(token, deviceId, "Oven"),
         (s) => s.find(token, deviceId),
@@ -443,7 +443,7 @@ describe("'privileged' methods fail if the user is not an admin (UnauthorizedErr
     const deviceId = DeviceId("1")
     const token = makeToken(UserRole.User)
     const allMethods: Array<(s: DevicesService) => Effect.Effect<unknown, unknown>> = [
-        (s) => s.add(token, new URL("http://localhost")),
+        (s) => s.add(token, DeviceAddress("localhost", 8080)),
         (s) => s.remove(token, deviceId),
         (s) => s.rename(token, deviceId, "Oven"),
     ]

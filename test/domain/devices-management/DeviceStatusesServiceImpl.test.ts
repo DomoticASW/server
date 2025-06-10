@@ -1,7 +1,7 @@
 import { Effect } from "effect"
 import { DeviceCommunicationProtocol } from "../../../src/ports/devices-management/DeviceCommunicationProtocol.js"
 import { DeviceStatusChangesSubscriber } from "../../../src/ports/devices-management/DeviceStatusesService.js"
-import { Device, DeviceId, DeviceStatus } from "../../../src/domain/devices-management/Device.js"
+import { Device, DeviceAddress, DeviceId, DeviceStatus } from "../../../src/domain/devices-management/Device.js"
 import { DevicesService } from "../../../src/ports/devices-management/DevicesService.js"
 import { DeviceStatusesServiceImpl } from "../../../src/domain/devices-management/DeviceStatusesServiceImpl.js"
 
@@ -16,9 +16,9 @@ beforeEach(() => {
     devicesService = {
         getAllDevicesUnsafe() {
             return Effect.succeed([
-                Device(DeviceId("1"), "Lamp", new URL("http://192.168.0.1"), DeviceStatus.Online, [], [], []),
-                Device(DeviceId("2"), "Oven", new URL("http://192.168.0.2"), DeviceStatus.Online, [], [], []),
-                Device(DeviceId("3"), "Dishwasher", new URL("http://192.168.0.3"), DeviceStatus.Online, [], [], []),
+                Device(DeviceId("1"), "Lamp", DeviceAddress("192.168.0.1", 8080), DeviceStatus.Online, [], [], []),
+                Device(DeviceId("2"), "Oven", DeviceAddress("192.168.0.2", 8080), DeviceStatus.Online, [], [], []),
+                Device(DeviceId("3"), "Dishwasher", DeviceAddress("192.168.0.3", 8080), DeviceStatus.Online, [], [], []),
             ])
         }
     } as unknown as DevicesService
@@ -39,8 +39,8 @@ test("subscribeForDeviceStatusChanges lets subscriber receive updates approximat
     // DeviceCommunicationProtocol that inverts the status of a device every time checkDeviceStatus is called
     let turn = true
     protocol = {
-        checkDeviceStatus(url: URL) {
-            if (url.toString() === new URL("http://192.168.0.1").toString()) {
+        checkDeviceStatus(address: DeviceAddress) {
+            if (address.host === "192.168.0.1" && address.port === 8080) {
                 const status = turn ? DeviceStatus.Online : DeviceStatus.Offline
                 turn = !turn
                 return Effect.succeed(status)

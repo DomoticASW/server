@@ -4,30 +4,26 @@ import { UsersService } from "../../../ports/users-management/UserService.js";
 import { Effect } from "effect";
 import { StatusCodes } from "http-status-codes";
 import { deserializeToken, BadRequest, handleCommonErrors, sendResponse, Response } from "./HttpUtils.js";
-import { DeviceActionId, DeviceId, DevicePropertyId } from "../../../domain/devices-management/Device.js";
+import { DeviceActionId, DeviceAddress, DeviceId, DevicePropertyId } from "../../../domain/devices-management/Device.js";
+
+function isDeviceAddress(a: unknown): a is DeviceAddress {
+    return a != null && typeof a == "object" &&
+        "host" in a && typeof a.host == "string" &&
+        "port" in a && Number.isInteger(a.port)
+}
 
 export function registerDevicesServiceRoutes(app: express.Express, service: DevicesService, usersService: UsersService) {
 
     // create
     app.post('/api/devices', async (req, res) => {
-        const key = "deviceUrl"
+        const key = "deviceAddress"
         const response = await Effect.Do.pipe(
             Effect.bind("token", () => deserializeToken(req, usersService)),
-            Effect.bind("deviceUrlVal", () => {
-                if (req.body && key in req.body) { return Effect.succeed(req.body[key]) }
-                else { return Effect.fail(BadRequest(`Expected body format is: {${key}: ???}`)) }
+            Effect.bind("deviceAddress", () => {
+                if (req.body && key in req.body && isDeviceAddress(req.body[key])) { return Effect.succeed(req.body[key]) }
+                else { return Effect.fail(BadRequest(`Expected body format is: {${key}: {host: ..., port: ...}}`)) }
             }),
-            Effect.bind("deviceUrlString", ({ deviceUrlVal }) => {
-                if (typeof deviceUrlVal == "string") { return Effect.succeed(deviceUrlVal) }
-                else { return Effect.fail(BadRequest(`Expected ${key} of type string but found ${typeof deviceUrlVal}`)) }
-            }),
-            Effect.bind("url", ({ deviceUrlString }) =>
-                Effect.try({
-                    try: () => new URL(deviceUrlString),
-                    catch: () => BadRequest(`"${deviceUrlString}" is not a valid URL`)
-                })
-            ),
-            Effect.bind("deviceId", ({ token, url }) => service.add(token, url)),
+            Effect.bind("deviceId", ({ token, deviceAddress }) => service.add(token, deviceAddress)),
             Effect.map(({ deviceId }) => Response(StatusCodes.CREATED, { id: deviceId })),
             Effect.catch("__brand", {
                 failure: "DeviceAlreadyRegisteredError",

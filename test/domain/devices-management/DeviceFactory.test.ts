@@ -1,17 +1,17 @@
 import { Effect } from "effect";
 import { DeviceCommunicationProtocol } from "../../../src/ports/devices-management/DeviceCommunicationProtocol.js";
 import { DeviceFactoryImpl } from "../../../src/domain/devices-management/DeviceFactoryImpl.js";
-import { DeviceStatus, Device, DeviceId } from "../../../src/domain/devices-management/Device.js";
+import { DeviceStatus, Device, DeviceId, DeviceAddress } from "../../../src/domain/devices-management/Device.js";
 import { CommunicationError, DeviceActionError, DeviceUnreachableError } from "../../../src/ports/devices-management/Errors.js";
 import { DeviceFactory } from "../../../src/ports/devices-management/DeviceFactory.js";
 
-let address: URL
+let address: DeviceAddress
 let commProtocol: DeviceCommunicationProtocolSpy
 let exampleDevice: Device
 let factory: DeviceFactory
 
 beforeEach(() => {
-    address = new URL("deviceurl:8080")
+    address = DeviceAddress("deviceurl", 8080)
     exampleDevice = Device(DeviceId("1"), "device", address, DeviceStatus.Online, [], [], [])
     commProtocol = new DeviceCommunicationProtocolSpy(exampleDevice)
     factory = new DeviceFactoryImpl(commProtocol)
@@ -35,8 +35,8 @@ test("DeviceFactory maps DeviceUnreachableErrors from CommunicationProtocol into
 
 class DeviceCommunicationProtocolSpy implements DeviceCommunicationProtocol {
     callsToRegister: number = 0
-    constructor(private deviceToCreate: Device, public deviceAddress?: URL) { }
-    register(deviceAddress: URL): Effect.Effect<Device, DeviceUnreachableError> {
+    constructor(private deviceToCreate: Device, public deviceAddress?: DeviceAddress) { }
+    register(deviceAddress: DeviceAddress): Effect.Effect<Device, DeviceUnreachableError> {
         this.callsToRegister += 1
         this.deviceAddress = deviceAddress
         return Effect.succeed(this.deviceToCreate)

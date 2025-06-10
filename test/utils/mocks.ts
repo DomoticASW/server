@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { Effect, succeed, fail } from "effect/Effect";
-import { DeviceId, DeviceStatus, Device, DeviceProperty, DevicePropertyId, DeviceAction, DeviceActionId, DeviceEvent } from "../../src/domain/devices-management/Device.js";
+import { DeviceId, DeviceStatus, Device, DeviceProperty, DevicePropertyId, DeviceAction, DeviceActionId, DeviceEvent, DeviceAddress } from "../../src/domain/devices-management/Device.js";
 import { NoneInt } from "../../src/domain/devices-management/Types.js";
 import { ExecutionEnvironment, Instruction } from "../../src/domain/scripts-management/Instruction.js";
 import { TaskId, AutomationId, Automation, ScriptId, Task } from "../../src/domain/scripts-management/Script.js";
@@ -174,7 +174,7 @@ export function DeviceMock(eventName: string = ""): Device {
   return {
     id: DeviceId("id"),
     name: "name",
-    address: URL.prototype,
+    address: DeviceAddress.prototype,
     status: DeviceStatus.Online,
     properties: [
       DevicePropertyMock()
@@ -221,7 +221,7 @@ export function DevicesServiceSpy(device: Device = DeviceMock(), testingAction: 
     call: () => call,
     get: () => {
       return {
-        add: function (token: Token, deviceUrl: URL): Effect<DeviceId, DeviceAlreadyRegisteredError | DeviceUnreachableError | TokenError> {
+        add: function (token: Token, deviceAddress: DeviceAddress): Effect<DeviceId, DeviceAlreadyRegisteredError | DeviceUnreachableError | TokenError> {
           throw new Error("Function not implemented.");
         },
         remove: function (token: Token, deviceId: DeviceId): Effect<void, DeviceNotFoundError | TokenError> {
