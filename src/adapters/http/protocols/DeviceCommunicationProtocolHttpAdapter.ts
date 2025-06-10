@@ -7,7 +7,7 @@ import { millis } from "effect/Duration";
 import { TimeoutException } from "effect/Cause";
 import { DoubleRange, Enum, IntRange, NoneBoolean, NoneColor, NoneDouble, NoneInt, NoneString, NoneVoid, TypeConstraints } from "../../../domain/devices-management/Types.js";
 
-export class DeviceCommunicationProtocolImpl implements DeviceCommunicationProtocol {
+export class DeviceCommunicationProtocolHttpAdapter implements DeviceCommunicationProtocol {
 
   checkDeviceStatus(deviceAddress: DeviceAddress): Effect<DeviceStatus, CommunicationError> {
     const { host, port } = deviceAddress

@@ -18,7 +18,7 @@ import { DeviceOfflineNotificationSubscriptionRepositoryMongoAdapter } from "./a
 import { NotificationsService } from "./domain/notifications-management/NotificationsServiceImpl.js";
 import { DeviceCommunicationProtocol } from "./ports/devices-management/DeviceCommunicationProtocol.js";
 import { DeviceFactoryImpl } from "./domain/devices-management/DeviceFactoryImpl.js";
-import { DeviceCommunicationProtocolImpl } from "./adapters/http/protocols/DeviceCommunicationProtocol.js";
+import { DeviceCommunicationProtocolHttpAdapter } from "./adapters/http/protocols/DeviceCommunicationProtocolHttpAdapter.js";
 
 const mongoDBConnection = mongoose.createConnection("mongodb://localhost:27017/DomoticASW")
 // TODO: replace with production impl
@@ -32,7 +32,7 @@ const permissionsService: PermissionsService = {
     canExecuteActionOnDevice: () => Effect.succeed(undefined)
 } as unknown as PermissionsService
 // TODO: replace with production impl
-const deviceCommunicationProtocol: DeviceCommunicationProtocol = new DeviceCommunicationProtocolImpl()
+const deviceCommunicationProtocol: DeviceCommunicationProtocol = new DeviceCommunicationProtocolHttpAdapter()
 
 const deviceStatusesService: DeviceStatusesService = {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
