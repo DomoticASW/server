@@ -1,4 +1,4 @@
-import { Effect, succeed, fail, tryPromise, flatMap, catchAll, timeout, bind, catchIf, Do, all, tap } from "effect/Effect";
+import { Effect, succeed, fail, tryPromise, flatMap, timeout, bind, catchIf, Do, all } from "effect/Effect";
 import { DeviceCommunicationProtocol } from "../../../ports/devices-management/DeviceCommunicationProtocol.js";
 import { CommunicationError, DeviceUnreachableError, DeviceActionError } from "../../../ports/devices-management/Errors.js";
 import { Device, DeviceAction, DeviceActionId, DeviceAddress, DeviceEvent, DeviceId, DeviceProperty, DevicePropertyId, DeviceStatus } from "../../../domain/devices-management/Device.js";
@@ -7,89 +7,46 @@ import { millis } from "effect/Duration";
 import { TimeoutException } from "effect/Cause";
 import { DoubleRange, Enum, IntRange, NoneBoolean, NoneColor, NoneDouble, NoneInt, NoneString, NoneVoid, TypeConstraints } from "../../../domain/devices-management/Types.js";
 
-class TimeoutError {
-    constructor() {
-    }
-}
-
 export class DeviceCommunicationProtocolImpl implements DeviceCommunicationProtocol {
 
   checkDeviceStatus(deviceAddress: DeviceAddress): Effect<DeviceStatus, CommunicationError> {
-    const promise = async () => {
-      const response = await fetch(deviceAddress.toString() + `/check-status`, {
-        method: "GET",
-      });
-      return response;
-    };
-
+    const { host, port } = deviceAddress
     return pipe(
       tryPromise({
-        try: promise,
-        catch: (e) => {
-          if (e instanceof Error && e.name === "TimeoutError") {
-            return new TimeoutError();
-          }
-          return CommunicationError();
-        }
+        try: () => fetch(`http://${host}:${port}/check-status`, { method: "GET", }),
+        catch: (e) => CommunicationError((e as Error).message)
       }),
       timeout(millis(5000)),
       flatMap(response => {
         if (response.ok) {
           return succeed(DeviceStatus.Online);
         } else {
-          return fail(CommunicationError());
+          return fail(CommunicationError("While checking if device is online it responded but with an error"));
         }
       }),
-      catchAll((e): Effect<DeviceStatus, CommunicationError> => {
-        if (e instanceof TimeoutError) {
-          return succeed(DeviceStatus.Offline);
-        } else {
-          return fail(CommunicationError(e.message));
-        }
-      })
+      catchIf(e => e instanceof TimeoutException, () => succeed(DeviceStatus.Offline))
     );
   }
 
   executeDeviceAction(deviceAddress: DeviceAddress, deviceActionId: DeviceActionId, input: unknown): Effect<void, DeviceUnreachableError | CommunicationError | DeviceActionError> {
-    const promise = async () => {
-      const completeUrl = new URL(deviceAddress.toString() + `/execute/${deviceActionId.toString()}`);
-      const response = await fetch(completeUrl.toString(), {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ input: input })
-      });
-      return response;
-    }
-
-    return pipe(
-      tryPromise({
-        try: promise,
-        catch: (e) => {
-          if (e instanceof Error && e.name === "TimeoutError") {
-            return DeviceUnreachableError();
-          }
-          return CommunicationError();
-        }
-      }),
+    const { host, port } = deviceAddress
+    return Do.pipe(
+      bind("response", () => tryPromise({
+        try: () => fetch(`http://${host}:${port}/execute/${deviceActionId}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ input: input })
+        }),
+        catch: (e) => CommunicationError((e as Error).message)
+      })),
       timeout(millis(5000)),
-      flatMap(response => {
+      catchIf(e => e instanceof TimeoutException, () => fail(DeviceUnreachableError())),
+      flatMap(({ response }) => {
         if (response.ok) {
           return succeed(undefined);
         }
-        return fail(CommunicationError());
-      }),
-       catchAll((e): Effect<void, DeviceActionError | DeviceUnreachableError | CommunicationError> => {
-        if (e instanceof DeviceUnreachableError) {
-          return fail(DeviceUnreachableError());
-        }
-        switch (e instanceof CommunicationError) {
-          case (e.cause === "404"): 
-            return fail(DeviceActionError());
-          default:
-            return fail(CommunicationError());
-        }
+        // TODO: maybe parse a DeviceActionError
+        return fail(CommunicationError()); // TODO set message from device
       })
     );
   }
