@@ -43,7 +43,7 @@ beforeEach(() => {
     repo = new InMemoryRepositoryMock((d) => d.id, (id) => id)
     deviceFactory = {
         create(deviceAddress: DeviceAddress): Effect.Effect<Device, DeviceUnreachableError> {
-            const properties = [DeviceProperty(DevicePropertyId("prop"), "prop", 0, NoneInt())]
+            const properties = [DeviceProperty(DevicePropertyId("prop"), "prop", 0, NoneInt()), DeviceProperty(DevicePropertyId("prop2"), "prop2", 10, NoneInt())]
             const actions: DeviceAction<unknown>[] = []
             const events: DeviceEvent[] = []
             return Effect.succeed(Device(DeviceId(deviceAddress.toString()), "device", deviceAddress, DeviceStatus.Online, properties, actions, events))
@@ -210,7 +210,68 @@ test("updateDeviceProperty returns an error in case device property is not found
     )).toThrow("DevicePropertyNotFound")
 })
 
-test("subscribeForDevicePropertyUpdates lets subscriber receive updates", () => {
+test("updateDeviceProperties updates the value of multiple device properties", () => {
+    pipe(
+        Effect.gen(function* () {
+            const id = yield* service.add(makeToken(), DeviceAddress("localhost", 8080))
+            const device = yield* service.find(makeToken(), id)
+            const property0 = device.properties[0]
+            const property1 = device.properties[1]
+            const oldValue0 = property0.value
+            const oldValue1 = property1.value
+            const newValue0 = 12098
+            const newValue1 = 47382
+            expect(oldValue0).not.toEqual(newValue0)
+            expect(oldValue1).not.toEqual(newValue1)
+            const changes = new Map<DevicePropertyId, unknown>([
+                [property0.id, newValue0],
+                [property1.id, newValue1]
+            ])
+            yield* service.updateDeviceProperties(id, changes)
+            const newDevice = yield* service.find(makeToken(), id)
+            const newProperty0 = newDevice.properties[0]
+            const newProperty1 = newDevice.properties[1]
+            expect(newProperty0.value).toEqual(newValue0)
+            expect(newProperty1.value).toEqual(newValue1)
+        }),
+        Effect.runSync
+    )
+})
+
+test("updateDeviceProperties returns an error in case device is not found", () => {
+    const deviceId = DeviceId(DeviceAddress("localhost", 8080).toString())
+    expect(() => pipe(
+        service.updateDeviceProperties(deviceId, new Map()),
+        Effect.runSync
+    )).toThrow("DeviceNotFoundError")
+})
+
+test("updateDeviceProperties returns an error in case any device property is not found, without updating any", () => {
+    const deviceId = service.add(makeToken(), DeviceAddress("localhost", 8080)).pipe(Effect.runSync)
+    let oldValue: unknown
+    const newValue = 238219
+    expect(() => pipe(
+        Effect.gen(function* () {
+            const device = yield* service.find(makeToken(), deviceId)
+            const property = device.properties[0]
+            oldValue = property.value
+            expect(oldValue).not.toEqual(newValue)
+            const changes = new Map<DevicePropertyId, unknown>([
+                [property.id, newValue],
+                [DevicePropertyId("not exists"), 1000]
+            ])
+            yield* service.updateDeviceProperties(deviceId, changes)
+        }),
+        Effect.runSync
+    )).toThrow("DevicePropertyNotFound")
+    pipe(
+        service.find(makeToken(), deviceId),
+        Effect.map((device) => expect(device.properties[0].value).toEqual(oldValue)),
+        Effect.runSync
+    )
+})
+
+test("subscribeForDevicePropertyUpdates lets subscriber receive updates when a property is updated", () => {
     let updatedDeviceId: DeviceId
     let updatedDevicePropertyId: DevicePropertyId
     let updatedPropertyValue: unknown
@@ -232,6 +293,46 @@ test("subscribeForDevicePropertyUpdates lets subscriber receive updates", () => 
             expect(updatedDeviceId).toEqual(id)
             expect(updatedDevicePropertyId).toEqual(property.id)
             expect(updatedPropertyValue).toEqual(newValue)
+        }),
+        Effect.runSync
+    )
+})
+
+test("subscribeForDevicePropertyUpdates lets subscriber receive updates when multiple properties are updated", () => {
+    let updatedDeviceId: DeviceId
+    let updatedDevicePropertyId0: DevicePropertyId
+    let updatedPropertyValue0: unknown
+    let updatedPropertyValue1: unknown
+    const subscriber: DevicePropertyUpdatesSubscriber = {
+        devicePropertyChanged: function (deviceId: DeviceId, propertyId: DevicePropertyId, value: unknown): void {
+            updatedDeviceId = deviceId
+            if (propertyId == updatedDevicePropertyId0) {
+                updatedPropertyValue0 = value
+            } else {
+                updatedPropertyValue1 = value
+            }
+        }
+    }
+    pipe(
+        Effect.gen(function* () {
+            const id = yield* service.add(makeToken(), DeviceAddress("localhost", 8080))
+            const device = yield* service.find(makeToken(), id)
+            const property0 = device.properties[0]
+            updatedDevicePropertyId0 = property0.id
+            const property1 = device.properties[1]
+            const newValue0 = 10
+            const newValue1 = 20
+            expect(property0.value).not.toBe(newValue0)
+            expect(property1.value).not.toBe(newValue1)
+            const changes = new Map<DevicePropertyId, unknown>([
+                [property0.id, newValue0],
+                [property1.id, newValue1]
+            ])
+            service.subscribeForDevicePropertyUpdates(subscriber)
+            yield* service.updateDeviceProperties(id, changes)
+            expect(updatedDeviceId).toEqual(id)
+            expect(updatedPropertyValue0).toEqual(newValue0)
+            expect(updatedPropertyValue1).toEqual(newValue1)
         }),
         Effect.runSync
     )

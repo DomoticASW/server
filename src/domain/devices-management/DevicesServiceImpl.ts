@@ -162,6 +162,42 @@ export class DevicesServiceImpl implements DevicesService {
             Effect.asVoid
         )
     }
+    updateDeviceProperties(deviceId: DeviceId, properties: Map<DevicePropertyId, unknown>): Effect.Effect<void, DeviceNotFoundError | DevicePropertyNotFound> {
+        return Effect.Do.pipe(
+            Effect.bind("device", () => this.repo.find(deviceId)),
+            Effect.bind("_", ({ device }) => {
+                // Checking that all properties exist
+                const notFoundProperties = Array.from(properties.keys()).flatMap(id => device.properties.find(p => p.id === id) ? [] : [id])
+                if (notFoundProperties.length > 0) { return Effect.fail(DevicePropertyNotFound(notFoundProperties.join(", "))) }
+                else { return Effect.void }
+            }),
+            Effect.let("oldProperties", ({ device }) => {
+                return device.properties.map(p => [p.id, p.value] as [DevicePropertyId, unknown])
+            }),
+            Effect.bind("__", ({ device }) => {
+                properties.forEach((value, id) =>
+                    device.properties.find(p => p.id === id)!.value = value
+                )
+                return this.repo.update(device)
+            }),
+            Effect.mapError((e) => {
+                switch (e.__brand) {
+                    case "NotFoundError":
+                        return DeviceNotFoundError(e.cause)
+                    default:
+                        return e
+                }
+            }),
+            Effect.map(({ oldProperties }) => {
+                const updatedProperties = Array.from(properties).filter(pair => oldProperties.find(p => p[0] === pair[0])![1] != pair[1])
+                this.propertyUpdatesSubscribers.forEach(s => {
+                    updatedProperties.forEach(pair => {
+                        s.devicePropertyChanged(deviceId, pair[0], pair[1])
+                    })
+                })
+            })
+        )
+    }
     subscribeForDevicePropertyUpdates(subscriber: DevicePropertyUpdatesSubscriber): void {
         this.propertyUpdatesSubscribers.push(subscriber)
     }
