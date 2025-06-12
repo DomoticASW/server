@@ -12,6 +12,7 @@ import { PermissionsServiceImpl } from "../../../src/domain/permissions-manageme
 import { PermissionsService } from "../../../src/ports/permissions-management/PermissionsService.js"
 import { ScriptId, TaskId } from "../../../src/domain/scripts-management/Script.js"
 import { UserDevicePermission } from "../../../src/domain/permissions-management/UserDevicePermission.js"
+import { UserNotFoundError } from "../../../src/ports/users-management/Errors.js"
 
 
 let service: PermissionsService
@@ -19,7 +20,6 @@ let devicesService: DevicesService
 let userDevicePermissionRepo: InMemoryRepositoryMock<[Email, DeviceId], UserDevicePermission>
 let taskListsRepo: InMemoryRepositoryMock<TaskId, TaskLists>
 let editListRepo: InMemoryRepositoryMock<ScriptId, EditList>
-let userRepo: InMemoryRepositoryMock<Email, User>
 
 function makeToken(role: Role = Role.Admin): Token {
     return {
@@ -52,10 +52,6 @@ beforeEach(async () => {
         (p) => [p.email, p.deviceId],
         (id) => id[0].toString() + id[1].toString(),
     );
-    userRepo = new InMemoryRepositoryMock(
-        (u) => u.email,
-        (id) => id.toString()
-    )
     devicesService = {
         add: () => Effect.succeed(DeviceId("1")),
         getAllDevices: () => Effect.succeed([]),
@@ -69,11 +65,17 @@ beforeEach(async () => {
     const alwaysValidTokenUsersService = {
         verifyToken() {
             return Effect.succeed(null)
+        },
+        getUserDataUnsafe(email: Email) {
+            if ( email === Email("test@test.com")) {
+                return Effect.succeed(User(Nickname("Test"), Email("test@test.com"), PasswordHash("1234"), Role.Admin))
+            } else {
+                return Effect.fail(UserNotFoundError())
+            }
         }
     } as unknown as UsersService
-    service = new PermissionsServiceImpl(userDevicePermissionRepo, taskListsRepo, editListRepo, userRepo, alwaysValidTokenUsersService, devicesService)
+    service = new PermissionsServiceImpl(userDevicePermissionRepo, taskListsRepo, editListRepo, alwaysValidTokenUsersService, devicesService)
     // Setting data for tests
-    Effect.runSync(userRepo.add(User(Nickname("Test"), Email("test@test.com"), PasswordHash("1234"), Role.Admin)))
     Effect.runSync(taskListsRepo.add(TaskLists(TaskId("1"), [], [])))
     Effect.runSync(taskListsRepo.add(TaskLists(TaskId("3"), [Email("test@test.com")], [])))
     Effect.runSync(editListRepo.add(EditList(TaskId("1"), [Email("test@test.com")])))

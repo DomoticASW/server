@@ -11,7 +11,6 @@ import { DevicesService } from "../../ports/devices-management/DevicesService.js
 import { InvalidTokenError, TokenError, UnauthorizedError, UserNotFoundError } from "../../ports/users-management/Errors.js";
 import { TaskListsRepository } from "../../ports/permissions-management/TaskListsRepository.js";
 import { EditListRepository } from "../../ports/permissions-management/EditListRepository.js";
-import { UserRepository } from "../../ports/users-management/UserRepository.js";
 import { UserDevicePermission } from "./UserDevicePermission.js";
 import { ScriptId, TaskId } from "../scripts-management/Script.js";
 import { ScriptNotFoundError } from "../../ports/scripts-management/Errors.js";
@@ -21,16 +20,14 @@ export class PermissionsServiceImpl implements PermissionsService {
   private userDevicePermissionRepo: UserDevicePermissionRepository;
   private taskListsRepo: TaskListsRepository;
   private editListRepo: EditListRepository;
-  private userRepo: UserRepository;
   private usersService: UsersService
   private deviceService: DevicesService;
 
-  constructor(userDevicePermissionRepo: UserDevicePermissionRepository, taskListsRepo: TaskListsRepository, editListRepo: EditListRepository, userRepo: UserRepository, usersService: UsersService, devicesService: DevicesService) {
+  constructor(userDevicePermissionRepo: UserDevicePermissionRepository, taskListsRepo: TaskListsRepository, editListRepo: EditListRepository, usersService: UsersService, devicesService: DevicesService) {
     this.userDevicePermissionRepo = userDevicePermissionRepo;
     this.taskListsRepo = taskListsRepo;
     this.editListRepo = editListRepo;
     this.usersService = usersService;
-    this.userRepo = userRepo;
     this.deviceService = devicesService;
   }
 
@@ -41,15 +38,7 @@ export class PermissionsServiceImpl implements PermissionsService {
         onTrue: () => this.usersService.verifyToken(token),
         onFalse: () => Effect.fail(UnauthorizedError())
       }),
-      Effect.flatMap(() => this.userRepo.find(email)),
-      Effect.mapError(e => {
-        switch (e.__brand) {
-          case "NotFoundError":
-            return UserNotFoundError(e.cause)
-          default:
-            return e
-        }
-      }),
+      Effect.flatMap(() => this.usersService.getUserDataUnsafe(email)),
       Effect.flatMap(() => this.deviceService.find(token, deviceId)),
       Effect.flatMap(() => this.userDevicePermissionRepo.add(UserDevicePermission(email, deviceId))),
       Effect.catch("__brand", {
@@ -64,15 +53,7 @@ export class PermissionsServiceImpl implements PermissionsService {
         onTrue: () => this.usersService.verifyToken(token),
         onFalse: () => Effect.fail(UnauthorizedError())
       }),
-      Effect.flatMap(() => this.userRepo.find(email)),
-      Effect.mapError(e => {
-        switch (e.__brand) {
-          case "NotFoundError":
-            return UserNotFoundError(e.cause)
-          default:
-            return e
-        }
-      }),
+      Effect.flatMap(() => this.usersService.getUserDataUnsafe(email)),
       Effect.flatMap(() => this.deviceService.find(token, deviceId)),
       Effect.flatMap(() => this.userDevicePermissionRepo.remove([email, deviceId])),
       Effect.catch("__brand", {
@@ -143,11 +124,7 @@ export class PermissionsServiceImpl implements PermissionsService {
         onTrue: () => this.usersService.verifyToken(token),
         onFalse: () => Effect.fail(UnauthorizedError())
       }),
-      Effect.flatMap(() => this.userRepo.find(email)),
-      Effect.catch("__brand", {
-        failure: "NotFoundError",
-        onFailure: () => Effect.fail(UserNotFoundError())
-      }),
+      Effect.flatMap(() => this.usersService.getUserDataUnsafe(email)),
       Effect.flatMap(() => this.editListRepo.find(scriptId)),
       Effect.catch("__brand", {
         failure: "NotFoundError",
@@ -169,11 +146,7 @@ export class PermissionsServiceImpl implements PermissionsService {
         onTrue: () => this.usersService.verifyToken(token),
         onFalse: () => Effect.fail(UnauthorizedError())
       }),
-      Effect.flatMap(() => this.userRepo.find(email)),
-      Effect.catch("__brand", {
-        failure: "NotFoundError",
-        onFailure: () => Effect.fail(UserNotFoundError())
-      }),
+      Effect.flatMap(() => this.usersService.getUserDataUnsafe(email)),
       Effect.flatMap(() => this.editListRepo.find(scriptId)),
       Effect.catch("__brand", {
         failure: "NotFoundError",
@@ -196,11 +169,7 @@ export class PermissionsServiceImpl implements PermissionsService {
         onTrue: () => this.usersService.verifyToken(token),
         onFalse: () => Effect.fail(UnauthorizedError())
       }),
-      Effect.flatMap(() => this.userRepo.find(email)),
-      Effect.catch("__brand", {
-        failure: "NotFoundError",
-        onFailure: () => Effect.fail(UserNotFoundError())
-      }),
+      Effect.flatMap(() => this.usersService.getUserDataUnsafe(email)),
       Effect.flatMap(() => this.taskListsRepo.find(taskId)),
       Effect.catch("__brand", {
         failure: "NotFoundError",
@@ -227,11 +196,7 @@ export class PermissionsServiceImpl implements PermissionsService {
         onTrue: () => this.usersService.verifyToken(token),
         onFalse: () => Effect.fail(UnauthorizedError())
       }),
-      Effect.flatMap(() => this.userRepo.find(email)),
-      Effect.catch("__brand", {
-        failure: "NotFoundError",
-        onFailure: () => Effect.fail(UserNotFoundError())
-      }),
+      Effect.flatMap(() => this.usersService.getUserDataUnsafe(email)),
       Effect.flatMap(() => this.taskListsRepo.find(taskId)),
       Effect.catch("__brand", {
         failure: "NotFoundError",
@@ -253,11 +218,7 @@ export class PermissionsServiceImpl implements PermissionsService {
         onTrue: () => this.usersService.verifyToken(token),
         onFalse: () => Effect.fail(UnauthorizedError())
       }),
-      Effect.flatMap(() => this.userRepo.find(email)),
-      Effect.catch("__brand", {
-        failure: "NotFoundError",
-        onFailure: () => Effect.fail(UserNotFoundError())
-      }),
+      Effect.flatMap(() => this.usersService.getUserDataUnsafe(email)),
       Effect.flatMap(() => this.taskListsRepo.find(taskId)),
       Effect.catch("__brand", {
         failure: "NotFoundError",
@@ -284,11 +245,7 @@ export class PermissionsServiceImpl implements PermissionsService {
         onTrue: () => this.usersService.verifyToken(token),
         onFalse: () => Effect.fail(UnauthorizedError())
       }),
-      Effect.flatMap(() => this.userRepo.find(email)),
-      Effect.catch("__brand", {
-        failure: "NotFoundError",
-        onFailure: () => Effect.fail(UserNotFoundError())
-      }),
+      Effect.flatMap(() => this.usersService.getUserDataUnsafe(email)),
       Effect.flatMap(() => this.taskListsRepo.find(taskId)),
       Effect.catch("__brand", {
         failure: "NotFoundError",
