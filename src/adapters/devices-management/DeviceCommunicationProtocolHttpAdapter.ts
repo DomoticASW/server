@@ -51,6 +51,83 @@ export class DeviceCommunicationProtocolHttpAdapter implements DeviceCommunicati
     );
   }
 
+  /**
+   * 
+   * **An example of expected device response**:
+   * ```json
+   * {
+   *  "id": "128012392139102821",
+   *  "name": "Roomba",
+   *  "properties": [
+   *    {
+   *      "id": "battery",
+   *      "name": "Battery",
+   *      "value": 50,
+   *      "typeConstraints": {
+   *        "constraint": "IntRange",
+   *        "min": 0,
+   *        "max": 100
+   *      }
+   *    },
+   *    {
+   *      "id": "state",
+   *      "name": "State",
+   *      "value": "Cleaning",
+   *      "typeConstraints": {
+   *        "constraint": "Enum",
+   *        "values": ["Charging", "Cleaning", "Going charging"]
+   *      }
+   *    },
+   *    {
+   *      "id": "mode",
+   *      "name": "Mode",
+   *      "value": "Silent",
+   *      "setterActionId": "setMode"
+   *    },
+   *    {
+   *      "id": "currentRoom",
+   *      "name": "Current room",
+   *      "value": "Bathroom",
+   *      "typeConstraints": {
+   *        "type": "String",
+   *        "constraint": "None"
+   *      }
+   *    },
+   *  ],
+   *  "actions": [
+   *    {
+   *      "id": "start",
+   *      "name": "Start",
+   *      "description": "The roomba will start cleaning",
+   *      "inputTypeConstraints": {
+   *        "type": "Void",
+   *        "constraint": "None"
+   *      }
+   *    },
+   *    {
+   *      "id": "stop",
+   *      "name": "Stop",
+   *      "description": "The roomba will stop cleaning and return to its charging station",
+   *      "inputTypeConstraints": {
+   *        "type": "Void",
+   *        "constraint": "None"
+   *      }
+   *    },
+   *    {
+   *      "id": "setMode",
+   *      "name": "Set mode",
+   *      "description": null,
+   *      "inputTypeConstraints": {
+   *        "constraint": "Enum",
+   *        "values": ["Silent", "DeepCleaning", "Performance"]
+   *      }
+   *    }
+   *  ]
+   *  "events": ["started", "stopped", "low-battery"]
+   * }
+   * ```
+   * @inheritdoc
+   */
   register(deviceAddress: DeviceAddress): Effect<Device, DeviceUnreachableError | CommunicationError> {
     const { host, port } = deviceAddress
     return Do.pipe(
