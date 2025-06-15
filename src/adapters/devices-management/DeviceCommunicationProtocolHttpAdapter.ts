@@ -9,6 +9,11 @@ import { DoubleRange, Enum, IntRange, NoneBoolean, NoneColor, NoneDouble, NoneIn
 
 export class DeviceCommunicationProtocolHttpAdapter implements DeviceCommunicationProtocol {
 
+  /**
+   * @param serverPort The port on which devices are able to reach the server.
+   */
+  constructor(readonly serverPort: number) { }
+
   checkDeviceStatus(deviceAddress: DeviceAddress): Effect<DeviceStatus, CommunicationError> {
     const { host, port } = deviceAddress
     return pipe(
@@ -132,7 +137,11 @@ export class DeviceCommunicationProtocolHttpAdapter implements DeviceCommunicati
     const { host, port } = deviceAddress
     return Do.pipe(
       bind("response", () => tryPromise({
-        try: () => fetch(`http://${host}:${port}/register`, { method: "POST" }),
+        try: () => fetch(`http://${host}:${port}/register`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ serverPort: this.serverPort })
+        }),
         catch: (e) => CommunicationError((e as Error).message)
       })),
       timeout(millis(5000)),
