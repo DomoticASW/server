@@ -132,6 +132,35 @@ export function registerDevicesServiceRoutes(app: express.Express, service: Devi
         sendResponse(res, response)
     });
 
+    // update properties
+    app.patch('/api/devices/:id/properties', async (req, res) => {
+        const response = await Effect.Do.pipe(
+            Effect.bind("updates", () => {
+                if (isUpdateDevicePropertiesBody(req.body)) {
+                    return Effect.succeed(req.body)
+                } else {
+                    return Effect.fail(BadRequest(`Expected body format is: [{propertyId: ..., value: ...}, ...]`))
+                }
+            }),
+            Effect.bind("_", ({ updates }) => {
+                const updatesMap = new Map(updates.map(item => [DevicePropertyId(item.propertyId), item.value]))
+                return service.updateDeviceProperties(DeviceId(req.params.id), updatesMap)
+            }),
+            Effect.map(() => Response(StatusCodes.OK)),
+            Effect.catch("__brand", {
+                failure: "DeviceNotFoundError",
+                onFailure: (err) => Effect.succeed(Response(StatusCodes.NOT_FOUND, err))
+            }),
+            Effect.catch("__brand", {
+                failure: "DevicePropertyNotFound",
+                onFailure: (err) => Effect.succeed(Response(StatusCodes.NOT_FOUND, err))
+            }),
+            handleCommonErrors,
+            Effect.runPromise
+        )
+        sendResponse(res, response)
+    });
+
     // execute action
     app.post('/api/devices/:id/actions/:actionId/execute', async (req, res) => {
         const key = "input"
@@ -164,4 +193,22 @@ export function registerDevicesServiceRoutes(app: express.Express, service: Devi
         )
         sendResponse(res, response)
     });
+}
+
+// Below are utils to serialize and deserialize stuff
+
+type UpdateDevicePropertiesBody = Array<UpdateDevicePropertyItem>
+interface UpdateDevicePropertyItem {
+    propertyId: string
+    value: unknown
+}
+function isUpdateDevicePropertiesBody(o: unknown): o is UpdateDevicePropertiesBody {
+    return o != undefined && Array.isArray(o) &&
+        (o.length == 0 || o.map(e => isUpdateDevicePropertyItem(e)).reduce((a, b) => a && b))
+
+}
+function isUpdateDevicePropertyItem(o: unknown): o is UpdateDevicePropertyItem {
+    return o != undefined && typeof o == "object" &&
+        "propertyId" in o && typeof o.propertyId == "string" &&
+        "value" in o
 }
