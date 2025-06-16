@@ -19,7 +19,7 @@
     "lint": "eslint",
     "pretest": "docker compose -f docker-compose.yaml -f docker-compose.testing.yaml up --force-recreate -d --wait",
     "test": "jest",
-    "posttest": "docker compose -f docker-compose.yaml -f docker-compose.testing.yaml down",
+    "posttest": "docker compose -f docker-compose.yaml -f docker-compose.testing.yaml down -v",
     "tdd": "npm run test -- --coverage false"
   },
   "author": "Alessandro Venturini, Corrado Stortini, Marco Raggini, Francesco Carlucci",
