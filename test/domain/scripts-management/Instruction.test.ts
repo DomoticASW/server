@@ -1,13 +1,13 @@
 import { Effect, pipe } from "effect"
 import { DeviceActionId, DeviceId, DevicePropertyId } from "../../../src/domain/devices-management/Device.js"
 import { Condition, ConstantValue, ExecutionEnvironment, ExecutionEnvironmentCopy } from "../../../src/domain/scripts-management/Instruction.js"
-import { CreateConstantInstruction, CreateDevicePropertyConstantInstruction, DeviceActionInstruction, ElseInstruction, IfInstruction, SendNotificationInstruction, StartTaskInstruction, WaitInstruction } from "../../../src/domain/scripts-management/InstructionImpl.js"
+import { CreateConstantInstruction, CreateDevicePropertyConstantInstruction, DeviceActionInstruction, IfElseInstruction, IfInstruction, SendNotificationInstruction, StartTaskInstruction, WaitInstruction } from "../../../src/domain/scripts-management/InstructionImpl.js"
 import { NumberGOperator, NumberLEOperator } from "../../../src/domain/scripts-management/Operators.js"
 import { TaskId } from "../../../src/domain/scripts-management/Script.js"
 import { Email } from "../../../src/domain/users-management/User.js"
 import { Type } from "../../../src/ports/devices-management/Types.js"
 import { DevicesServiceSpy, NotificationsServiceSpy, ScriptsServiceSpy, DeviceMock, SpyTaskMock, UserNotFoundErrorMock, TokenMock, PermissionsServiceSpy } from "../../utils/mocks.js"
-import { InvalidConstantType, ScriptError, ScriptNotFoundError } from "../../../src/ports/scripts-management/Errors.js"
+import { InvalidConstantTypeError, ScriptError, ScriptNotFoundError } from "../../../src/ports/scripts-management/Errors.js"
 import { DeviceNotFoundError, DevicePropertyNotFound } from "../../../src/ports/devices-management/Errors.js"
 import { Color } from "../../../src/domain/devices-management/Types.js"
 import { PermissionError } from "../../../src/ports/permissions-management/Errors.js"
@@ -125,7 +125,7 @@ test("A create constant instruction execution should return a ScriptError if the
       onSuccess() { throw Error("Should not be here") },
       onFailure(err) {
         expect(err.__brand).toBe("ScriptError")
-        expect(err.cause).toBe(InvalidConstantType().message + ": " + Type.StringType)
+        expect(err.cause).toBe(InvalidConstantTypeError().message + ": " + Type.StringType)
       }
     }),
     Effect.runPromise
@@ -137,7 +137,7 @@ test("A create constant instruction execution should return a ScriptError if the
       onSuccess() { throw Error("Should not be here") },
       onFailure(err) {
         expect(err.__brand).toBe("ScriptError")
-        expect(err.cause).toBe(InvalidConstantType().message + ": " + Type.IntType)
+        expect(err.cause).toBe(InvalidConstantTypeError().message + ": " + Type.IntType)
       }
     }),
     Effect.runPromise
@@ -149,7 +149,7 @@ test("A create constant instruction execution should return a ScriptError if the
       onSuccess() { throw Error("Should not be here") },
       onFailure(err) {
         expect(err.__brand).toBe("ScriptError")
-        expect(err.cause).toBe(InvalidConstantType().message + ": " + Type.ColorType)
+        expect(err.cause).toBe(InvalidConstantTypeError().message + ": " + Type.ColorType)
       }
     }),
     Effect.runPromise
@@ -161,7 +161,7 @@ test("A create constant instruction execution should return a ScriptError if the
       onSuccess() { throw Error("Should not be here") },
       onFailure(err) {
         expect(err.__brand).toBe("ScriptError")
-        expect(err.cause).toBe(InvalidConstantType().message + ": " + Type.DoubleType)
+        expect(err.cause).toBe(InvalidConstantTypeError().message + ": " + Type.DoubleType)
       }
     }),
     Effect.runPromise
@@ -173,7 +173,7 @@ test("A create constant instruction execution should return a ScriptError if the
       onSuccess() { throw Error("Should not be here") },
       onFailure(err) {
         expect(err.__brand).toBe("ScriptError")
-        expect(err.cause).toBe(InvalidConstantType().message + ": " + Type.VoidType)
+        expect(err.cause).toBe(InvalidConstantTypeError().message + ": " + Type.VoidType)
       }
     }),
     Effect.runPromise
@@ -287,8 +287,8 @@ test("An else instruction can be created", async () => {
   const setupEnv = ExecutionEnvironment(notificationServiceMock, scriptsServiceMock, permissionsServiceMock, devicesServiceMock, TokenMock("email"))
   const env = await Effect.runPromise(right.execute(await Effect.runPromise(left.execute(setupEnv))))
   
-  const elseIfInstruction = ElseInstruction(thenInstructions, elseInstructions, condition)
-  const falseElseIfInstruction = ElseInstruction(thenInstructions, elseInstructions, negatedCondition)
+  const elseIfInstruction = IfElseInstruction(thenInstructions, elseInstructions, condition)
+  const falseElseIfInstruction = IfElseInstruction(thenInstructions, elseInstructions, negatedCondition)
 
   //ACT
   const stringInstruction1 = (await Effect.runPromise(elseIfInstruction.execute(env))).constants.get(thenInstruction)
@@ -308,7 +308,7 @@ test("A wait instruction should stop the task for a given period of time", async
   const instruction = WaitInstruction(1)
   const start = Date.now()
   await Effect.runPromise(instruction.execute(ExecutionEnvironment(notificationServiceMock, scriptsServiceMock, permissionsServiceMock, devicesServiceMock, TokenMock("email"))))
-  expect(Date.now()).toBeGreaterThan(start + 1 * 1000)
+  expect(Date.now()).toBeGreaterThanOrEqual(start + 1 * 1000)
 })
 
 test("A send notification instruction should use a notification service to send a notification", async () => {
@@ -478,7 +478,7 @@ test("A CreateDevicePropertyConstantInstruction execution should return a Script
       onSuccess() { throw Error("Should not be here") },
       onFailure(err) {
         expect(err.__brand).toBe("ScriptError")
-        expect(err.cause).toBe(InvalidConstantType().message + ", " + Type.StringType + " is not " + device.properties.at(0)!.typeConstraints.type)
+        expect(err.cause).toBe(InvalidConstantTypeError().message + ", " + Type.StringType + " is not " + device.properties.at(0)!.typeConstraints.type)
       }
     }),
     Effect.runPromise

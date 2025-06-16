@@ -1,10 +1,9 @@
 import mongoose from "mongoose";
 import { HTTPServerAdapter } from "./adapters/http/HTTPServerAdapter.js";
 import { DeviceGroupRepositoryMongoAdapter } from "./adapters/devices-management/DeviceGroupRepositoryMongoAdapter.js";
-import { UsersService } from "./ports/users-management/UserService.js";
+import { UsersService } from "./ports/users-management/UsersService.js";
 import { Effect } from "effect";
-import { UserRole } from "./domain/users-management/Token.js";
-import { Email } from "./domain/users-management/User.js";
+import { Email, Role } from "./domain/users-management/User.js";
 import { DeviceGroupsServiceImpl } from "./domain/devices-management/DeviceGroupsServiceImpl.js";
 import { DeviceRepositoryMongoAdapter } from "./adapters/devices-management/DeviceRepositoryMongoAdapter.js";
 import { DevicesServiceImpl } from "./domain/devices-management/DevicesServiceImpl.js";
@@ -23,7 +22,7 @@ const defaultServerPort = 3000
 const serverPort = getServerPortFromEnv(defaultServerPort)
 // TODO: replace with production impl
 const usersServiceMock: UsersService = {
-    makeToken() { return Effect.succeed({ role: UserRole.Admin, userEmail: Email("a@email.com") }) },
+    makeToken() { return Effect.succeed({ role: Role.Admin, userEmail: Email("a@email.com") }) },
     verifyToken() { return Effect.succeed(null) },
     getUserDataUnsafe() { return Effect.succeed({}) }
 } as unknown as UsersService

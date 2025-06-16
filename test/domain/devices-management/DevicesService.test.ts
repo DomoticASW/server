@@ -1,7 +1,7 @@
 import { Effect, pipe } from "effect"
 import { DeviceId, Device, DeviceStatus, DevicePropertyId, DeviceProperty, DeviceAction, DeviceEvent, DeviceActionId, DeviceAddress } from "../../../src/domain/devices-management/Device.js"
-import { UserRole, Token } from "../../../src/domain/users-management/Token.js"
-import { Email } from "../../../src/domain/users-management/User.js"
+import { Token } from "../../../src/domain/users-management/Token.js"
+import { Email, Role } from "../../../src/domain/users-management/User.js"
 import { DevicePropertyUpdatesSubscriber, DevicesService } from "../../../src/ports/devices-management/DevicesService.js"
 import { InMemoryRepositoryMock } from "../../InMemoryRepositoryMock.js"
 import { DevicesServiceImpl } from "../../../src/domain/devices-management/DevicesServiceImpl.js"
@@ -10,7 +10,7 @@ import { DeviceUnreachableError } from "../../../src/ports/devices-management/Er
 import { DeviceRepository } from "../../../src/ports/devices-management/DeviceRepository.js"
 import { IntRange, NoneInt } from "../../../src/domain/devices-management/Types.js"
 import { InvalidTokenError } from "../../../src/ports/users-management/Errors.js"
-import { UsersService } from "../../../src/ports/users-management/UserService.js"
+import { UsersService } from "../../../src/ports/users-management/UsersService.js"
 import { PermissionsService } from "../../../src/ports/permissions-management/PermissionsService.js"
 import { PermissionError } from "../../../src/ports/permissions-management/Errors.js"
 import { DeviceCommunicationProtocol } from "../../../src/ports/devices-management/DeviceCommunicationProtocol.js"
@@ -32,10 +32,11 @@ const freePermissionsService = {
     }
 } as unknown as PermissionsService
 
-function makeToken(role: UserRole = UserRole.Admin): Token {
+function makeToken(role: Role = Role.Admin): Token {
     return {
         userEmail: Email("ciccio.pasticcio@email.com"),
-        role: role
+        role: role,
+        source: "test",
     }
 }
 
@@ -468,7 +469,8 @@ describe("executeAction", () => {
     test("throws if the user executing the action has no permission to do so", () => {
         const token: Token = {
             userEmail: userWithoutPermissionEmail,
-            role: UserRole.Admin
+            role: Role.Admin,
+            source: "test",
         }
         expect(() => pipe(
             Effect.gen(function* () {
@@ -563,7 +565,7 @@ describe("all methods requiring a token fail if the token is invalid", () => {
 
 describe("'privileged' methods fail if the user is not an admin (UnauthorizedError)", () => {
     const deviceId = DeviceId("1")
-    const token = makeToken(UserRole.User)
+    const token = makeToken(Role.User)
     const allMethods: Array<(s: DevicesService) => Effect.Effect<unknown, unknown>> = [
         (s) => s.add(token, DeviceAddress("localhost", 8080)),
         (s) => s.remove(token, deviceId),

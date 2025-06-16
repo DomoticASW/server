@@ -1,6 +1,6 @@
 import express from "express";
 import { DevicesService } from "../../../ports/devices-management/DevicesService.js";
-import { UsersService } from "../../../ports/users-management/UserService.js";
+import { UsersService } from "../../../ports/users-management/UsersService.js";
 import { Effect } from "effect";
 import { StatusCodes } from "http-status-codes";
 import { deserializeToken, BadRequest, handleCommonErrors, sendResponse, Response } from "./HttpUtils.js";

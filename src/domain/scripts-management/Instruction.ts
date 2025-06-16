@@ -53,7 +53,7 @@ export interface IfInstruction extends Instruction {
   condition: Condition<never>
 }
 
-export interface ElseInstruction extends IfInstruction {
+export interface IfElseInstruction extends IfInstruction {
   else: Array<Instruction>
 }
 
@@ -196,7 +196,7 @@ export function isIfInstruction(o: any): o is IfInstruction {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function isIfElseInstruction(o: any): o is ElseInstruction {
+export function isIfElseInstruction(o: any): o is IfElseInstruction {
   return isIfInstruction(o) &&
     'else' in o && Array.isArray(o.else);
 }

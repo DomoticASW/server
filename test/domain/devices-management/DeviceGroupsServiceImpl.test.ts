@@ -1,7 +1,7 @@
 import { DeviceGroupsService } from "../../../src/ports/devices-management/DeviceGroupsService.js"
 import { DeviceGroupsServiceImpl } from "../../../src/domain/devices-management/DeviceGroupsServiceImpl.js"
-import { Token, UserRole } from "../../../src/domain/users-management/Token.js"
-import { Email } from "../../../src/domain/users-management/User.js"
+import { Token } from "../../../src/domain/users-management/Token.js"
+import { Email, Role } from "../../../src/domain/users-management/User.js"
 import { Effect, Either, pipe } from "effect"
 import { InMemoryRepositoryMockCheckingUniqueness } from "../../InMemoryRepositoryMock.js"
 import { DeviceGroup, DeviceGroupId } from "../../../src/domain/devices-management/DeviceGroup.js"
@@ -9,17 +9,18 @@ import * as uuid from "uuid";
 import { Device, DeviceAddress, DeviceId, DeviceStatus } from "../../../src/domain/devices-management/Device.js"
 import { DevicesService } from "../../../src/ports/devices-management/DevicesService.js"
 import { DeviceNotFoundError } from "../../../src/ports/devices-management/Errors.js"
-import { UsersService } from "../../../src/ports/users-management/UserService.js"
+import { UsersService } from "../../../src/ports/users-management/UsersService.js"
 import { InvalidTokenError, UnauthorizedError } from "../../../src/ports/users-management/Errors.js"
 
 let service: DeviceGroupsService
 let devicesService: DevicesService
 let repo: InMemoryRepositoryMockCheckingUniqueness<DeviceGroupId, DeviceGroup>
 
-function makeToken(role: UserRole = UserRole.Admin): Token {
+function makeToken(role: Role = Role.Admin): Token {
     return {
         userEmail: Email("ciccio.pasticcio@email.com"),
-        role: role
+        role: role,
+        source: "test",
     }
 }
 
@@ -334,11 +335,11 @@ describe("all methods fail if the token is invalid", () => {
 
 describe("'write' methods fail if the user is not an admin (UnauthorizedError)", () => {
     const allMethods: Array<(s: DeviceGroupsService) => Effect.Effect<unknown, unknown>> = [
-        (s) => s.addGroup(makeToken(UserRole.User), "group"),
-        (s) => s.removeGroup(makeToken(UserRole.User), DeviceGroupId("1")),
-        (s) => s.renameGroup(makeToken(UserRole.User), DeviceGroupId("1"), "group"),
-        (s) => s.addDeviceToGroup(makeToken(UserRole.User), DeviceId("1"), DeviceGroupId("1")),
-        (s) => s.removeDeviceFromGroup(makeToken(UserRole.User), DeviceId("1"), DeviceGroupId("1")),
+        (s) => s.addGroup(makeToken(Role.User), "group"),
+        (s) => s.removeGroup(makeToken(Role.User), DeviceGroupId("1")),
+        (s) => s.renameGroup(makeToken(Role.User), DeviceGroupId("1"), "group"),
+        (s) => s.addDeviceToGroup(makeToken(Role.User), DeviceId("1"), DeviceGroupId("1")),
+        (s) => s.removeDeviceFromGroup(makeToken(Role.User), DeviceId("1"), DeviceGroupId("1")),
     ]
 
     allMethods.forEach(m => {

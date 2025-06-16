@@ -2,7 +2,7 @@ import express from "express";
 import { Effect } from "effect";
 import { DeviceGroupId } from "../../../domain/devices-management/DeviceGroup.js";
 import { DeviceGroupsService } from "../../../ports/devices-management/DeviceGroupsService.js";
-import { UsersService } from "../../../ports/users-management/UserService.js";
+import { UsersService } from "../../../ports/users-management/UsersService.js";
 import { StatusCodes } from "http-status-codes";
 import { BadRequest, deserializeToken, handleCommonErrors, sendResponse, Response } from "./HttpUtils.js";
 import { DeviceId } from "../../../domain/devices-management/Device.js";

@@ -6,7 +6,7 @@ import { Token } from "../../../domain/users-management/Token.js"
 import { UnauthorizedError, InvalidTokenFormatError, InvalidTokenError } from "../../../ports/users-management/Errors.js"
 import { Error } from "../../../ports/Error.js"
 import { Brand } from "../../../utils/Brand.js"
-import { UsersService } from "../../../ports/users-management/UserService.js"
+import { UsersService } from "../../../ports/users-management/UsersService.js"
 import { PermissionError } from "../../../ports/permissions-management/Errors.js"
 
 export interface Response {
