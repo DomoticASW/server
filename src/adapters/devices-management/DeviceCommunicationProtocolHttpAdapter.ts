@@ -23,11 +23,18 @@ export class DeviceCommunicationProtocolHttpAdapter implements DeviceCommunicati
         catch: (e) => CommunicationError((e as Error).message)
       })),
       timeout(millis(this.timeoutToReachDeviceMs)),
-      bind("body", ({ response }) => tryPromise({
-        try: () => response.json(),
-        catch: (e) => CommunicationError((e as Error).message)
-      })),
-      flatMap(({ response, body }) => response.ok ? succeed(DeviceStatus.Online) : fail(CommunicationError("While checking if device is online it responded but with an error\n" + body))),
+      flatMap(({ response }) =>
+        if_(response.ok, {
+          onTrue: () => succeed(DeviceStatus.Online),
+          onFalse: () => Do.pipe(
+            bind("body", () => tryPromise({
+              try: () => response.json(),
+              catch: (e) => CommunicationError((e as Error).message)
+            })),
+            flatMap(({ body }) => fail(CommunicationError("While checking if device is online it responded but with an error\n" + body)))
+          )
+        })
+      ),
       catchIf(e => e instanceof TimeoutException, () => succeed(DeviceStatus.Offline))
     );
   }
