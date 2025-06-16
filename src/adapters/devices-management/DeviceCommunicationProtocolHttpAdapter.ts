@@ -53,7 +53,7 @@ export class DeviceCommunicationProtocolHttpAdapter implements DeviceCommunicati
               try: () => response.json(),
               catch: (e) => CommunicationError((e as Error).message)
             })),
-            bind("_", ({ body }) => response.ok ? succeed(null) : fail(DeviceActionError(body)))
+            flatMap(({ body }) => fail(DeviceActionError(body)))
           )
         })
       )
