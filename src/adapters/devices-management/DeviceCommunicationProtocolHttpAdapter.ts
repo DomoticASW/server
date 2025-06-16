@@ -17,19 +17,17 @@ export class DeviceCommunicationProtocolHttpAdapter implements DeviceCommunicati
 
   checkDeviceStatus(deviceAddress: DeviceAddress): Effect<DeviceStatus, CommunicationError> {
     const { host, port } = deviceAddress
-    return pipe(
-      tryPromise({
-        try: () => fetch(`http://${host}:${port}/check-status`, { method: "GET", }),
+    return Do.pipe(
+      bind("response", () => tryPromise({
+        try: () => fetch(`http://${host}:${port}/check-status`, { method: "GET" }),
         catch: (e) => CommunicationError((e as Error).message)
-      }),
-      flatMap(response => {
-        if (response.ok) {
-          return succeed(DeviceStatus.Online);
-        } else {
-          return fail(CommunicationError("While checking if device is online it responded but with an error"));
-        }
-      }),
+      })),
       timeout(millis(this.timeoutToReachDeviceMs)),
+      bind("body", ({ response }) => tryPromise({
+        try: () => response.json(),
+        catch: (e) => CommunicationError((e as Error).message)
+      })),
+      flatMap(({ response, body }) => response.ok ? succeed(DeviceStatus.Online) : fail(CommunicationError("While checking if device is online it responded but with an error\n" + body))),
       catchIf(e => e instanceof TimeoutException, () => succeed(DeviceStatus.Offline))
     );
   }
@@ -47,13 +45,18 @@ export class DeviceCommunicationProtocolHttpAdapter implements DeviceCommunicati
       })),
       timeout(millis(this.timeoutToReachDeviceMs)),
       catchIf(e => e instanceof TimeoutException, () => fail(DeviceUnreachableError())),
-      flatMap(({ response }) => {
-        if (response.ok) {
-          return succeed(undefined);
-        }
-        // TODO: maybe parse a DeviceActionError
-        return fail(CommunicationError()); // TODO set message from device
-      })
+      bind("_", ({ response }) =>
+        if_(response.ok, {
+          onTrue: () => succeed(null),
+          onFalse: () => Do.pipe(
+            bind("body", () => tryPromise({
+              try: () => response.json(),
+              catch: (e) => CommunicationError((e as Error).message)
+            })),
+            bind("_", ({ body }) => response.ok ? succeed(null) : fail(DeviceActionError(body)))
+          )
+        })
+      )
     );
   }
 
@@ -151,6 +154,7 @@ export class DeviceCommunicationProtocolHttpAdapter implements DeviceCommunicati
         try: () => response.json(),
         catch: (e) => CommunicationError((e as Error).message)
       })),
+      bind("_", ({ response, body }) => response.ok ? succeed(null) : fail(CommunicationError(body))),
       bind("d", ({ body }) => isDeviceRegistration(body) ? succeed(body) : fail(CommunicationError("Received device description format was wrong"))),
       flatMap(({ d }) => {
         const actions = d.actions.map(a => DeviceAction(DeviceActionId(a.id), a.name, decodeTypeConstraint(a.inputTypeConstraints), a.description))
