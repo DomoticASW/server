@@ -1,4 +1,4 @@
-import { Effect, succeed, fail, tryPromise, flatMap, timeout, bind, catchIf, Do, all } from "effect/Effect";
+import { Effect, succeed, fail, tryPromise, flatMap, timeout, bind, catchIf, Do, all, if as if_ } from "effect/Effect";
 import { DeviceCommunicationProtocol } from "../../ports/devices-management/DeviceCommunicationProtocol.js";
 import { CommunicationError, DeviceUnreachableError, DeviceActionError } from "../../ports/devices-management/Errors.js";
 import { Device, DeviceAction, DeviceActionId, DeviceAddress, DeviceEvent, DeviceId, DeviceProperty, DevicePropertyId, DeviceStatus } from "../../domain/devices-management/Device.js";
@@ -11,8 +11,9 @@ export class DeviceCommunicationProtocolHttpAdapter implements DeviceCommunicati
 
   /**
    * @param serverPort The port on which devices are able to reach the server.
+   * @param timeoutToReachDeviceMs The amount of time after which a non responding device is considered unreachable
    */
-  constructor(readonly serverPort: number) { }
+  constructor(readonly serverPort: number, readonly timeoutToReachDeviceMs: number = 5000) { }
 
   checkDeviceStatus(deviceAddress: DeviceAddress): Effect<DeviceStatus, CommunicationError> {
     const { host, port } = deviceAddress
@@ -21,7 +22,6 @@ export class DeviceCommunicationProtocolHttpAdapter implements DeviceCommunicati
         try: () => fetch(`http://${host}:${port}/check-status`, { method: "GET", }),
         catch: (e) => CommunicationError((e as Error).message)
       }),
-      timeout(millis(5000)),
       flatMap(response => {
         if (response.ok) {
           return succeed(DeviceStatus.Online);
@@ -29,6 +29,7 @@ export class DeviceCommunicationProtocolHttpAdapter implements DeviceCommunicati
           return fail(CommunicationError("While checking if device is online it responded but with an error"));
         }
       }),
+      timeout(millis(this.timeoutToReachDeviceMs)),
       catchIf(e => e instanceof TimeoutException, () => succeed(DeviceStatus.Offline))
     );
   }
@@ -44,7 +45,7 @@ export class DeviceCommunicationProtocolHttpAdapter implements DeviceCommunicati
         }),
         catch: (e) => CommunicationError((e as Error).message)
       })),
-      timeout(millis(5000)),
+      timeout(millis(this.timeoutToReachDeviceMs)),
       catchIf(e => e instanceof TimeoutException, () => fail(DeviceUnreachableError())),
       flatMap(({ response }) => {
         if (response.ok) {
@@ -144,7 +145,7 @@ export class DeviceCommunicationProtocolHttpAdapter implements DeviceCommunicati
         }),
         catch: (e) => CommunicationError((e as Error).message)
       })),
-      timeout(millis(5000)),
+      timeout(millis(this.timeoutToReachDeviceMs)),
       catchIf(e => e instanceof TimeoutException, () => fail(DeviceUnreachableError())),
       bind("body", ({ response }) => tryPromise({
         try: () => response.json(),
