@@ -10,12 +10,13 @@ import { DeviceRepositoryMongoAdapter } from "./adapters/devices-management/Devi
 import { DevicesServiceImpl } from "./domain/devices-management/DevicesServiceImpl.js";
 import { PermissionsService } from "./ports/permissions-management/PermissionsService.js";
 import { DeviceEventsServiceImpl } from "./domain/devices-management/DeviceEventsServiceImpl.js";
-import { DeviceStatusChangesSubscriber, DeviceStatusesService } from "./ports/devices-management/DeviceStatusesService.js";
+import { DeviceStatusesService } from "./ports/devices-management/DeviceStatusesService.js";
 import { DeviceOfflineNotificationSubscriptionRepositoryMongoAdapter } from "./adapters/notifications-management/DeviceOfflineNotificationSubscription.js";
 import { NotificationsService } from "./domain/notifications-management/NotificationsServiceImpl.js";
 import { DeviceCommunicationProtocol } from "./ports/devices-management/DeviceCommunicationProtocol.js";
 import { DeviceFactoryImpl } from "./domain/devices-management/DeviceFactoryImpl.js";
 import { DeviceCommunicationProtocolHttpAdapter } from "./adapters/devices-management/DeviceCommunicationProtocolHttpAdapter.js";
+import { DeviceStatusesServiceImpl } from "./domain/devices-management/DeviceStatusesServiceImpl.js";
 
 const mongoDBConnection = mongoose.createConnection("mongodb://localhost:27017/DomoticASW")
 const defaultServerPort = 3000
@@ -33,22 +34,12 @@ const permissionsService: PermissionsService = {
 
 const deviceCommunicationProtocol: DeviceCommunicationProtocol = new DeviceCommunicationProtocolHttpAdapter(serverPort)
 
-const deviceStatusesService: DeviceStatusesService = {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    subscribeForDeviceStatusChanges: function (subscriber: DeviceStatusChangesSubscriber): void {
-
-    },
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    unsubscribeForDeviceStatusChanges: function (subscriber: DeviceStatusChangesSubscriber): void {
-
-    }
-}
-
 const deviceFactory = new DeviceFactoryImpl(deviceCommunicationProtocol)
 const deviceGroupRepository = new DeviceGroupRepositoryMongoAdapter(mongoDBConnection)
 const deviceRepository = new DeviceRepositoryMongoAdapter(mongoDBConnection)
 const deviceOfflineNotificationSubscriptionRepository = new DeviceOfflineNotificationSubscriptionRepositoryMongoAdapter(mongoDBConnection)
 const devicesService = new DevicesServiceImpl(deviceRepository, deviceFactory, usersServiceMock, permissionsService, deviceCommunicationProtocol)
+const deviceStatusesService: DeviceStatusesService = new DeviceStatusesServiceImpl(5000, devicesService, deviceCommunicationProtocol)
 const deviceGroupsService = new DeviceGroupsServiceImpl(deviceGroupRepository, devicesService, usersServiceMock)
 const deviceEventsService = new DeviceEventsServiceImpl(devicesService)
 const notificationsService = NotificationsService(deviceStatusesService, devicesService, usersServiceMock, deviceOfflineNotificationSubscriptionRepository)
