@@ -271,6 +271,27 @@ test("updateDeviceProperties returns an error in case any device property is not
     )
 })
 
+test("setDeviceStatusUnsafe sets a device status", () => {
+    pipe(
+        Effect.gen(function* () {
+            const id = yield* service.add(makeToken(), DeviceAddress("localhost", 8080))
+            const device = yield* service.find(makeToken(), id)
+            const newStatus = DeviceStatus.Offline
+            expect(device.status).not.toEqual(newStatus)
+            yield* service.setDeviceStatusUnsafe(id, DeviceStatus.Offline)
+            const newDevice = yield* service.find(makeToken(), id)
+            expect(newDevice.status).toEqual(newStatus)
+        }),
+        Effect.runSync
+    )
+})
+
+test("setDeviceStatusUnsafe to fail if device not found", () => {
+    expect(() =>
+        Effect.runSync(service.setDeviceStatusUnsafe(DeviceId("non-existing"), DeviceStatus.Offline))
+    ).toThrow("DeviceNotFoundError")
+})
+
 test("subscribeForDevicePropertyUpdates lets subscriber receive updates when a property is updated", () => {
     let updatedDeviceId: DeviceId
     let updatedDevicePropertyId: DevicePropertyId

@@ -4,7 +4,7 @@ import { DeviceUnreachableError, DeviceNotFoundError, InvalidInputError, DeviceA
 import { PermissionError } from "../../ports/permissions-management/Errors.js";
 import { TokenError, InvalidTokenError, UnauthorizedError } from "../../ports/users-management/Errors.js";
 import { Token, UserRole } from "../users-management/Token.js";
-import { DeviceId, Device, DeviceActionId, DevicePropertyId, DeviceAddress } from "./Device.js";
+import { DeviceId, Device, DeviceActionId, DevicePropertyId, DeviceAddress, DeviceStatus } from "./Device.js";
 import { DeviceFactory } from "../../ports/devices-management/DeviceFactory.js";
 import { DeviceRepository } from "../../ports/devices-management/DeviceRepository.js";
 import { UsersService } from "../../ports/users-management/UserService.js";
@@ -196,6 +196,21 @@ export class DevicesServiceImpl implements DevicesService {
                     })
                 })
             })
+        )
+    }
+    setDeviceStatusUnsafe(deviceId: DeviceId, status: DeviceStatus): Effect.Effect<void, DeviceNotFoundError> {
+        return Effect.Do.pipe(
+            Effect.bind("device", () => this.repo.find(deviceId)),
+            Effect.bind("_", ({ device }) => {
+                device.status = status
+                return this.repo.update(device)
+            }),
+            Effect.mapError(e => {
+                switch (e.__brand) {
+                    case "NotFoundError": return DeviceNotFoundError()
+                }
+            }),
+            Effect.asVoid
         )
     }
     subscribeForDevicePropertyUpdates(subscriber: DevicePropertyUpdatesSubscriber): void {

@@ -1,4 +1,4 @@
-import { Device, DeviceActionId, DeviceAddress, DeviceId, DevicePropertyId } from "../../domain/devices-management/Device.js";
+import { Device, DeviceActionId, DeviceAddress, DeviceId, DevicePropertyId, DeviceStatus } from "../../domain/devices-management/Device.js";
 import { DeviceUnreachableError, DeviceNotFoundError, InvalidInputError, DeviceActionError, DeviceActionNotFound, DevicePropertyNotFound, DeviceAlreadyRegisteredError } from "./Errors.js";
 import { PermissionError } from "../permissions-management/Errors.js";
 import { Token } from "../../domain/users-management/Token.js";
@@ -17,6 +17,7 @@ export interface DevicesService {
     executeAutomationAction(deviceId: DeviceId, actionId: DeviceActionId, input: unknown): Effect<void, InvalidInputError | DeviceActionError | DeviceActionNotFound | DeviceNotFoundError>;
     updateDeviceProperty(deviceId: DeviceId, propertyId: DevicePropertyId, value: unknown): Effect<void, DeviceNotFoundError | DevicePropertyNotFound>;
     updateDeviceProperties(deviceId: DeviceId, properties: Map<DevicePropertyId, unknown>): Effect<void, DeviceNotFoundError | DevicePropertyNotFound>;
+    setDeviceStatusUnsafe(deviceId: DeviceId, status: DeviceStatus): Effect<void, DeviceNotFoundError>
     subscribeForDevicePropertyUpdates(subscriber: DevicePropertyUpdatesSubscriber): void;
     unsubscribeForDevicePropertyUpdates(subscriber: DevicePropertyUpdatesSubscriber): void;
 }

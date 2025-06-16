@@ -260,6 +260,9 @@ export function DevicesServiceSpy(device: Device = DeviceMock(), testingAction: 
         updateDeviceProperties: function (deviceId: DeviceId, properties: Map<DevicePropertyId, unknown>): Effect<void, DeviceNotFoundError | DevicePropertyNotFound> {
           throw new Error("Function not implemented.");
         },
+        setDeviceStatusUnsafe() {
+          throw new Error("Function not implemented.");
+        },
         subscribeForDevicePropertyUpdates: function (subscriber: DevicePropertyUpdatesSubscriber): void {
           throw new Error("Function not implemented.");
         },
