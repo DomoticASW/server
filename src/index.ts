@@ -13,7 +13,6 @@ import { DeviceStatusesService } from "./ports/devices-management/DeviceStatuses
 import { DeviceOfflineNotificationSubscriptionRepositoryMongoAdapter } from "./adapters/notifications-management/DeviceOfflineNotificationSubscription.js";
 import { NotificationsService } from "./domain/notifications-management/NotificationsServiceImpl.js";
 import { DeviceCommunicationProtocol } from "./ports/devices-management/DeviceCommunicationProtocol.js";
-import { DeviceFactoryImpl } from "./domain/devices-management/DeviceFactoryImpl.js";
 import { DeviceCommunicationProtocolHttpAdapter } from "./adapters/devices-management/DeviceCommunicationProtocolHttpAdapter.js";
 import { DeviceStatusesServiceImpl } from "./domain/devices-management/DeviceStatusesServiceImpl.js";
 
@@ -33,11 +32,10 @@ const permissionsService: PermissionsService = {
 
 const deviceCommunicationProtocol: DeviceCommunicationProtocol = new DeviceCommunicationProtocolHttpAdapter(serverPort)
 
-const deviceFactory = new DeviceFactoryImpl(deviceCommunicationProtocol)
 const deviceGroupRepository = new DeviceGroupRepositoryMongoAdapter(mongoDBConnection)
 const deviceRepository = new DeviceRepositoryMongoAdapter(mongoDBConnection)
 const deviceOfflineNotificationSubscriptionRepository = new DeviceOfflineNotificationSubscriptionRepositoryMongoAdapter(mongoDBConnection)
-const devicesService = new DevicesServiceImpl(deviceRepository, deviceFactory, usersServiceMock, permissionsService, deviceCommunicationProtocol)
+const devicesService = new DevicesServiceImpl(deviceRepository, usersServiceMock, permissionsService, deviceCommunicationProtocol)
 const deviceStatusesService: DeviceStatusesService = new DeviceStatusesServiceImpl(5000, devicesService, deviceCommunicationProtocol)
 const deviceGroupsService = new DeviceGroupsServiceImpl(deviceGroupRepository, devicesService, usersServiceMock)
 const deviceEventsService = new DeviceEventsServiceImpl(devicesService)

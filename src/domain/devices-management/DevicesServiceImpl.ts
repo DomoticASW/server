@@ -6,7 +6,6 @@ import { TokenError, InvalidTokenError, UnauthorizedError } from "../../ports/us
 import { DeviceId, Device, DeviceActionId, DevicePropertyId, DeviceAddress, DeviceStatus } from "./Device.js";
 import { Token } from "../users-management/Token.js";
 import { Role } from "../users-management/User.js";
-import { DeviceFactory } from "../../ports/devices-management/DeviceFactory.js";
 import { DeviceRepository } from "../../ports/devices-management/DeviceRepository.js";
 import { UsersService } from "../../ports/users-management/UsersService.js";
 import { PermissionsService } from "../../ports/permissions-management/PermissionsService.js";
@@ -16,7 +15,6 @@ export class DevicesServiceImpl implements DevicesService {
     private propertyUpdatesSubscribers: DevicePropertyUpdatesSubscriber[] = [];
     constructor(
         private repo: DeviceRepository,
-        private deviceFactory: DeviceFactory,
         private usersService: UsersService,
         private permissionsService: PermissionsService,
         private deviceCommunicationProtocol: DeviceCommunicationProtocol) {
@@ -29,15 +27,14 @@ export class DevicesServiceImpl implements DevicesService {
                     onTrue: () => this.usersService.verifyToken(token),
                     onFalse: () => Effect.fail(UnauthorizedError())
                 })),
-            Effect.bind("device", () => this.deviceFactory.create(deviceAddress)),
+            Effect.bind("device", () => this.deviceCommunicationProtocol.register(deviceAddress)),
             Effect.bind("__", ({ device }) => this.repo.add(device)),
             Effect.map(({ device }) => device.id),
             Effect.mapError((e) => {
                 switch (e.__brand) {
-                    case "DuplicateIdError":
-                        return DeviceAlreadyRegisteredError()
-                    default:
-                        return e
+                    case "DuplicateIdError": return DeviceAlreadyRegisteredError()
+                    case "CommunicationError": return DeviceUnreachableError(`${e.message}\n${e.cause}`)
+                    default: return e
                 }
             })
         )

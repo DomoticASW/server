@@ -5,7 +5,6 @@ import { Email, Role } from "../../../src/domain/users-management/User.js"
 import { DevicePropertyUpdatesSubscriber, DevicesService } from "../../../src/ports/devices-management/DevicesService.js"
 import { InMemoryRepositoryMock } from "../../InMemoryRepositoryMock.js"
 import { DevicesServiceImpl } from "../../../src/domain/devices-management/DevicesServiceImpl.js"
-import { DeviceFactory } from "../../../src/ports/devices-management/DeviceFactory.js"
 import { DeviceUnreachableError } from "../../../src/ports/devices-management/Errors.js"
 import { DeviceRepository } from "../../../src/ports/devices-management/DeviceRepository.js"
 import { IntRange, NoneInt } from "../../../src/domain/devices-management/Types.js"
@@ -16,10 +15,15 @@ import { PermissionError } from "../../../src/ports/permissions-management/Error
 import { DeviceCommunicationProtocol } from "../../../src/ports/devices-management/DeviceCommunicationProtocol.js"
 
 let service: DevicesService
-let deviceFactory: DeviceFactory
 let repo: DeviceRepository
 const deviceCommunicationProtocol: DeviceCommunicationProtocol = {
     executeDeviceAction: () => Effect.succeed(undefined),
+    register(deviceAddress: DeviceAddress) {
+        const properties = [DeviceProperty(DevicePropertyId("prop"), "prop", 0, NoneInt()), DeviceProperty(DevicePropertyId("prop2"), "prop2", 10, NoneInt())]
+        const actions: DeviceAction<unknown>[] = []
+        const events: DeviceEvent[] = []
+        return Effect.succeed(Device(DeviceId(deviceAddress.toString()), "device", deviceAddress, DeviceStatus.Online, properties, actions, events))
+    },
 } as unknown as DeviceCommunicationProtocol
 const alwaysValidTokenUsersService = {
     verifyToken() {
@@ -42,15 +46,7 @@ function makeToken(role: Role = Role.Admin): Token {
 
 beforeEach(() => {
     repo = new InMemoryRepositoryMock((d) => d.id, (id) => id)
-    deviceFactory = {
-        create(deviceAddress: DeviceAddress): Effect.Effect<Device, DeviceUnreachableError> {
-            const properties = [DeviceProperty(DevicePropertyId("prop"), "prop", 0, NoneInt()), DeviceProperty(DevicePropertyId("prop2"), "prop2", 10, NoneInt())]
-            const actions: DeviceAction<unknown>[] = []
-            const events: DeviceEvent[] = []
-            return Effect.succeed(Device(DeviceId(deviceAddress.toString()), "device", deviceAddress, DeviceStatus.Online, properties, actions, events))
-        }
-    }
-    service = new DevicesServiceImpl(repo, deviceFactory, alwaysValidTokenUsersService, freePermissionsService, deviceCommunicationProtocol)
+    service = new DevicesServiceImpl(repo, alwaysValidTokenUsersService, freePermissionsService, deviceCommunicationProtocol)
 })
 
 test("has 0 devices initially", () => {
@@ -89,7 +85,7 @@ test("uses DeviceFactory to construct devices", () => {
         }),
         Effect.runSync
     )
-    const expected = Effect.runSync(deviceFactory.create(deviceUrl))
+    const expected = Effect.runSync(deviceCommunicationProtocol.register(deviceUrl))
     expect(device).toEqual(expected)
 })
 
@@ -416,8 +412,9 @@ describe("executeAction", () => {
     const userWithoutPermissionEmail = Email("sventurato@email.com")
     let receivedInput: unknown
     beforeEach(() => {
-        deviceFactory = {
-            create(deviceAddress: DeviceAddress): Effect.Effect<Device, DeviceUnreachableError> {
+        const commProtocol = {
+            executeDeviceAction: () => Effect.succeed(undefined),
+            register(deviceAddress: DeviceAddress): Effect.Effect<Device, DeviceUnreachableError> {
                 const action = DeviceAction(actionId, "action", IntRange(0, 100))
                 const d = Device(deviceId, "device", deviceAddress, DeviceStatus.Online, [], [action], [])
                 return Effect.succeed({
@@ -434,14 +431,14 @@ describe("executeAction", () => {
                     },
                 })
             }
-        }
+        } as unknown as DeviceCommunicationProtocol
         const permissionsService: PermissionsService = {
             canExecuteActionOnDevice(token: Token) {
                 if (token.userEmail !== userWithoutPermissionEmail) return Effect.succeed(null)
                 else return Effect.fail(PermissionError())
             }
         } as unknown as PermissionsService
-        service = new DevicesServiceImpl(repo, deviceFactory, alwaysValidTokenUsersService, permissionsService, deviceCommunicationProtocol)
+        service = new DevicesServiceImpl(repo, alwaysValidTokenUsersService, permissionsService, commProtocol)
     })
 
     test("executes the given action on the given device with the given input", () => {
@@ -487,8 +484,9 @@ describe("executeAutomationAction", () => {
     const actionId = DeviceActionId("1")
     let receivedInput: unknown
     beforeEach(() => {
-        deviceFactory = {
-            create(deviceAddress: DeviceAddress): Effect.Effect<Device, DeviceUnreachableError> {
+        const commProtocol = {
+            executeDeviceAction: () => Effect.succeed(undefined),
+            register(deviceAddress: DeviceAddress): Effect.Effect<Device, DeviceUnreachableError> {
                 const action = DeviceAction(actionId, "action", IntRange(0, 100))
                 const d = Device(deviceId, "device", deviceAddress, DeviceStatus.Online, [], [action], [])
                 return Effect.succeed({
@@ -505,8 +503,8 @@ describe("executeAutomationAction", () => {
                     },
                 })
             }
-        }
-        service = new DevicesServiceImpl(repo, deviceFactory, alwaysValidTokenUsersService, freePermissionsService, deviceCommunicationProtocol)
+        } as unknown as DeviceCommunicationProtocol
+        service = new DevicesServiceImpl(repo, alwaysValidTokenUsersService, freePermissionsService, commProtocol)
     })
 
     test("executes the given action on the given device with the given input", () => {
@@ -550,7 +548,7 @@ describe("all methods requiring a token fail if the token is invalid", () => {
                 return Effect.fail({ __brand: "InvalidTokenError", message: "" })
             }
         } as unknown as UsersService
-        service = new DevicesServiceImpl(repo, deviceFactory, alwaysInvalidTokenUsersService, freePermissionsService, deviceCommunicationProtocol)
+        service = new DevicesServiceImpl(repo, alwaysInvalidTokenUsersService, freePermissionsService, deviceCommunicationProtocol)
     })
 
     allMethods.forEach(m => {
