@@ -13,8 +13,7 @@ import { NotificationProtocolSocketIOAdapter } from '../notifications-management
 
 export class HTTPServerAdapter {
 
-    // TODO: change parameter types to interfaces and not implementations
-    constructor(port: number, deviceGroupsService: DeviceGroupsService, devicesService: DevicesService, deviceEventsService: DeviceEventsService, usersService: UsersService, notificationsService: NotificationsService) {
+    constructor(host: string, port: number, deviceGroupsService: DeviceGroupsService, devicesService: DevicesService, deviceEventsService: DeviceEventsService, usersService: UsersService, notificationsService: NotificationsService) {
         const app = express();
         const server = createServer(app)
 
@@ -28,7 +27,7 @@ export class HTTPServerAdapter {
         registerNotificationsServiceProtocol(server, notificationsService)
 
         server.listen(port, async () => {
-            return console.log(`Express is listening at http://localhost:${port}`);
+            return console.log(`Express is listening at http://${host}:${port}`);
         });
     }
 }

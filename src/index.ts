@@ -42,7 +42,7 @@ const deviceStatusesService: DeviceStatusesService = new DeviceStatusesServiceIm
 const deviceGroupsService = new DeviceGroupsServiceImpl(deviceGroupRepository, devicesService, usersServiceMock)
 const deviceEventsService = new DeviceEventsServiceImpl(devicesService)
 const notificationsService = NotificationsService(deviceStatusesService, devicesService, usersServiceMock, deviceOfflineNotificationSubscriptionRepository)
-new HTTPServerAdapter(serverPort, deviceGroupsService, devicesService, deviceEventsService, usersServiceMock, notificationsService)
+new HTTPServerAdapter("localhost", serverPort, deviceGroupsService, devicesService, deviceEventsService, usersServiceMock, notificationsService)
 
 function getServerPortFromEnv(defaultServerPort: number): number {
     type EnvVarNotSet = "EnvVarNotSet"
