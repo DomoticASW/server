@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { Effect, succeed, fail } from "effect/Effect";
-import { DeviceId, DeviceStatus, Device, DeviceProperty, DevicePropertyId, DeviceAction, DeviceActionId, DeviceEvent } from "../../src/domain/devices-management/Device.js";
+import { DeviceId, DeviceStatus, Device, DeviceProperty, DevicePropertyId, DeviceAction, DeviceActionId, DeviceEvent, DeviceAddress } from "../../src/domain/devices-management/Device.js";
 import { NoneInt } from "../../src/domain/devices-management/Types.js";
 import { ExecutionEnvironment, Instruction } from "../../src/domain/scripts-management/Instruction.js";
 import { TaskId, AutomationId, Automation, ScriptId, Task } from "../../src/domain/scripts-management/Script.js";
@@ -51,7 +51,7 @@ export function NotificationsServiceSpy(existingEmail: Email): Spy<Notifications
         subscribeForDeviceOfflineNotifications: function (token: Token, deviceId: DeviceId): Effect<void, DeviceNotFoundError | UserNotFoundError | InvalidTokenError> {
           return succeed(null)
         },
-        unsubscribeForDeviceOfflineNotifications: function (token: Token, deviceId: DeviceId): Effect<void, DeviceNotFoundError | UserNotFoundError| InvalidTokenError> {
+        unsubscribeForDeviceOfflineNotifications: function (token: Token, deviceId: DeviceId): Effect<void, DeviceNotFoundError | UserNotFoundError | InvalidTokenError> {
           return succeed(null)
         },
         sendNotification: function (email: Email, message: string): Effect<void, UserNotFoundError> {
@@ -63,7 +63,7 @@ export function NotificationsServiceSpy(existingEmail: Email): Spy<Notifications
           return succeed(null)
         },
         setupNotificationProtocol(notificationProtocol: NotificationProtocol): void {
-          
+
         }
       }
     }
@@ -184,7 +184,7 @@ export function DeviceMock(eventName: string = ""): Device {
   return {
     id: DeviceId("id"),
     name: "name",
-    address: URL.prototype,
+    address: DeviceAddress.prototype,
     status: DeviceStatus.Online,
     properties: [
       DevicePropertyMock()
@@ -215,10 +215,7 @@ function DeviceActionMock(): DeviceAction<unknown> {
   return {
     id: DeviceActionId("actionId"),
     name: "",
-    inputTypeConstraints: NoneInt(),
-    execute: function (input: unknown): Effect<void, InvalidInputError | DeviceActionError> {
-      throw new Error("Function not implemented.");
-    }
+    inputTypeConstraints: NoneInt()
   }
 }
 
@@ -234,7 +231,7 @@ export function DevicesServiceSpy(device: Device = DeviceMock(), testingAction: 
     call: () => call,
     get: () => {
       return {
-        add: function (token: Token, deviceUrl: URL): Effect<DeviceId, DeviceAlreadyRegisteredError | DeviceUnreachableError | TokenError> {
+        add: function (token: Token, deviceAddress: DeviceAddress): Effect<DeviceId, DeviceAlreadyRegisteredError | DeviceUnreachableError | TokenError> {
           throw new Error("Function not implemented.");
         },
         remove: function (token: Token, deviceId: DeviceId): Effect<void, DeviceNotFoundError | TokenError> {
@@ -268,6 +265,12 @@ export function DevicesServiceSpy(device: Device = DeviceMock(), testingAction: 
           return deviceId == device.id ? succeed(null) : fail(DeviceNotFoundError())
         },
         updateDeviceProperty: function (deviceId: DeviceId, propertyId: DevicePropertyId, value: unknown): Effect<void, DeviceNotFoundError | DevicePropertyNotFound> {
+          throw new Error("Function not implemented.");
+        },
+        updateDeviceProperties: function (deviceId: DeviceId, properties: Map<DevicePropertyId, unknown>): Effect<void, DeviceNotFoundError | DevicePropertyNotFound> {
+          throw new Error("Function not implemented.");
+        },
+        setDeviceStatusUnsafe() {
           throw new Error("Function not implemented.");
         },
         subscribeForDevicePropertyUpdates: function (subscriber: DevicePropertyUpdatesSubscriber): void {
@@ -350,7 +353,7 @@ export function DeviceOfflineNotificationSubscriptionRepositorySpy(operation: Re
   let call = 0
   return {
     call: () => call,
-    get: function () : DeviceOfflineNotificationSubscriptionRepository {
+    get: function (): DeviceOfflineNotificationSubscriptionRepository {
       return {
         add: function (entity: DeviceOfflineNotificationSubscription): Effect<void, DuplicateIdError> {
           if (operation == RepoOperation.ADD && subscription.deviceId == entity.deviceId && subscription.email == entity.email) {

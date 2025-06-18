@@ -1,5 +1,5 @@
 import mongoose, { Document, Model } from "mongoose";
-import { Device, DeviceAction, DeviceActionId, DeviceEvent, DeviceId, DeviceProperty, DevicePropertyId, DeviceStatus } from "../../domain/devices-management/Device.js";
+import { Device, DeviceAction, DeviceActionId, DeviceAddress, DeviceEvent, DeviceId, DeviceProperty, DevicePropertyId, DeviceStatus } from "../../domain/devices-management/Device.js";
 import { BaseRepositoryMongoAdapter } from "../BaseRepositoryMongoAdapter.js";
 import { DoubleRange, Enum, IntRange, NoneBoolean, NoneColor, NoneDouble, NoneInt, NoneString, NoneVoid, TypeConstraints } from "../../domain/devices-management/Types.js";
 import { Type } from "../../ports/devices-management/Types.js";
@@ -10,11 +10,16 @@ import { Effect } from "effect";
 export interface DeviceSchema {
     _id: string
     name: string
-    address: string
+    address: DeviceAddressSchema
     status: string
     properties: DevicePropertySchema[]
     actions: DeviceActionSchema[]
     events: string[]
+}
+
+interface DeviceAddressSchema {
+    host: string
+    port: number
 }
 
 interface DevicePropertySchema {
@@ -63,10 +68,15 @@ export class DeviceRepositoryMongoAdapter extends BaseRepositoryMongoAdapter<Dev
         setter: { type: this.deviceActionSchema, required: false },
         typeConstraints: { type: this.typeConstraintSchema, required: true }
     });
+
+    private deviceAddressSchema = new mongoose.Schema<DeviceAddressSchema>({
+        host: { type: String, required: true },
+        port: { type: Number, required: true },
+    })
     private deviceSchema = new mongoose.Schema<DeviceSchema>({
         _id: { type: String, required: true },
         name: { type: String, required: true },
-        address: { type: String, required: true },
+        address: { type: this.deviceAddressSchema, required: true },
         status: { type: String, enum: DeviceStatus, required: true },
         properties: { type: [this.devicePropertySchema], required: true },
         actions: { type: [this.deviceActionSchema], required: true },
@@ -175,13 +185,13 @@ export class DeviceRepositoryMongoAdapter extends BaseRepositoryMongoAdapter<Dev
         const properties: DevicePropertySchema[] = e.properties.map(p => this.devicePropertyToSchema(p))
         const actions: DeviceActionSchema[] = e.actions.map(a => this.deviceActionToSchema(a))
         const events = e.events.map(e => e.name)
-        return new this.Device({ _id: e.id, name: e.name, address: e.address.toString(), status: e.status, properties: properties, actions: actions, events: events })
+        return new this.Device({ _id: e.id, name: e.name, address: { host: e.address.host, port: e.address.port }, status: e.status, properties: properties, actions: actions, events: events })
     }
     protected toEntity(s: DeviceSchema): Device {
         const properties = s.properties.map(p => this.devicePropertyFromSchema(p))
         const actions = s.actions.map(a => this.deviceActionFromSchema(a))
         const events = s.events.map(e => DeviceEvent(e))
-        return Device(DeviceId(s._id), s.name, new URL(s.address), s.status as DeviceStatus, properties, actions, events)
+        return Device(DeviceId(s._id), s.name, DeviceAddress(s.address.host, s.address.port), s.status as DeviceStatus, properties, actions, events)
     }
     protected model(): Model<DeviceSchema> {
         return this.Device

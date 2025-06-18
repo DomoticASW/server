@@ -3,35 +3,33 @@ import { DevicePropertyUpdatesSubscriber, DevicesService } from "../../ports/dev
 import { DeviceUnreachableError, DeviceNotFoundError, InvalidInputError, DeviceActionError, DeviceActionNotFound, DevicePropertyNotFound, DeviceAlreadyRegisteredError } from "../../ports/devices-management/Errors.js";
 import { PermissionError } from "../../ports/permissions-management/Errors.js";
 import { TokenError, InvalidTokenError, UnauthorizedError } from "../../ports/users-management/Errors.js";
+import { DeviceId, Device, DeviceActionId, DevicePropertyId, DeviceAddress, DeviceStatus } from "./Device.js";
 import { Token } from "../users-management/Token.js";
 import { Role } from "../users-management/User.js";
-import { DeviceId, Device, DeviceActionId, DevicePropertyId } from "./Device.js";
 import { DeviceFactory } from "../../ports/devices-management/DeviceFactory.js";
 import { DeviceRepository } from "../../ports/devices-management/DeviceRepository.js";
 import { UsersService } from "../../ports/users-management/UsersService.js";
 import { PermissionsService } from "../../ports/permissions-management/PermissionsService.js";
+import { DeviceCommunicationProtocol } from "../../ports/devices-management/DeviceCommunicationProtocol.js";
 
 export class DevicesServiceImpl implements DevicesService {
-    private repo: DeviceRepository
-    private deviceFactory: DeviceFactory
-    private usersService: UsersService
-    private permissionsService: PermissionsService
     private propertyUpdatesSubscribers: DevicePropertyUpdatesSubscriber[] = [];
-    constructor(repository: DeviceRepository, deviceFactory: DeviceFactory, usersService: UsersService, permissionsService: PermissionsService) {
-        this.repo = repository
-        this.deviceFactory = deviceFactory
-        this.usersService = usersService
-        this.permissionsService = permissionsService
+    constructor(
+        private repo: DeviceRepository,
+        private deviceFactory: DeviceFactory,
+        private usersService: UsersService,
+        private permissionsService: PermissionsService,
+        private deviceCommunicationProtocol: DeviceCommunicationProtocol) {
     }
 
-    add(token: Token, deviceUrl: URL): Effect.Effect<DeviceId, DeviceAlreadyRegisteredError | DeviceUnreachableError | TokenError> {
+    add(token: Token, deviceAddress: DeviceAddress): Effect.Effect<DeviceId, DeviceAlreadyRegisteredError | DeviceUnreachableError | TokenError> {
         return Effect.Do.pipe(
             Effect.bind("_", () =>
                 Effect.if(token.role == Role.Admin, {
                     onTrue: () => this.usersService.verifyToken(token),
                     onFalse: () => Effect.fail(UnauthorizedError())
                 })),
-            Effect.bind("device", () => this.deviceFactory.create(deviceUrl)),
+            Effect.bind("device", () => this.deviceFactory.create(deviceAddress)),
             Effect.bind("__", ({ device }) => this.repo.add(device)),
             Effect.map(({ device }) => device.id),
             Effect.mapError((e) => {
@@ -130,12 +128,7 @@ export class DevicesServiceImpl implements DevicesService {
     executeAutomationAction(deviceId: DeviceId, actionId: DeviceActionId, input: unknown): Effect.Effect<void, InvalidInputError | DeviceActionError | DeviceActionNotFound | DeviceNotFoundError> {
         return Effect.Do.pipe(
             Effect.bind("device", () => this.findUnsafe(deviceId)),
-            Effect.let("action", ({ device }) => device.actions.find(a => a.id === actionId)),
-            Effect.bind("__", ({ action }) => Effect.if(action != undefined, {
-                onTrue: () => Effect.succeed(null),
-                onFalse: () => Effect.fail(DeviceActionNotFound())
-            })),
-            Effect.bind("___", ({ action }) => action!.execute(input))
+            Effect.bind("_", ({ device }) => device.executeAction(actionId, input, this.deviceCommunicationProtocol))
         )
     }
 
@@ -167,6 +160,57 @@ export class DevicesServiceImpl implements DevicesService {
                 }
             }),
             Effect.tap(({ device, property }) => this.propertyUpdatesSubscribers.forEach(s => s.devicePropertyChanged(device.id, property.id, value))),
+            Effect.asVoid
+        )
+    }
+    updateDeviceProperties(deviceId: DeviceId, properties: Map<DevicePropertyId, unknown>): Effect.Effect<void, DeviceNotFoundError | DevicePropertyNotFound> {
+        return Effect.Do.pipe(
+            Effect.bind("device", () => this.repo.find(deviceId)),
+            Effect.bind("_", ({ device }) => {
+                // Checking that all properties exist
+                const notFoundProperties = Array.from(properties.keys()).flatMap(id => device.properties.find(p => p.id === id) ? [] : [id])
+                if (notFoundProperties.length > 0) { return Effect.fail(DevicePropertyNotFound(notFoundProperties.join(", "))) }
+                else { return Effect.void }
+            }),
+            Effect.let("oldProperties", ({ device }) => {
+                return device.properties.map(p => [p.id, p.value] as [DevicePropertyId, unknown])
+            }),
+            Effect.bind("__", ({ device }) => {
+                properties.forEach((value, id) =>
+                    device.properties.find(p => p.id === id)!.value = value
+                )
+                return this.repo.update(device)
+            }),
+            Effect.mapError((e) => {
+                switch (e.__brand) {
+                    case "NotFoundError":
+                        return DeviceNotFoundError(e.cause)
+                    default:
+                        return e
+                }
+            }),
+            Effect.map(({ oldProperties }) => {
+                const updatedProperties = Array.from(properties).filter(pair => oldProperties.find(p => p[0] === pair[0])![1] != pair[1])
+                this.propertyUpdatesSubscribers.forEach(s => {
+                    updatedProperties.forEach(pair => {
+                        s.devicePropertyChanged(deviceId, pair[0], pair[1])
+                    })
+                })
+            })
+        )
+    }
+    setDeviceStatusUnsafe(deviceId: DeviceId, status: DeviceStatus): Effect.Effect<void, DeviceNotFoundError> {
+        return Effect.Do.pipe(
+            Effect.bind("device", () => this.repo.find(deviceId)),
+            Effect.bind("_", ({ device }) => {
+                device.status = status
+                return this.repo.update(device)
+            }),
+            Effect.mapError(e => {
+                switch (e.__brand) {
+                    case "NotFoundError": return DeviceNotFoundError()
+                }
+            }),
             Effect.asVoid
         )
     }

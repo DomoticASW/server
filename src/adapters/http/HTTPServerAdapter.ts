@@ -9,12 +9,11 @@ import { DeviceEventsService } from '../../ports/devices-management/DeviceEvents
 import { registerDeviceEventsServiceRoutes } from './routes/DeviceEventsService.js';
 import { createServer, Server } from 'node:http';
 import { NotificationsService } from '../../ports/notifications-management/NotificationsService.js';
-import { NotificationProtocolImpl } from '../notifications-management/NotificationProtocol.js';
+import { NotificationProtocolSocketIOAdapter } from '../notifications-management/NotificationProtocolSocketIOAdapter.js';
 
 export class HTTPServerAdapter {
 
-    // TODO: change parameter types to interfaces and not implementations
-    constructor(port: number, deviceGroupsService: DeviceGroupsService, devicesService: DevicesService, deviceEventsService: DeviceEventsService, usersService: UsersService, notificationsService: NotificationsService) {
+    constructor(host: string, port: number, deviceGroupsService: DeviceGroupsService, devicesService: DevicesService, deviceEventsService: DeviceEventsService, usersService: UsersService, notificationsService: NotificationsService) {
         const app = express();
         const server = createServer(app)
 
@@ -28,11 +27,11 @@ export class HTTPServerAdapter {
         registerNotificationsServiceProtocol(server, notificationsService)
 
         server.listen(port, async () => {
-            return console.log(`Express is listening at http://localhost:${port}`);
+            return console.log(`Express is listening at http://${host}:${port}`);
         });
     }
 }
 
 export function registerNotificationsServiceProtocol(server: Server, notificationsService: NotificationsService) {
-  notificationsService.setupNotificationProtocol(new NotificationProtocolImpl(server))
+  notificationsService.setupNotificationProtocol(new NotificationProtocolSocketIOAdapter(server))
 }

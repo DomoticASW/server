@@ -1,12 +1,12 @@
 import { Effect, pipe } from "effect"
 import { DeviceEventsServiceImpl } from "../../../src/domain/devices-management/DeviceEventsServiceImpl.js"
 import { DeviceEventsService, DeviceEventsSubscriber } from "../../../src/ports/devices-management/DeviceEventsService.js"
-import { DeviceId, DeviceEvent, Device, DeviceStatus } from "../../../src/domain/devices-management/Device.js"
+import { DeviceId, DeviceEvent, Device, DeviceStatus, DeviceAddress } from "../../../src/domain/devices-management/Device.js"
 import { DevicesService } from "../../../src/ports/devices-management/DevicesService.js"
 import { DeviceNotFoundError } from "../../../src/ports/devices-management/Errors.js"
 
 let service: DeviceEventsService
-const device = Device(DeviceId("1"), "Lamp", new URL("http://localhost"), DeviceStatus.Online, [], [], [DeviceEvent("turned-on"), DeviceEvent("turned-off")])
+const device = Device(DeviceId("1"), "Lamp", DeviceAddress("localhost", 8080), DeviceStatus.Online, [], [], [DeviceEvent("turned-on"), DeviceEvent("turned-off")])
 let devicesService: DevicesService
 
 beforeEach(() => {

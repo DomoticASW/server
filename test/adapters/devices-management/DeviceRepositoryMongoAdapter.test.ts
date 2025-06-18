@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 import { DeviceRepositoryMongoAdapter, DeviceSchema } from "../../../src/adapters/devices-management/DeviceRepositoryMongoAdapter.js";
-import { Device, DeviceAction, DeviceActionId, DeviceEvent, DeviceId, DeviceProperty, DevicePropertyId, DeviceStatus } from "../../../src/domain/devices-management/Device.js";
+import { Device, DeviceAction, DeviceActionId, DeviceAddress, DeviceEvent, DeviceId, DeviceProperty, DevicePropertyId, DeviceStatus } from "../../../src/domain/devices-management/Device.js";
 import { testRepositoryMongoAdapter } from "../BaseRepositoryMongoAdapterTests.js";
 import { Color, Enum, IntRange, NoneBoolean, NoneColor, NoneVoid } from "../../../src/domain/devices-management/Types.js";
 
@@ -24,7 +24,7 @@ function makeEntity(id: string = "1", something: string = "Bedroom"): Device {
         DeviceProperty(DevicePropertyId("4"), "Color", Color(0, 255, 255), NoneColor()),
     ]
     const events = [DeviceEvent("Turn on"), DeviceEvent("Turn off")]
-    return Device(DeviceId(id), something, new URL("http://localhost"), DeviceStatus.Online, properties, actions, events)
+    return Device(DeviceId(id), something, DeviceAddress("localhost", 8080), DeviceStatus.Online, properties, actions, events)
 }
 function makeRepository(connection: mongoose.Connection): DeviceRepositoryMongoAdapter {
     return new DeviceRepositoryMongoAdapter(connection)

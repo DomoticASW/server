@@ -5,7 +5,7 @@ import { Token } from "../../../src/domain/users-management/Token.js"
 import { DevicesService } from "../../../src/ports/devices-management/DevicesService.js"
 import { DeviceNotFoundError } from "../../../src/ports/devices-management/Errors.js"
 import { UsersService } from "../../../src/ports/users-management/UsersService.js"
-import { Device, DeviceId, DeviceStatus } from "../../../src/domain/devices-management/Device.js"
+import { Device, DeviceAddress, DeviceId, DeviceStatus } from "../../../src/domain/devices-management/Device.js"
 import { TaskLists } from "../../../src/domain/permissions-management/TaskLists.js"
 import { EditList } from "../../../src/domain/permissions-management/EditList.js"
 import { PermissionsServiceImpl } from "../../../src/domain/permissions-management/PermissionsServiceImpl.js"
@@ -57,7 +57,7 @@ beforeEach(async () => {
         getAllDevices: () => Effect.succeed([]),
         find(token: Token, id: DeviceId) {
             if (id == DeviceId("1"))
-                return Effect.succeed(Device(DeviceId("1"), "Lamp", new URL("localhost:8080"), DeviceStatus.Online, [], [], []))
+                return Effect.succeed(Device(DeviceId("1"), "Lamp", DeviceAddress("localhost", 8080), DeviceStatus.Online, [], [], []))
             else
                 return Effect.fail(DeviceNotFoundError())
         },
@@ -79,7 +79,7 @@ beforeEach(async () => {
     Effect.runSync(taskListsRepo.add(TaskLists(TaskId("1"), [], [])))
     Effect.runSync(taskListsRepo.add(TaskLists(TaskId("3"), [Email("test@test.com")], [])))
     Effect.runSync(editListRepo.add(EditList(TaskId("1"), [Email("test@test.com")])))
-    devicesService.add(makeToken(), new URL("localhost:8080"))
+    devicesService.add(makeToken(), DeviceAddress("localhost", 8080))
 
 })
 

@@ -7,55 +7,66 @@ import { Email, Role } from "./domain/users-management/User.js";
 import { DeviceGroupsServiceImpl } from "./domain/devices-management/DeviceGroupsServiceImpl.js";
 import { DeviceRepositoryMongoAdapter } from "./adapters/devices-management/DeviceRepositoryMongoAdapter.js";
 import { DevicesServiceImpl } from "./domain/devices-management/DevicesServiceImpl.js";
-import { DeviceFactory } from "./ports/devices-management/DeviceFactory.js";
 import { PermissionsService } from "./ports/permissions-management/PermissionsService.js";
-import { Device, DeviceAction, DeviceActionId, DeviceEvent, DeviceId, DeviceProperty, DevicePropertyId, DeviceStatus } from "./domain/devices-management/Device.js";
-import { DeviceUnreachableError } from "./ports/devices-management/Errors.js";
-import * as uuid from "uuid";
-import { NoneInt } from "./domain/devices-management/Types.js";
 import { DeviceEventsServiceImpl } from "./domain/devices-management/DeviceEventsServiceImpl.js";
-import { DeviceStatusChangesSubscriber, DeviceStatusesService } from "./ports/devices-management/DeviceStatusesService.js";
+import { DeviceStatusesService } from "./ports/devices-management/DeviceStatusesService.js";
 import { DeviceOfflineNotificationSubscriptionRepositoryMongoAdapter } from "./adapters/notifications-management/DeviceOfflineNotificationSubscription.js";
 import { NotificationsService } from "./domain/notifications-management/NotificationsServiceImpl.js";
+import { DeviceCommunicationProtocol } from "./ports/devices-management/DeviceCommunicationProtocol.js";
+import { DeviceFactoryImpl } from "./domain/devices-management/DeviceFactoryImpl.js";
+import { DeviceCommunicationProtocolHttpAdapter } from "./adapters/devices-management/DeviceCommunicationProtocolHttpAdapter.js";
+import { DeviceStatusesServiceImpl } from "./domain/devices-management/DeviceStatusesServiceImpl.js";
 
 const mongoDBConnection = mongoose.createConnection("mongodb://localhost:27017/DomoticASW")
+const defaultServerPort = 3000
+const serverPort = getServerPortFromEnv(defaultServerPort)
 // TODO: replace with production impl
 const usersServiceMock: UsersService = {
     makeToken() { return Effect.succeed({ role: Role.Admin, userEmail: Email("a@email.com") }) },
     verifyToken() { return Effect.succeed(null) },
-    getUserDataUnsafe() { return Effect.succeed({  }) }
+    getUserDataUnsafe() { return Effect.succeed({}) }
 } as unknown as UsersService
 // TODO: replace with production impl
 const permissionsService: PermissionsService = {
     canExecuteActionOnDevice: () => Effect.succeed(undefined)
 } as unknown as PermissionsService
-// TODO: replace with production impl
-const deviceFactory: DeviceFactory = {
-    create: function (deviceUrl: URL): Effect.Effect<Device, DeviceUnreachableError> {
-        const action = DeviceAction(DeviceActionId("1"), "Action", NoneInt())
-        const property = DeviceProperty(DevicePropertyId("1"), "Name", 3, NoneInt())
-        const event1 = DeviceEvent("event1")
-        const event2 = DeviceEvent("event2")
-        return Effect.succeed(Device(DeviceId(uuid.v4()), deviceUrl.hostname, deviceUrl, DeviceStatus.Online, [property], [action], [event1, event2]))
-    }
-}
 
-const deviceStatusesService: DeviceStatusesService = {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    subscribeForDeviceStatusChanges: function (subscriber: DeviceStatusChangesSubscriber): void {
-        
-    },
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    unsubscribeForDeviceStatusChanges: function (subscriber: DeviceStatusChangesSubscriber): void {
-        
-    }
-}
+const deviceCommunicationProtocol: DeviceCommunicationProtocol = new DeviceCommunicationProtocolHttpAdapter(serverPort)
 
+const deviceFactory = new DeviceFactoryImpl(deviceCommunicationProtocol)
 const deviceGroupRepository = new DeviceGroupRepositoryMongoAdapter(mongoDBConnection)
 const deviceRepository = new DeviceRepositoryMongoAdapter(mongoDBConnection)
 const deviceOfflineNotificationSubscriptionRepository = new DeviceOfflineNotificationSubscriptionRepositoryMongoAdapter(mongoDBConnection)
-const devicesService = new DevicesServiceImpl(deviceRepository, deviceFactory, usersServiceMock, permissionsService)
+const devicesService = new DevicesServiceImpl(deviceRepository, deviceFactory, usersServiceMock, permissionsService, deviceCommunicationProtocol)
+const deviceStatusesService: DeviceStatusesService = new DeviceStatusesServiceImpl(5000, devicesService, deviceCommunicationProtocol)
 const deviceGroupsService = new DeviceGroupsServiceImpl(deviceGroupRepository, devicesService, usersServiceMock)
 const deviceEventsService = new DeviceEventsServiceImpl(devicesService)
 const notificationsService = NotificationsService(deviceStatusesService, devicesService, usersServiceMock, deviceOfflineNotificationSubscriptionRepository)
-new HTTPServerAdapter(3000, deviceGroupsService, devicesService, deviceEventsService, usersServiceMock, notificationsService)
+new HTTPServerAdapter("localhost", serverPort, deviceGroupsService, devicesService, deviceEventsService, usersServiceMock, notificationsService)
+
+function getServerPortFromEnv(defaultServerPort: number): number {
+    type EnvVarNotSet = "EnvVarNotSet"
+    type InvalidEnvVar = "InvalidEnvVar"
+
+    return Effect.Do.pipe(
+        Effect.bind("serverPortStr", () => process.env.SERVER_PORT ? Effect.succeed(process.env.SERVER_PORT) : Effect.fail<EnvVarNotSet>("EnvVarNotSet")),
+        Effect.bind("serverPortInt", ({ serverPortStr }) => {
+            const portInt = Number.parseInt(serverPortStr)
+            return !isNaN(portInt) ? Effect.succeed(portInt) : Effect.fail<InvalidEnvVar>("InvalidEnvVar")
+        }),
+        Effect.bind("_", ({ serverPortInt }) => serverPortInt >= 0 && serverPortInt <= 65535 ? Effect.void : Effect.fail<InvalidEnvVar>("InvalidEnvVar")),
+        Effect.map(({ serverPortInt }) => serverPortInt),
+        Effect.catchAll(err => {
+            switch (err) {
+                case "EnvVarNotSet":
+                    console.log(`SERVER_PORT environment variable was not set, using default: ${defaultServerPort}`)
+                    break
+                case "InvalidEnvVar":
+                    console.log(`SERVER_PORT=${process.env.SERVER_PORT} was not a valid port, using default: ${defaultServerPort}`)
+                    break
+            }
+            return Effect.succeed(defaultServerPort)
+        }),
+        Effect.runSync
+    )
+}
