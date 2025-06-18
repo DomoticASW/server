@@ -196,7 +196,7 @@ export function registerDevicesServiceRoutes(app: express.Express, service: Devi
 interface DeviceDTO {
     id: string
     name: string
-    address: string
+    address: DeviceAddressDTO
     status: DeviceStatus
     properties: DevicePropertyDTO[]
     actions: DeviceActionDTO[]
@@ -206,12 +206,20 @@ function DeviceDTO(d: Device): DeviceDTO {
     return {
         id: d.id,
         name: d.name,
-        address: d.address.toString(),
+        address: DeviceAddressDTO(d.address),
         status: d.status,
         properties: d.properties.map(p => DevicePropertyDTO(p)),
         actions: d.actions.map(a => DeviceActionDTO(a)),
         events: d.events.map(e => DeviceEventDTO(e)),
     }
+}
+
+interface DeviceAddressDTO {
+    host: string
+    port: number
+}
+function DeviceAddressDTO(a: DeviceAddress): DeviceAddressDTO {
+    return { host: a.host, port: a.port }
 }
 
 interface DeviceEventDTO {
