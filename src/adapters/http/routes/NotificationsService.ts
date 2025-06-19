@@ -34,6 +34,7 @@ export function registerDevicesServiceRoutes(app: express.Express, service: Noti
     sendResponse(res, response)
   })
 
+  // delete
   app.delete('api/notifications/:id', async (req, res) => {
     const response = await Effect.Do.pipe(
       Effect.bind("token", () => deserializeToken(req, usersService)),
