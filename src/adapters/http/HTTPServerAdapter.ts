@@ -10,6 +10,7 @@ import { registerDeviceEventsServiceRoutes } from './routes/DeviceEventsService.
 import { createServer, Server } from 'node:http';
 import { NotificationsService } from '../../ports/notifications-management/NotificationsService.js';
 import { NotificationProtocolSocketIOAdapter } from '../notifications-management/NotificationProtocolSocketIOAdapter.js';
+import { registerNotificationsServiceRoutes } from './routes/NotificationsService.js';
 
 export class HTTPServerAdapter {
 
@@ -23,7 +24,7 @@ export class HTTPServerAdapter {
         registerDevicesServiceRoutes(app, devicesService, usersService)
         registerDeviceGroupsServiceRoutes(app, deviceGroupsService, usersService)
         registerDeviceEventsServiceRoutes(app, deviceEventsService)
-
+        registerNotificationsServiceRoutes(app, notificationsService, usersService)
         registerNotificationsServiceProtocol(server, notificationsService)
 
         server.listen(port, async () => {

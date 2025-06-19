@@ -6,10 +6,10 @@ import { BadRequest, deserializeToken, sendResponse, Response, handleCommonError
 import { DeviceId } from "../../../domain/devices-management/Device.js";
 import { StatusCodes } from "http-status-codes";
 
-export function registerDevicesServiceRoutes(app: express.Express, service: NotificationsService, usersService: UsersService) {
+export function registerNotificationsServiceRoutes(app: express.Express, service: NotificationsService, usersService: UsersService) {
 
   // create
-  app.post('api/notifications', async (req, res) => {
+  app.post('/api/notifications', async (req, res) => {
     const key = "deviceId"
     const response = await Effect.Do.pipe(
       Effect.bind("token", () => deserializeToken(req, usersService)),
@@ -35,7 +35,7 @@ export function registerDevicesServiceRoutes(app: express.Express, service: Noti
   })
 
   // delete
-  app.delete('api/notifications/:id', async (req, res) => {
+  app.delete('/api/notifications/:id', async (req, res) => {
     const response = await Effect.Do.pipe(
       Effect.bind("token", () => deserializeToken(req, usersService)),
       Effect.bind("_", ({ token }) => service.unsubscribeForDeviceOfflineNotifications(token, DeviceId(req.params.id))),
