@@ -39,7 +39,7 @@ export function registerNotificationsServiceRoutes(app: express.Express, service
     const response = await Effect.Do.pipe(
       Effect.bind("token", () => deserializeToken(req, usersService)),
       Effect.bind("_", ({ token }) => service.unsubscribeForDeviceOfflineNotifications(token, DeviceId(req.params.id))),
-      Effect.map(() => Response(StatusCodes.CREATED)),
+      Effect.map(() => Response(StatusCodes.OK)),
       Effect.catch("__brand", {
         failure: "DeviceNotFoundError",
         onFailure: (err) => Effect.succeed(Response(StatusCodes.NOT_FOUND, err))
