@@ -33,4 +33,24 @@ export function registerDevicesServiceRoutes(app: express.Express, service: Noti
 
     sendResponse(res, response)
   })
+
+  app.delete('api/notifications/:id', async (req, res) => {
+    const response = await Effect.Do.pipe(
+      Effect.bind("token", () => deserializeToken(req, usersService)),
+      Effect.bind("_", ({ token }) => service.unsubscribeForDeviceOfflineNotifications(token, DeviceId(req.params.id))),
+      Effect.map(() => Response(StatusCodes.CREATED)),
+      Effect.catch("__brand", {
+        failure: "DeviceNotFoundError",
+        onFailure: (err) => Effect.succeed(Response(StatusCodes.NOT_FOUND, err))
+      }),
+      Effect.catch("__brand", {
+        failure: "UserNotFoundError",
+        onFailure: (err) => Effect.succeed(Response(StatusCodes.NOT_FOUND, err))
+      }),
+      handleCommonErrors,
+      Effect.runPromise
+    )
+
+    sendResponse(res, response)
+  })
 }
