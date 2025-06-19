@@ -2,7 +2,7 @@ import { Effect, pipe } from "effect";
 import { DeviceCommunicationProtocol } from "../../ports/devices-management/DeviceCommunicationProtocol.js";
 import { DevicesService } from "../../ports/devices-management/DevicesService.js";
 import { DeviceStatusChangesSubscriber, DeviceStatusesService } from "../../ports/devices-management/DeviceStatusesService.js";
-import { DeviceId, DeviceStatus } from "./Device.js";
+import { DeviceStatus } from "./Device.js";
 
 /**
  * Objects of this class when created start polling each device to check whether they are online or not.
@@ -14,7 +14,6 @@ export class DeviceStatusesServiceImpl implements DeviceStatusesService {
     private devicesService: DevicesService
     private protocol: DeviceCommunicationProtocol
 
-    private deviceLastStatuses: Map<DeviceId, DeviceStatus> = new Map()
     private shouldStop = false
     private subscribers: DeviceStatusChangesSubscriber[] = []
 
@@ -50,26 +49,26 @@ export class DeviceStatusesServiceImpl implements DeviceStatusesService {
             Effect.runPromise
         )
 
-        // compute which devices changed their status
-        const changed = results.filter(r => {
-            const lastStatus = this.deviceLastStatuses.get(r.deviceId)
-            if (lastStatus) {
-                // device has changed status?
-                return lastStatus != r.status
-            } else {
-                // new device
-                return true
-            }
-        })
-
-        // update map
-        this.deviceLastStatuses.clear()
-        results.forEach(r => this.deviceLastStatuses.set(r.deviceId, r.status))
-
-        // inform subscribers only about changed statuses
-        changed.forEach(result =>
-            this.subscribers.forEach(s => s.deviceStatusChanged(result.deviceId, result.status))
-        );
+        // Inform subscribers and update persisted device status through DevicesService
+        await pipe(
+            results,
+            Effect.forEach(r => Effect.Do.pipe(
+                Effect.bind("device", () => this.devicesService.findUnsafe(r.deviceId)),
+                Effect.flatMap(({ device }) => Effect.if(device.status == r.status, {
+                    onTrue: () => Effect.void,
+                    onFalse: () => pipe(
+                        this.subscribers,
+                        Effect.forEach(s => s.deviceStatusChanged(r.deviceId, r.status), { concurrency: "unbounded" }),
+                        Effect.flatMap(() => this.devicesService.setDeviceStatusUnsafe(r.deviceId, r.status)),
+                        // If the device is not found at this point there's no reason to throw errors
+                        Effect.catchAll(() => Effect.void)
+                    )
+                })),
+                // If the device is not found it's possible that it was deleted and therefore we shouldn't do anything
+                Effect.catchAll(() => Effect.void)
+            ), { concurrency: "unbounded" }),
+            Effect.runPromise
+        )
     }
 
     stop(): void {

@@ -6,7 +6,7 @@ import { Effect, Either, pipe } from "effect"
 import { InMemoryRepositoryMockCheckingUniqueness } from "../../InMemoryRepositoryMock.js"
 import { DeviceGroup, DeviceGroupId } from "../../../src/domain/devices-management/DeviceGroup.js"
 import * as uuid from "uuid";
-import { Device, DeviceId, DeviceStatus } from "../../../src/domain/devices-management/Device.js"
+import { Device, DeviceAddress, DeviceId, DeviceStatus } from "../../../src/domain/devices-management/Device.js"
 import { DevicesService } from "../../../src/ports/devices-management/DevicesService.js"
 import { DeviceNotFoundError } from "../../../src/ports/devices-management/Errors.js"
 import { UsersService } from "../../../src/ports/users-management/UsersService.js"
@@ -30,7 +30,7 @@ beforeEach(() => {
         add: () => Effect.succeed(DeviceId("1")),
         find(token: Token, id: DeviceId) {
             if (id == DeviceId("1"))
-                return Effect.succeed(Device(DeviceId("1"), "Lamp", new URL("localhost:8080"), DeviceStatus.Online, [], [], []))
+                return Effect.succeed(Device(DeviceId("1"), "Lamp", DeviceAddress("localhost", 8080), DeviceStatus.Online, [], [], []))
             else
                 return Effect.fail(DeviceNotFoundError())
         }
