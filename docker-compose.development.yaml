@@ -15,6 +15,26 @@ services:
     environment:
       - PORT=8085
 
+  presence-sensor:
+    image: ventus218/domoticasw-boolean-sensor
+    network_mode: host
+    environment:
+      ID: presence-sensor
+      TARGET_CONDITION: Presence
+      CONDITION_PROBABILITY: 33
+      CONDITION_TEST_PERIOD_MS: 5000
+      PORT: 8088
+
+  rain-sensor:
+    image: ventus218/domoticasw-boolean-sensor
+    network_mode: host
+    environment:
+      ID: rain-sensor
+      TARGET_CONDITION: Rain
+      CONDITION_PROBABILITY: 25
+      CONDITION_TEST_PERIOD_MS: 5000
+      PORT: 8089
+
   mongo:
     ports:
       - 27017:27017
