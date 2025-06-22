@@ -20,7 +20,15 @@ export interface DevicesService {
     setDeviceStatusUnsafe(deviceId: DeviceId, status: DeviceStatus): Effect<void, DeviceNotFoundError>
     subscribeForDevicePropertyUpdates(subscriber: DevicePropertyUpdatesSubscriber): void;
     unsubscribeForDevicePropertyUpdates(subscriber: DevicePropertyUpdatesSubscriber): void;
+    discoveredDevices(): Iterable<DiscoveredDevice>
 }
+
 export interface DevicePropertyUpdatesSubscriber {
     devicePropertyChanged(deviceId: DeviceId, propertyId: DevicePropertyId, value: unknown): void;
+}
+
+export interface DiscoveredDevice {
+    readonly id: DeviceId
+    readonly name: string
+    readonly address: DeviceAddress
 }
