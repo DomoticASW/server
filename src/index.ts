@@ -42,8 +42,23 @@ const deviceStatusesService: DeviceStatusesService = new DeviceStatusesServiceIm
 const deviceGroupsService = new DeviceGroupsServiceImpl(deviceGroupRepository, devicesService, usersServiceMock)
 const deviceEventsService = new DeviceEventsServiceImpl(devicesService)
 const notificationsService = NotificationsService(deviceStatusesService, devicesService, usersServiceMock, deviceOfflineNotificationSubscriptionRepository)
-new HTTPServerAdapter("localhost", serverPort, deviceGroupsService, devicesService, deviceEventsService, usersServiceMock, notificationsService)
+const logRequestUrls = parseBooleanEnvVar("LOG_REQ_URLS") ?? false
+const logRequestBodies = parseBooleanEnvVar("LOG_REQ_BODIES") ?? false
+new HTTPServerAdapter("localhost", serverPort, deviceGroupsService, devicesService, deviceEventsService, usersServiceMock, notificationsService, { logRequestUrls, logRequestBodies })
 
+function parseBooleanEnvVar(varName: string): boolean | undefined {
+    const str = process.env[varName]?.toLocaleLowerCase()
+    if (str) {
+        if (["true", "1", "yes", "on"].includes(str)) {
+            return true
+        } else if (["false", "0", "no", "off"].includes(str)) {
+            return false
+        } else {
+            console.error(`Ignoring invalid value "${str}" for env var "${varName}"`)
+        }
+    }
+    return undefined
+}
 function getServerPortFromEnv(defaultServerPort: number): number {
     type EnvVarNotSet = "EnvVarNotSet"
     type InvalidEnvVar = "InvalidEnvVar"
