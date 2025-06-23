@@ -19,13 +19,14 @@ services:
     image: corradostortini2/domoticasw-music-player
     network_mode: host
     environment:
-      - PORT=8086
+      MUSICS: "Back in Black-255,Must Have Been the Wind-243,Eye of the Tiger-246,Don't Stop Me Now-209,INVISIBLE-191"
+      PORT: 8086
   
   light-sensor:
     image: corradostortini2/domoticasw-light-sensor
     network_mode: host
     environment:
-      - PORT=8087
+      PORT: 8087
 
   presence-sensor:
     image: ventus218/domoticasw-boolean-sensor
