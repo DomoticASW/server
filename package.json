@@ -9,7 +9,7 @@
   },
   "scripts": {
     "prestart": "npm run build-client && tsc && docker compose -f docker-compose.yaml -f docker-compose.development.yaml up --force-recreate -d --wait",
-    "start": "nodemon",
+    "start": "nodemon || exit 0",
     "poststart": "docker compose -f docker-compose.yaml -f docker-compose.development.yaml down",
     "prestart-clean": "npm run poststart -- --volumes",
     "start-clean": "npm run start",
