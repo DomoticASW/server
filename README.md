@@ -33,7 +33,7 @@ Runs `eslint`
 1. Ensures the code compiles
 1. Starts a testing docker compose environment
 1. It runs tests and computes coverage
-1. Stops the testing docker compose enviroment
+1. Stops and cleans the testing docker compose enviroment
 
 ### `tdd`
 
