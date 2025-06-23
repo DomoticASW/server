@@ -1,0 +1,38 @@
+# DomoticASW server
+
+## Npm scripts reference
+
+### `start`
+
+1. Runs [`build-client`](#build-client)
+1. Starts a development docker compose environment with multiple emulated devices
+1. It runs the server under `nodemon`
+1. Stops the development docker compose environment
+
+Subsequent runs will have containers using the same volumes in order to not lose the application state.
+
+### `start-clean`
+
+The same as [`start`](#start) but every time it is executed it will clean container volumes in order to start in a clean state.
+
+### `build-client`
+
+Checks if the client is built and ready to be served and if not it launches [`rebuild-client`](#rebuild-client)
+
+### `rebuild-client`
+
+Builds the client to be served by the server
+
+### `lint`
+
+Runs `eslint`
+
+### `test`
+
+1. Starts a testing docker compose environment
+1. It runs tests and computes coverage
+1. Stops the testing docker compose enviroment
+
+### `tdd`
+
+The same as [`test`](#test) but it doesn't compute coverage
