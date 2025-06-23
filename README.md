@@ -4,6 +4,7 @@
 
 ### `start`
 
+1. Ensures the code compiles
 1. Runs [`build-client`](#build-client)
 1. Starts a development docker compose environment with multiple emulated devices
 1. It runs the server under `nodemon`
@@ -29,6 +30,7 @@ Runs `eslint`
 
 ### `test`
 
+1. Ensures the code compiles
 1. Starts a testing docker compose environment
 1. It runs tests and computes coverage
 1. Stops the testing docker compose enviroment
