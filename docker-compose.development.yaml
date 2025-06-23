@@ -15,6 +15,18 @@ services:
     environment:
       - PORT=8085
 
+  music-player:
+    image: corradostortini2/domoticasw-music-player
+    network_mode: host
+    environment:
+      - PORT=8086
+  
+  light-sensor:
+    image: corradostortini2/domoticasw-light-sensor
+    network_mode: host
+    environment:
+      - PORT=8087
+
   presence-sensor:
     image: ventus218/domoticasw-boolean-sensor
     network_mode: host
