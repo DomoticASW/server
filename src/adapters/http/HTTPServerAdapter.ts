@@ -13,6 +13,7 @@ import { NotificationsService } from '../../ports/notifications-management/Notif
 import { registerScriptsServiceRoutes } from './routes/ScriptsService.js';
 import { ScriptsService } from '../../ports/scripts-management/ScriptsService.js';
 import { NotificationProtocolSocketIOAdapter } from '../notifications-management/NotificationProtocolSocketIOAdapter.js';
+import { registerNotificationsServiceRoutes } from './routes/NotificationsService.js';
 
 export class HTTPServerAdapter {
 
@@ -27,7 +28,7 @@ export class HTTPServerAdapter {
         registerDeviceGroupsServiceRoutes(app, deviceGroupsService, usersService)
         registerDeviceEventsServiceRoutes(app, deviceEventsService)
         registerScriptsServiceRoutes(app, scriptsService, usersService)
-
+        registerNotificationsServiceRoutes(app, notificationsService, usersService)
         registerNotificationsServiceProtocol(server, notificationsService)
 
         server.listen(port, async () => {
