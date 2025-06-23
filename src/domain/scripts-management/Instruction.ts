@@ -94,8 +94,8 @@ class ConditionImpl<T> implements Condition<T> {
     public negate: boolean,
   ) { }
   evaluate(env: ExecutionEnvironment): boolean {
-    const left = env.constants.get(this.leftConstant) as ConstantValue<T>
-    const right = env.constants.get(this.rightConstant) as ConstantValue<T>
+    const left = Array.from(env.constants.entries()).find(instruction => instruction[0].name == this.leftConstant.name)?.[1] as ConstantValue<T>
+    const right = Array.from(env.constants.entries()).find(instruction => instruction[0].name == this.rightConstant.name)?.[1] as ConstantValue<T>
     return this.negate !== this.operator.evaluate(left, right);
   }
 }

@@ -1,5 +1,5 @@
 import { match, runPromise } from "effect/Effect"
-import { CreateConstantInstruction, StartTaskInstruction } from "../../../src/domain/scripts-management/InstructionImpl.js"
+import { CreateConstantInstruction, IfElseInstruction, SendNotificationInstruction, StartTaskInstruction } from "../../../src/domain/scripts-management/InstructionImpl.js"
 import { Automation, AutomationId, Task, TaskId } from "../../../src/domain/scripts-management/Script.js"
 import { Type } from "../../../src/ports/devices-management/Types.js"
 import { ScriptError, ScriptNotFoundError } from "../../../src/ports/scripts-management/Errors.js"
@@ -8,6 +8,8 @@ import { pipe } from "effect"
 import { PermissionError } from "../../../src/ports/permissions-management/Errors.js"
 import { PeriodTrigger } from "../../../src/domain/scripts-management/Trigger.js"
 import { Email } from "../../../src/domain/users-management/User.js"
+import { Condition } from "../../../src/domain/scripts-management/Instruction.js"
+import { NumberEOperator } from "../../../src/domain/scripts-management/Operators.js"
 
 test("A script error can be created", () => {
   const error = ScriptError("this is the cause")
@@ -43,18 +45,22 @@ test("A task can be created", () => {
 
 test("A task can be executed", async () => {
   const taskId = TaskId("1")
+  const notificationService = NotificationsServiceSpy(Email("email"))
   const instruction1 = CreateConstantInstruction("constantName1", Type.IntType, 15)
-  const instruction2 = CreateConstantInstruction("constantName2", Type.IntType, 25)
+  const instruction2 = CreateConstantInstruction("constantName2", Type.IntType, 15)
+  const ifElseInstruction = IfElseInstruction([SendNotificationInstruction(Email("email"), "thenMessage")], [SendNotificationInstruction(Email("email"), "elseMessage")], Condition(instruction1, instruction2, NumberEOperator()))
   const instructions = [
     instruction1,
-    instruction2
+    instruction2,
+    ifElseInstruction
   ]
 
   const task = Task(taskId, "taskName", instructions)
-  const env = await runPromise(task.execute(NotificationsServiceSpy(Email("email")).get(), ScriptsServiceSpy().get(), PermissionsServiceSpy().get(), DevicesServiceSpy().get(), TokenMock("email")))
+  const env = await runPromise(task.execute(notificationService.get(), ScriptsServiceSpy().get(), PermissionsServiceSpy().get(), DevicesServiceSpy().get(), TokenMock("email")))
 
   expect(env.constants.get(instruction1)).toBeDefined()
   expect(env.constants.get(instruction2)).toBeDefined()
+  expect(notificationService.getMessages()).toStrictEqual(["thenMessage"])
 })
 
 test("A task cannot execute another task if token has not the permissions", async () => {
@@ -103,7 +109,7 @@ test("An automation can be created", async () => {
   const name = "automationName"
   const automation = Automation(automationId, name, periodTrigger, [])
   
-  expect(automation.enabled).toBe(true)
+  expect(automation.enabled).toBe(false)
   expect(automation.id).toBe(automationId)
   expect(automation.trigger).toBe(periodTrigger)
   expect(automation.name).toBe(name)

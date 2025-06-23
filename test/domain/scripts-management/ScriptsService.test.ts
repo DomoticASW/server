@@ -12,7 +12,7 @@ import { pipe } from "effect"
 import { AutomationBuilderWithDeviceEventTrigger, TaskBuilder } from "../../../src/domain/scripts-management/ScriptBuilder.js"
 import { flatMap } from "effect/Effect"
 import { InvalidTokenError } from "../../../src/ports/users-management/Errors.js"
-import { AutomationNameAlreadyInUseError, InvalidScriptError, ScriptNotFoundError, TaskNameAlreadyInUseError } from "../../../src/ports/scripts-management/Errors.js"
+import { AutomationNameAlreadyInUseError, ScriptNotFoundError, TaskNameAlreadyInUseError } from "../../../src/ports/scripts-management/Errors.js"
 import { Type } from "../../../src/ports/devices-management/Types.js"
 import { NumberEOperator, StringEOperator } from "../../../src/domain/scripts-management/Operators.js"
 import { AutomationId, TaskId } from "../../../src/domain/scripts-management/Script.js"
@@ -159,10 +159,7 @@ test("If trying to create a task with syntax errors, the errors are returned", a
     match({
       onSuccess: () => { throw Error("should not be here") },
       onFailure: err => {
-        expect(err).toStrictEqual([
-          InvalidScriptError("The constant constantName3 was not defined inside of the if's scope"), 
-          InvalidScriptError("The constant constantName4 was not defined inside of the if's scope")
-        ])
+        expect(err.cause).toBe("The constant constantName3 was not defined inside of the if's scope, The constant constantName4 was not defined inside of the if's scope")
       },
     })
   ))
@@ -340,10 +337,7 @@ test("If trying to edit a task with syntax errors, the errors are returned", asy
     match({
       onSuccess: () => { throw Error("should not be here") },
       onFailure: err => {
-        expect(err).toStrictEqual([
-          InvalidScriptError("The constant constantName3 was not defined inside of the if's scope"), 
-          InvalidScriptError("The constant constantName4 was not defined inside of the if's scope")
-        ])
+        expect(err.cause).toBe("The constant constantName3 was not defined inside of the if's scope, The constant constantName4 was not defined inside of the if's scope")
       },
     })
   ))
@@ -459,10 +453,7 @@ test("If trying to edit an automation with syntax errors, the errors are returne
     match({
       onSuccess: () => { throw Error("should not be here") },
       onFailure: err => {
-        expect(err).toStrictEqual([
-          InvalidScriptError("The constant constantName3 was not defined inside of the if's scope"), 
-          InvalidScriptError("The constant constantName4 was not defined inside of the if's scope")
-        ])
+        expect(err.cause).toBe("The constant constantName3 was not defined inside of the if's scope, The constant constantName4 was not defined inside of the if's scope")
       },
     })
   ))
@@ -513,13 +504,29 @@ test("Cannot start a task if the user has not the right permissions", async () =
   expect(permissionsServiceSpy.call()).toBe(1)
 })
 
-test("An automation can be disabled", async () => {
-  const automation = await runPromise(pipe(
-    scriptsService.createAutomation(token, automationBuilder),
-    flatMap(id => scriptsService.findAutomation(token, id))
+test("A task can be removed", async () => {
+  const taskId = await runPromise(pipe(
+    scriptsService.createTask(token, taskBuilder)
   ))
 
-  await runPromise(scriptsService.setAutomationState(token, automation.id, false))
+  await runPromise(scriptsService.removeTask(token, taskId))
+  const tasks = await runPromise(scriptsService.getAllTasks(token))
+  const repoTasks = await runPromise(scriptsRepository.getAll())
 
-  expect(automation.enabled).toBe(false)
+  expect(tasks).toHaveLength(0)
+  expect(repoTasks).toHaveLength(0)
+})
+
+test("An automation can be removed", async () => {
+  const automationId = await runPromise(pipe(
+    scriptsService.createAutomation(token, automationBuilder)
+  ))
+
+  await runPromise(scriptsService.removeAutomation(token, automationId))
+  const automations = await runPromise(scriptsService.getAllAutomations(token))
+  const repoAutomations = await runPromise(scriptsRepository.getAll())
+
+  expect(automations).toHaveLength(0)
+  expect(repoAutomations).toHaveLength(0)
+
 })

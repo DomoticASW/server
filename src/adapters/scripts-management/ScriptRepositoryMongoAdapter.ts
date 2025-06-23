@@ -141,7 +141,7 @@ export class ScriptRepositoryMongoAdapter extends BaseRepositoryMongoAdapter<Scr
     });
     private scriptSchema = new mongoose.Schema<ScriptSchema>({
         _id: { type: String, required: true },
-        name: { type: String, required: true },
+        name: { type: String, required: true, unique: true },
         scriptType: { type: String, enum: ScriptType, required: true },
         instructions: { type: [this.instructionSchema], required: true },
         automationData: { type: this.automationDataSchema, required: false }
@@ -186,7 +186,7 @@ export class ScriptRepositoryMongoAdapter extends BaseRepositoryMongoAdapter<Scr
                     const t = s.automationData!.trigger.trigger as DeviceEventTriggerSchema
                     trigger = DeviceEventTrigger(DeviceId(t.deviceId), t.eventName)
                 }
-                return Automation(AutomationId(s._id), s.name, trigger, instructions)
+                return Automation(AutomationId(s._id), s.name, trigger, instructions, s.automationData!.enabled)
             case ScriptType.Task:
                 return Task(TaskId(s._id), s.name, instructions)
         }
