@@ -363,8 +363,7 @@ test("An InvalidScriptError is returned if using a constant not defined ", async
     Effect.match({
       onSuccess() { throw Error("Should not be here") },
       onFailure(error) {
-        expect(error.length).toBe(2)
-        expect(error.map(error => error.cause)).toStrictEqual(["The constant constantName3 was not defined inside of the if's scope", "The constant constantName4 was not defined inside of the if's scope"])
+        expect(error.cause).toBe("The constant constantName3 was not defined inside of the if's scope, The constant constantName4 was not defined inside of the if's scope")
       },
     })
   ))
@@ -438,8 +437,7 @@ test("An InvalidScriptError is returned if using a constant not defined also wit
     Effect.match({
       onSuccess() { throw Error("Should not be here") },
       onFailure(error) {
-        expect(error.length).toBe(2)
-        expect(error.map(error => error.cause)).toStrictEqual(["The constant constantName3 was not defined inside of the if's scope", "The constant constantName4 was not defined inside of the if's scope"])
+        expect(error.cause).toBe("The constant constantName3 was not defined inside of the if's scope, The constant constantName4 was not defined inside of the if's scope")
       },
     })
   ))
@@ -519,8 +517,7 @@ test("An InvalidScriptError is returned if using a constant not defined also wit
     Effect.match({
       onSuccess() { throw Error("Should not be here") },
       onFailure(error) {
-        expect(error.length).toBe(2)
-        expect(error.map(error => error.cause)).toStrictEqual(["The constant constantName3 was not defined inside of the if's scope", "The constant constantName4 was not defined inside of the if's scope"])
+        expect(error.cause).toBe("The constant constantName3 was not defined inside of the if's scope, The constant constantName4 was not defined inside of the if's scope")
       },
     })
   ))

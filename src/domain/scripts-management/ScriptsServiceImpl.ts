@@ -1,5 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-import { Effect, flatMap, catch as catch_, succeed, fail, mapError, map, forkDaemon, runFork, forEach, fork, sync, sleep, andThen, tap } from "effect/Effect";
+import { Effect, flatMap, catch as catch_, succeed, fail, mapError, map, forkDaemon, runFork, forEach, sleep, andThen, runPromise, sync, tap, if as if_ } from "effect/Effect";
 import { PermissionError } from "../../ports/permissions-management/Errors.js";
 import { ScriptNotFoundError, TaskNameAlreadyInUseError, AutomationNameAlreadyInUseError, InvalidScriptError, ScriptError } from "../../ports/scripts-management/Errors.js";
 import { ScriptsService } from "../../ports/scripts-management/ScriptsService.js";
@@ -12,16 +11,16 @@ import { DevicesService } from "../../ports/devices-management/DevicesService.js
 import { NotificationsService } from "../../ports/notifications-management/NotificationsService.js";
 import { PermissionsService } from "../../ports/permissions-management/PermissionsService.js";
 import { UsersService } from "../../ports/users-management/UsersService.js";
-import { pipe, Runtime } from "effect";
-import { DuplicateIdError, UniquenessConstraintViolatedError } from "../../ports/Repository.js";
+import { Fiber, pipe } from "effect";
+import { DuplicateIdError, NotFoundError, UniquenessConstraintViolatedError } from "../../ports/Repository.js";
 import { DeviceEventsService, DeviceEventsSubscriber } from "../../ports/devices-management/DeviceEventsService.js";
 import { DeviceId, DeviceEvent } from "../devices-management/Device.js";
 import { DeviceEventTrigger, DeviceEventTriggerImpl, PeriodTrigger, PeriodTriggerImpl } from "./Trigger.js";
-import { RuntimeFiber } from "effect/Fiber";
-import { ExecutionEnvironment } from "./Instruction.js";
 import { millis, seconds } from "effect/Duration";
 
 export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscriber {
+  private automationsFiberMap: Map<AutomationId, Fiber.RuntimeFiber<undefined, ScriptError | NotFoundError>> = new Map()
+
   constructor(
     private scriptRepository: ScriptRepository, 
     private devicesService: DevicesService,
@@ -31,6 +30,9 @@ export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscribe
     deviceEventsService: DeviceEventsService
   ) {
     deviceEventsService.subscribeForDeviceEvents(this)
+    runPromise(this.scriptRepository.getAll())
+      .then(scripts => this.startAutomationsHandler(Array.from(scripts).filter(e => e instanceof AutomationImpl)))
+
   }
 
   findTask(token: Token, taskId: TaskId): Effect<Task, InvalidTokenError | ScriptNotFoundError> {
@@ -57,7 +59,7 @@ export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscribe
     )
   }
 
-  createTask(token: Token, task: TaskBuilder): Effect<TaskId, InvalidTokenError | TaskNameAlreadyInUseError | Array<InvalidScriptError>> {
+  createTask(token: Token, task: TaskBuilder): Effect<TaskId, InvalidTokenError | TaskNameAlreadyInUseError | InvalidScriptError> {
     return pipe(
       this.createScript(token, task),
       map(id => id as TaskId),
@@ -74,7 +76,7 @@ export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscribe
     )
   }
 
-  editTask(token: Token, taskId: TaskId, task: TaskBuilder): Effect<void, InvalidTokenError | PermissionError | ScriptNotFoundError | TaskNameAlreadyInUseError | Array<InvalidScriptError>> {
+  editTask(token: Token, taskId: TaskId, task: TaskBuilder): Effect<void, InvalidTokenError | PermissionError | ScriptNotFoundError | TaskNameAlreadyInUseError | InvalidScriptError> {
     return pipe(
       this.editScript(token, taskId, task),
       mapError(err => {
@@ -97,6 +99,9 @@ export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscribe
     )
   }
 
+  removeTask(token: Token, taskId: TaskId): Effect<void, InvalidTokenError | ScriptNotFoundError | PermissionError> {
+    return this.removeScript(token, taskId)
+  }
   findAutomation(token: Token, automationId: AutomationId): Effect<Automation, InvalidTokenError | ScriptNotFoundError> {
     return pipe(
       this.findScript(token, automationId),
@@ -111,7 +116,7 @@ export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscribe
     )
   }
 
-  createAutomation(token: Token, automation: AutomationBuilder): Effect<AutomationId, InvalidTokenError | AutomationNameAlreadyInUseError | Array<InvalidScriptError>> {
+  createAutomation(token: Token, automation: AutomationBuilder): Effect<AutomationId, InvalidTokenError | AutomationNameAlreadyInUseError | InvalidScriptError> {
     return pipe(
       this.createScript(token, automation),
       map(id => id as AutomationId),
@@ -123,7 +128,7 @@ export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscribe
         }),
         catch_("__brand", {
           failure: "ScriptNotFoundError",
-          onFailure: _ => succeed(id)
+          onFailure: () => succeed(id)
         })
       )),
       mapError(err => {
@@ -164,13 +169,23 @@ export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscribe
     })
   }
 
+  private startAutomationsHandler(automations: Automation[]) {
+    for (const automation of automations) {
+      this.startAutomationHandler(automation)
+    }
+  }
+
   private startAutomationHandler(automation: Automation) {
-    if (automation.trigger instanceof PeriodTriggerImpl && automation.enabled) {
-      const periodTrigger = automation.trigger as PeriodTrigger
-      runFork(forkDaemon(pipe(
+    if (automation.trigger instanceof PeriodTriggerImpl) {
+      const periodTrigger = automation.trigger as PeriodTrigger 
+
+      runFork(pipe(
         this.waitToStart(periodTrigger),
-        andThen(() => this.periodLoop(automation, periodTrigger))
-      )))
+        flatMap(() => forkDaemon(this.periodLoop(automation, periodTrigger))),
+        tap(fiber =>
+          sync(() => this.automationsFiberMap.set(automation.id, fiber))
+        )
+      ))
     }
   }
 
@@ -179,18 +194,11 @@ export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscribe
     return delay > 0 ? sleep(millis(delay)) : succeed(null)
   }
 
-  private periodLoop(automation: Automation, periodTrigger: PeriodTrigger): Effect<undefined, ScriptError> {
+  private periodLoop(automation: Automation, periodTrigger: PeriodTrigger): Effect<undefined, ScriptError | NotFoundError> {
     return pipe(
-      sync(() => automation.enabled),
-      flatMap(enabled =>
-        enabled
-          ? pipe(
-            this.startAutomation(automation),
-            andThen(() => sleep(seconds(periodTrigger.periodSeconds))),
-            andThen(() => this.periodLoop(automation, periodTrigger))
-          )
-          : succeed(undefined)
-      )
+      this.startAutomation(automation),
+      andThen(() => sleep(seconds(periodTrigger.periodSeconds))),
+      andThen(() => this.periodLoop(automation, periodTrigger))
     )
   }
 
@@ -198,7 +206,7 @@ export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscribe
     return automation.execute(this.notificationsService, this, this.permissionsService, this.devicesService)
   }
 
-  editAutomation(token: Token, automationId: AutomationId, automation: AutomationBuilder): Effect<void, InvalidTokenError | PermissionError | ScriptNotFoundError | AutomationNameAlreadyInUseError | Array<InvalidScriptError>> {
+  editAutomation(token: Token, automationId: AutomationId, automation: AutomationBuilder): Effect<void, InvalidTokenError | PermissionError | ScriptNotFoundError | AutomationNameAlreadyInUseError | InvalidScriptError> {
     return pipe(
       this.editScript(token, automationId, automation),
       mapError(err => {
@@ -216,10 +224,28 @@ export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscribe
   setAutomationState(token: Token, automationId: AutomationId, enable: boolean): Effect<void, InvalidTokenError | ScriptNotFoundError> {
     return pipe(
       this.findAutomation(token, automationId),
-      map(automation => automation.enabled = enable)
+      flatMap(automation => pipe(
+        sync(() => automation.enabled = enable),
+        flatMap(() => if_(enable, {
+          onTrue: () => succeed(this.startAutomationHandler(automation)),
+          onFalse: () => Fiber.interrupt(this.automationsFiberMap.get(automationId)!)
+        })),
+        flatMap(() => this.scriptRepository.update(automation))
+      )),
+      catch_("__brand", {
+        failure: "NotFoundError",
+        onFailure: () => succeed(undefined)
+      }),
+      catch_("__brand", {
+        failure: "UniquenessConstraintViolatedError",
+        onFailure: () => succeed(undefined)
+      })
     )
   }
 
+  removeAutomation(token: Token, automationId: AutomationId): Effect<void, InvalidTokenError | ScriptNotFoundError | PermissionError> {
+    return this.removeScript(token, automationId)
+  }
   private getAllScripts(token: Token): Effect<Iterable<Script<ScriptId>>, InvalidTokenError> {
     return pipe(
       this.usersService.verifyToken(token),
@@ -227,7 +253,7 @@ export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscribe
     )
   }
 
-  private createScript(token: Token, scriptBuilder: ScriptBuilder<Script<ScriptId>>): Effect<ScriptId, DuplicateIdError | UniquenessConstraintViolatedError | InvalidTokenError | Array<InvalidScriptError>> {
+  private createScript(token: Token, scriptBuilder: ScriptBuilder<Script<ScriptId>>): Effect<ScriptId, DuplicateIdError | UniquenessConstraintViolatedError | InvalidTokenError | InvalidScriptError> {
     return pipe(
       this.usersService.verifyToken(token),
       flatMap(() => scriptBuilder.build()),
@@ -251,7 +277,7 @@ export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscribe
     )
   }
 
-  private editScript(token: Token, scriptId: ScriptId, scriptBuilder: ScriptBuilder): Effect<void, InvalidTokenError | PermissionError | ScriptNotFoundError | UniquenessConstraintViolatedError | Array<InvalidScriptError>> {
+  private editScript(token: Token, scriptId: ScriptId, scriptBuilder: ScriptBuilder): Effect<void, InvalidTokenError | PermissionError | ScriptNotFoundError | UniquenessConstraintViolatedError | InvalidScriptError> {
     return pipe(
       this.permissionsService.canEdit(token, scriptId),
       flatMap(() => scriptBuilder.buildWithId(scriptId)),
@@ -266,5 +292,16 @@ export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscribe
         return err
       })
     )
+  }
+
+  private removeScript(token: Token, scriptId: ScriptId): Effect<void, InvalidTokenError | PermissionError | ScriptNotFoundError, never> {
+    return pipe(
+      this.permissionsService.canEdit(token, scriptId),
+      flatMap(() => this.scriptRepository.remove(scriptId)),
+      catch_("__brand", {
+        failure: "NotFoundError",
+        onFailure: err => fail(ScriptNotFoundError(err.cause))
+      })
+    );
   }
 }

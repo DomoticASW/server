@@ -9,12 +9,15 @@ import { DeviceEventsService } from '../../ports/devices-management/DeviceEvents
 import { registerDeviceEventsServiceRoutes } from './routes/DeviceEventsService.js';
 import { createServer, Server } from 'node:http';
 import { NotificationsService } from '../../ports/notifications-management/NotificationsService.js';
+
+import { registerScriptsServiceRoutes } from './routes/ScriptsService.js';
+import { ScriptsService } from '../../ports/scripts-management/ScriptsService.js';
 import { NotificationProtocolSocketIOAdapter } from '../notifications-management/NotificationProtocolSocketIOAdapter.js';
 import { registerNotificationsServiceRoutes } from './routes/NotificationsService.js';
 
 export class HTTPServerAdapter {
 
-    constructor(host: string, port: number, deviceGroupsService: DeviceGroupsService, devicesService: DevicesService, deviceEventsService: DeviceEventsService, usersService: UsersService, notificationsService: NotificationsService) {
+    constructor(host: string, port: number, deviceGroupsService: DeviceGroupsService, devicesService: DevicesService, deviceEventsService: DeviceEventsService, usersService: UsersService, notificationsService: NotificationsService, scriptsService: ScriptsService) {
         const app = express();
         const server = createServer(app)
 
@@ -24,6 +27,7 @@ export class HTTPServerAdapter {
         registerDevicesServiceRoutes(app, devicesService, usersService)
         registerDeviceGroupsServiceRoutes(app, deviceGroupsService, usersService)
         registerDeviceEventsServiceRoutes(app, deviceEventsService)
+        registerScriptsServiceRoutes(app, scriptsService, usersService)
         registerNotificationsServiceRoutes(app, notificationsService, usersService)
         registerNotificationsServiceProtocol(server, notificationsService)
 
