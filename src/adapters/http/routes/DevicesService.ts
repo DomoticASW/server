@@ -189,6 +189,17 @@ export function registerDevicesServiceRoutes(app: express.Express, service: Devi
         )
         sendResponse(res, response)
     });
+
+    app.get("/api/discovered-devices", async (req, res) => {
+        const response = await Effect.Do.pipe(
+            Effect.bind("token", () => deserializeToken(req, usersService)),
+            Effect.bind("devices", ({ token }) => service.discoveredDevices(token)),
+            Effect.map(({ devices }) => Response(StatusCodes.OK, Array.from(devices))),
+            handleCommonErrors,
+            Effect.runPromise
+        )
+        sendResponse(res, response)
+    })
 }
 
 // Below are utils to serialize and deserialize stuff

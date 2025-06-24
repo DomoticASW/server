@@ -421,7 +421,11 @@ test("unsubscribeForDevicePropertyUpdates unregisters subscribers", () => {
 
 test("discoveredDevices delegates to the given DeviceDiscoverer", () => {
     expect(deviceDiscoverer.callsToDiscoveredDevices).toEqual(0)
-    expect(service.discoveredDevices()).toEqual(deviceDiscoverer.discoveredDevices())
+    const result = pipe(
+        service.discoveredDevices(makeToken()),
+        Effect.runSync
+    )
+    expect(result).toEqual(deviceDiscoverer.discoveredDevices())
     expect(deviceDiscoverer.callsToDiscoveredDevices).toEqual(2)
 })
 
@@ -556,7 +560,8 @@ describe("all methods requiring a token fail if the token is invalid", () => {
         (s) => s.rename(token, deviceId, "Oven"),
         (s) => s.find(token, deviceId),
         (s) => s.getAllDevices(token),
-        (s) => s.executeAction(token, deviceId, DeviceActionId("action"), undefined)
+        (s) => s.executeAction(token, deviceId, DeviceActionId("action"), undefined),
+        (s) => s.discoveredDevices(token)
     ]
 
     beforeEach(() => {

@@ -21,7 +21,7 @@ export interface DevicesService {
     setDeviceStatusUnsafe(deviceId: DeviceId, status: DeviceStatus): Effect<void, DeviceNotFoundError>
     subscribeForDevicePropertyUpdates(subscriber: DevicePropertyUpdatesSubscriber): void;
     unsubscribeForDevicePropertyUpdates(subscriber: DevicePropertyUpdatesSubscriber): void;
-    discoveredDevices(): Iterable<DiscoveredDevice>
+    discoveredDevices(token: Token): Effect<Iterable<DiscoveredDevice>, InvalidTokenError>
 }
 
 export interface DevicePropertyUpdatesSubscriber {

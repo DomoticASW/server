@@ -223,7 +223,10 @@ export class DevicesServiceImpl implements DevicesService {
     unsubscribeForDevicePropertyUpdates(subscriber: DevicePropertyUpdatesSubscriber): void {
         this.propertyUpdatesSubscribers = this.propertyUpdatesSubscribers.filter(s => s !== subscriber)
     }
-    discoveredDevices(): Iterable<DiscoveredDevice> {
-        return this.deviceDiscoverer.discoveredDevices()
+    discoveredDevices(token: Token): Effect.Effect<Iterable<DiscoveredDevice>, InvalidTokenError> {
+        return pipe(
+            this.usersService.verifyToken(token),
+            Effect.flatMap(() => Effect.succeed(this.deviceDiscoverer.discoveredDevices()))
+        )
     }
 }
