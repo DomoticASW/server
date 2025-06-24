@@ -208,7 +208,8 @@ export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscribe
 
   editAutomation(token: Token, automationId: AutomationId, automation: AutomationBuilder): Effect<void, InvalidTokenError | PermissionError | ScriptNotFoundError | AutomationNameAlreadyInUseError | InvalidScriptError> {
     return pipe(
-      this.editScript(token, automationId, automation),
+      this.setAutomationState(token, automationId, false),
+      flatMap(() => this.editScript(token, automationId, automation)),
       mapError(err => {
         if ("__brand" in err) {
           switch (err.__brand) {
@@ -244,8 +245,12 @@ export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscribe
   }
 
   removeAutomation(token: Token, automationId: AutomationId): Effect<void, InvalidTokenError | ScriptNotFoundError | PermissionError> {
-    return this.removeScript(token, automationId)
+    return pipe(
+      this.setAutomationState(token, automationId, false),
+      flatMap(() => this.removeScript(token, automationId))
+    )
   }
+
   private getAllScripts(token: Token): Effect<Iterable<Script<ScriptId>>, InvalidTokenError> {
     return pipe(
       this.usersService.verifyToken(token),
