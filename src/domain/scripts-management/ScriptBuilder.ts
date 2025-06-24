@@ -20,8 +20,8 @@ export interface ScriptBuilder<S = Task | Automation> {
   addCreateConstant<T>(ref: NodeRef, name: string, type: Type, value: T): [ScriptBuilder<S>, ConstantRef];
   addCreateDevicePropertyConstant(ref: NodeRef, name: string, type: Type, deviceId: DeviceId, propertyId: DevicePropertyId): [ScriptBuilder<S>, ConstantRef];
 
-  build(): Effect<S, Array<InvalidScriptError>>
-  buildWithId(id: ScriptId): Effect<S, Array<InvalidScriptError>>
+  build(): Effect<S, InvalidScriptError>
+  buildWithId(id: ScriptId): Effect<S, InvalidScriptError>
 }
 
 export type AutomationBuilder = ScriptBuilder<Automation>
@@ -136,8 +136,8 @@ abstract class ScriptBuilderImpl<S = Task | Automation> implements ScriptBuilder
     return instructions;
   }
 
-  abstract build(): Effect<S, Array<InvalidScriptError>>
-  abstract buildWithId(id: ScriptId): Effect<S, InvalidScriptError[], never>
+  abstract build(): Effect<S, InvalidScriptError>
+  abstract buildWithId(id: ScriptId): Effect<S, InvalidScriptError, never>
   protected abstract copy(
     nodeRefs: Array<[NodeRef, Instruction]>,
     errors: Array<InvalidScriptError>
@@ -145,14 +145,16 @@ abstract class ScriptBuilderImpl<S = Task | Automation> implements ScriptBuilder
 }
 
 class TaskBuilderImpl extends ScriptBuilderImpl<Task> {
-  build(): Effect<Task, Array<InvalidScriptError>> {
+  build(): Effect<Task, InvalidScriptError> {
     return this.buildWithId(TaskId(uuid.v4()))
   }
 
-  buildWithId(id: TaskId): Effect<Task, Array<InvalidScriptError>> {
+  buildWithId(id: TaskId): Effect<Task, InvalidScriptError> {
     const instructions: Array<Instruction> = this.buildInstructions();
 
-    return this.errors.length == 0 ? succeed(Task(id, this.name, instructions)) : fail(this.errors)
+    return this.errors.length == 0
+      ? succeed(Task(id, this.name, instructions))
+      : fail(InvalidScriptError(this.errors.map(err => err.cause).join(", ")));
   }
 
   protected copy(
@@ -173,14 +175,14 @@ class AutomationBuilderImpl extends ScriptBuilderImpl<Automation> {
     super(name, nodeRefs, errors)
   }
 
-  build(): Effect<Automation, Array<InvalidScriptError>> {
+  build(): Effect<Automation, InvalidScriptError> {
     return this.buildWithId(AutomationId(uuid.v4()))
   }
 
-  buildWithId(id: AutomationId): Effect<Automation, Array<InvalidScriptError>> {
+  buildWithId(id: AutomationId): Effect<Automation, InvalidScriptError> {
     const instructions: Array<Instruction> = this.buildInstructions();
 
-    return this.errors.length == 0 ? succeed(Automation(id, this.name, this.trigger, instructions)) : fail(this.errors)
+    return this.errors.length == 0 ? succeed(Automation(id, this.name, this.trigger, instructions)) : fail(InvalidScriptError(this.errors.reduce((err1, err2) => InvalidScriptError(err1.cause + ", " + err2.cause)).cause))
   }
 
   protected copy(

@@ -1,6 +1,6 @@
 import { Effect } from "effect/Effect";
 import { Brand } from "../utils/Brand.js";
-import { Error } from "../ports/Error.js"
+import { Error } from "./Error.js"
 
 export interface Repository<Id, Entity> {
     add(entity: Entity): Effect<void, DuplicateIdError | UniquenessConstraintViolatedError>
