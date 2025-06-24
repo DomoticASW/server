@@ -49,7 +49,7 @@ export class DeviceDiscovererUDPAdapter implements DeviceDiscoverer {
 
     discoveredDevices(): Iterable<DiscoveredDevice> {
         return Array.from(this.receivedMessages.values())
-            .filter(m => m.arrivedAt.getTime() <= this.rememberDiscoveriesForSeconds)
+            .filter(m => m.arrivedAt.getTime() <= new Date().getTime() + this.rememberDiscoveriesForSeconds)
             .map(m => DiscoveredDevice(DeviceId(m.id), m.name, DeviceAddress(m.host, m.port)))
     }
 }
