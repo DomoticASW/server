@@ -11,6 +11,8 @@ import { DeviceRepository } from "../../ports/devices-management/DeviceRepositor
 import { UsersService } from "../../ports/users-management/UsersService.js";
 import { PermissionsService } from "../../ports/permissions-management/PermissionsService.js";
 import { DeviceCommunicationProtocol } from "../../ports/devices-management/DeviceCommunicationProtocol.js";
+import { DeviceDiscoverer } from "../../ports/devices-management/DeviceDiscoverer.js";
+import { DiscoveredDevice } from "./DiscoveredDevice.js";
 
 export class DevicesServiceImpl implements DevicesService {
     private propertyUpdatesSubscribers: DevicePropertyUpdatesSubscriber[] = [];
@@ -19,7 +21,8 @@ export class DevicesServiceImpl implements DevicesService {
         private deviceFactory: DeviceFactory,
         private usersService: UsersService,
         private permissionsService: PermissionsService,
-        private deviceCommunicationProtocol: DeviceCommunicationProtocol) {
+        private deviceCommunicationProtocol: DeviceCommunicationProtocol,
+        private deviceDiscoverer: DeviceDiscoverer) {
     }
 
     add(token: Token, deviceAddress: DeviceAddress): Effect.Effect<DeviceId, DeviceAlreadyRegisteredError | DeviceUnreachableError | TokenError> {
@@ -219,5 +222,8 @@ export class DevicesServiceImpl implements DevicesService {
     }
     unsubscribeForDevicePropertyUpdates(subscriber: DevicePropertyUpdatesSubscriber): void {
         this.propertyUpdatesSubscribers = this.propertyUpdatesSubscribers.filter(s => s !== subscriber)
+    }
+    discoveredDevices(): Iterable<DiscoveredDevice> {
+        return this.deviceDiscoverer.discoveredDevices()
     }
 }

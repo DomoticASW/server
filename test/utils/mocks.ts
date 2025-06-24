@@ -151,11 +151,11 @@ export function PermissionsServiceSpy(userToken: Token = TokenMock("email"), tes
         },
         canExecuteTask: function (token: Token, taskId: TaskId): Effect<void, PermissionError | InvalidTokenError | ScriptNotFoundError> {
           if (!testEdit) call++
-          return token == userToken ? succeed(true) : fail(testInvalidToken ? InvalidTokenError() :  PermissionError())
+          return token == userToken ? succeed(true) : fail(testInvalidToken ? InvalidTokenError() : PermissionError())
         },
         canEdit: function (token: Token, scriptId: ScriptId): Effect<void, PermissionError | InvalidTokenError> {
           if (testEdit) call++
-          return token == userToken ? succeed(true) : fail(testInvalidToken ? InvalidTokenError() :  PermissionError())
+          return token == userToken ? succeed(true) : fail(testInvalidToken ? InvalidTokenError() : PermissionError())
         },
         addToEditlist: function (token: Token, email: Email, scriptId: ScriptId): Effect<void, TokenError | UserNotFoundError | ScriptNotFoundError> {
           throw new Error("Function not implemented.");
@@ -231,55 +231,19 @@ export function DevicesServiceSpy(device: Device = DeviceMock(), testingAction: 
     call: () => call,
     get: () => {
       return {
-        add: function (token: Token, deviceAddress: DeviceAddress): Effect<DeviceId, DeviceAlreadyRegisteredError | DeviceUnreachableError | TokenError> {
-          throw new Error("Function not implemented.");
-        },
-        remove: function (token: Token, deviceId: DeviceId): Effect<void, DeviceNotFoundError | TokenError> {
-          throw new Error("Function not implemented.");
-        },
-        rename: function (token: Token, deviceId: DeviceId, name: string): Effect<void, DeviceNotFoundError | TokenError> {
-          throw new Error("Function not implemented.");
-        },
-        find: function (token: Token, deviceId: DeviceId): Effect<Device, DeviceNotFoundError | InvalidTokenError> {
-          throw new Error("Function not implemented.");
-        },
         findUnsafe: function (deviceId: DeviceId): Effect<Device, DeviceNotFoundError> {
           if (!testingAction) {
             call++
           }
           return device.id == deviceId ? succeed(device) : fail(DeviceNotFoundError())
         },
-        getAllDevices: function (token: Token): Effect<Iterable<Device>, InvalidTokenError> {
-          throw new Error("Function not implemented.");
-        },
-        getAllDevicesUnsafe: function (): Effect<Iterable<Device>, never> {
-          throw new Error("Function not implemented.");
-        },
-        executeAction: function (token: Token, deviceId: DeviceId, actionId: DeviceActionId, input: unknown): Effect<void, InvalidInputError | DeviceActionError | DeviceActionNotFound | DeviceNotFoundError | InvalidTokenError | PermissionError> {
-          throw new Error("Function not implemented.");
-        },
         executeAutomationAction: function (deviceId: DeviceId, actionId: DeviceActionId, input: unknown): Effect<void, InvalidInputError | DeviceActionError | DeviceActionNotFound | DeviceNotFoundError> {
           if (testingAction) {
             call++
           }
           return deviceId == device.id ? succeed(null) : fail(DeviceNotFoundError())
-        },
-        updateDeviceProperty: function (deviceId: DeviceId, propertyId: DevicePropertyId, value: unknown): Effect<void, DeviceNotFoundError | DevicePropertyNotFound> {
-          throw new Error("Function not implemented.");
-        },
-        updateDeviceProperties: function (deviceId: DeviceId, properties: Map<DevicePropertyId, unknown>): Effect<void, DeviceNotFoundError | DevicePropertyNotFound> {
-          throw new Error("Function not implemented.");
-        },
-        setDeviceStatusUnsafe() {
-          throw new Error("Function not implemented.");
-        },
-        subscribeForDevicePropertyUpdates: function (subscriber: DevicePropertyUpdatesSubscriber): void {
-          throw new Error("Function not implemented.");
-        },
-        unsubscribeForDevicePropertyUpdates: function (subscriber: DevicePropertyUpdatesSubscriber): void {
-          throw new Error("Function not implemented.");
         }
-      }
+      } as unknown as DevicesService
     }
   }
 }
