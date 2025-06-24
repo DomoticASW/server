@@ -38,3 +38,14 @@ Runs `eslint`
 ### `tdd`
 
 The same as [`test`](#test) but it doesn't compute coverage
+
+## Debugging
+
+For debugging purposes multiple console logs can be enabled distincively through boolean environment variables:
+
+| Variable                  | What it does                                                 |
+| ------------------------- | ------------------------------------------------------------ |
+| LOG_DEVICE_STATUS_CHANGES | Logs every time a device changes its status (Online/Offline) |
+| LOG_REQ_URLS              | Logs every request url with the relative http method         |
+| LOG_REQ_BODIES            | Logs every request body                                      |
+| LOG_ANNOUNCES             | Logs every device announce for discovery                     |
