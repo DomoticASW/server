@@ -15,12 +15,6 @@ services:
     environment:
       - PORT=8085
 
-  music-player:
-    image: corradostortini2/domoticasw-music-player
-    network_mode: host
-    environment:
-      PORT: 8086
-
   mongo:
     ports:
       - 27017:27017
