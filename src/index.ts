@@ -44,7 +44,7 @@ const deviceGroupRepository = new DeviceGroupRepositoryMongoAdapter(mongoDBConne
 const deviceRepository = new DeviceRepositoryMongoAdapter(mongoDBConnection)
 const deviceOfflineNotificationSubscriptionRepository = new DeviceOfflineNotificationSubscriptionRepositoryMongoAdapter(mongoDBConnection)
 const scriptRepository = new ScriptRepositoryMongoAdapter(mongoDBConnection)
-const deviceDiscoverer = new DeviceDiscovererUDPAdapter(30000, 5)
+const deviceDiscoverer = new DeviceDiscovererUDPAdapter(30000, 5, { logAnnounces: parseBooleanEnvVar("LOG_ANNOUNCES") })
 const devicesService = new DevicesServiceImpl(deviceRepository, deviceFactory, usersServiceMock, permissionsService, deviceCommunicationProtocol, deviceDiscoverer)
 const deviceStatusesService: DeviceStatusesService = new DeviceStatusesServiceImpl(5000, devicesService, deviceCommunicationProtocol)
 const deviceGroupsService = new DeviceGroupsServiceImpl(deviceGroupRepository, devicesService, usersServiceMock)
@@ -53,6 +53,19 @@ const notificationsService = NotificationsService(deviceStatusesService, devices
 const scriptsService = new ScriptsServiceImpl(scriptRepository, devicesService, notificationsService, usersServiceMock, permissionsService, deviceEventsService)
 new HTTPServerAdapter("localhost", serverPort, deviceGroupsService, devicesService, deviceEventsService, usersServiceMock, notificationsService, scriptsService)
 
+function parseBooleanEnvVar(varName: string): boolean | undefined {
+    const str = process.env[varName]?.toLocaleLowerCase()
+    if (str) {
+        if (["true", "1", "yes", "on"].includes(str)) {
+            return true
+        } else if (["false", "0", "no", "off"].includes(str)) {
+            return false
+        } else {
+            console.error(`Ignoring invalid value "${str}" for env var "${varName}"`)
+        }
+    }
+    return undefined
+}
 function getServerPortFromEnv(defaultServerPort: number): number {
     type EnvVarNotSet = "EnvVarNotSet"
     type InvalidEnvVar = "InvalidEnvVar"
