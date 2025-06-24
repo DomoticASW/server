@@ -18,6 +18,7 @@ import { DeviceCommunicationProtocol } from "./ports/devices-management/DeviceCo
 import { DeviceFactoryImpl } from "./domain/devices-management/DeviceFactoryImpl.js";
 import { DeviceCommunicationProtocolHttpAdapter } from "./adapters/devices-management/DeviceCommunicationProtocolHttpAdapter.js";
 import { DeviceStatusesServiceImpl } from "./domain/devices-management/DeviceStatusesServiceImpl.js";
+import { DeviceDiscovererUDPAdapter } from "./adapters/devices-management/DeviceDiscovererUDPAdapter.js";
 
 
 const mongoDBConnection = mongoose.createConnection("mongodb://localhost:27017/DomoticASW")
@@ -43,7 +44,8 @@ const deviceGroupRepository = new DeviceGroupRepositoryMongoAdapter(mongoDBConne
 const deviceRepository = new DeviceRepositoryMongoAdapter(mongoDBConnection)
 const deviceOfflineNotificationSubscriptionRepository = new DeviceOfflineNotificationSubscriptionRepositoryMongoAdapter(mongoDBConnection)
 const scriptRepository = new ScriptRepositoryMongoAdapter(mongoDBConnection)
-const devicesService = new DevicesServiceImpl(deviceRepository, deviceFactory, usersServiceMock, permissionsService, deviceCommunicationProtocol)
+const deviceDiscoverer = new DeviceDiscovererUDPAdapter(30000, 5, { logAnnounces: parseBooleanEnvVar("LOG_ANNOUNCES") })
+const devicesService = new DevicesServiceImpl(deviceRepository, deviceFactory, usersServiceMock, permissionsService, deviceCommunicationProtocol, deviceDiscoverer)
 const logDeviceStatusChanges = parseBooleanEnvVar("LOG_DEVICE_STATUS_CHANGES") ?? false
 const deviceStatusesService: DeviceStatusesService = new DeviceStatusesServiceImpl(5000, devicesService, deviceCommunicationProtocol, { logDeviceStatusChanges })
 const deviceGroupsService = new DeviceGroupsServiceImpl(deviceGroupRepository, devicesService, usersServiceMock)
