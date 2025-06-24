@@ -116,16 +116,13 @@ export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscribe
     )
   }
 
-  createAutomation(token: Token, automation: AutomationBuilder): Effect<AutomationId, InvalidTokenError | AutomationNameAlreadyInUseError | InvalidScriptError> {
+  createAutomation(token: Token, automation: AutomationBuilder, id: AutomationId | undefined = undefined): Effect<AutomationId, InvalidTokenError | AutomationNameAlreadyInUseError | InvalidScriptError> {
     return pipe(
-      this.createScript(token, automation),
+      this.createScript(token, automation, id),
       map(id => id as AutomationId),
       flatMap(id => pipe(
-        this.findAutomation(token, id),
-        map(automation => {
-          this.startAutomationHandler(automation)
-          return automation.id
-        }),
+        this.setAutomationState(token, id, true),
+        map(() => id),
         catch_("__brand", {
           failure: "ScriptNotFoundError",
           onFailure: () => succeed(id)
@@ -146,12 +143,10 @@ export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscribe
 
   deviceEventPublished(deviceId: DeviceId, event: DeviceEvent): void {
     runFork(
-      forkDaemon(
-        pipe(
-          this.scriptRepository.getAll(),
-          flatMap(scripts => succeed(Array.from(scripts).filter(e => e instanceof AutomationImpl))),
-          flatMap(automations => this.startDeviceEventTriggeredAutomations(automations, deviceId, event))
-        )
+      pipe(
+        this.scriptRepository.getAll(),
+        flatMap(scripts => succeed(Array.from(scripts).filter(e => e instanceof AutomationImpl))),
+        flatMap(automations => this.startDeviceEventTriggeredAutomations(automations, deviceId, event))
       )
     )
   }
@@ -160,9 +155,9 @@ export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscribe
     return forEach(automations, (automation) => {
       if (automation.trigger instanceof DeviceEventTriggerImpl && automation.enabled) {
         const deviceEventTrigger = automation.trigger as DeviceEventTrigger
-
+        
         if (deviceId == deviceEventTrigger.deviceId && event.name == deviceEventTrigger.eventName) {
-          runFork(forkDaemon(this.startAutomation(automation)))
+          runFork(this.startAutomation(automation))
         }
       }
       return succeed(undefined)
@@ -208,16 +203,8 @@ export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscribe
 
   editAutomation(token: Token, automationId: AutomationId, automation: AutomationBuilder): Effect<void, InvalidTokenError | PermissionError | ScriptNotFoundError | AutomationNameAlreadyInUseError | InvalidScriptError> {
     return pipe(
-      this.editScript(token, automationId, automation),
-      mapError(err => {
-        if ("__brand" in err) {
-          switch (err.__brand) {
-            case "UniquenessConstraintViolatedError":
-              return AutomationNameAlreadyInUseError(err.cause)
-          }
-        }
-        return err
-      })
+      this.removeAutomation(token, automationId),
+      flatMap(() => this.createAutomation(token, automation, automationId))
     )
   }
 
@@ -228,7 +215,13 @@ export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscribe
         sync(() => automation.enabled = enable),
         flatMap(() => if_(enable, {
           onTrue: () => succeed(this.startAutomationHandler(automation)),
-          onFalse: () => Fiber.interrupt(this.automationsFiberMap.get(automationId)!)
+          onFalse: () => 
+            if_(this.automationsFiberMap.get(automationId) != undefined, {
+              onTrue: () => pipe(
+                Fiber.interrupt(this.automationsFiberMap.get(automationId)!)
+              ),
+              onFalse: () => succeed(null)
+            }),
         })),
         flatMap(() => this.scriptRepository.update(automation))
       )),
@@ -244,8 +237,18 @@ export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscribe
   }
 
   removeAutomation(token: Token, automationId: AutomationId): Effect<void, InvalidTokenError | ScriptNotFoundError | PermissionError> {
-    return this.removeScript(token, automationId)
+    return pipe(
+      if_(this.automationsFiberMap.get(automationId) != undefined, {
+        onTrue: () => pipe(
+          Fiber.interrupt(this.automationsFiberMap.get(automationId)!),
+          tap(() => this.automationsFiberMap.delete(automationId))
+        ),
+        onFalse: () => succeed(null)
+      }),
+      flatMap(() => this.removeScript(token, automationId))
+    )
   }
+
   private getAllScripts(token: Token): Effect<Iterable<Script<ScriptId>>, InvalidTokenError> {
     return pipe(
       this.usersService.verifyToken(token),
@@ -253,10 +256,13 @@ export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscribe
     )
   }
 
-  private createScript(token: Token, scriptBuilder: ScriptBuilder<Script<ScriptId>>): Effect<ScriptId, DuplicateIdError | UniquenessConstraintViolatedError | InvalidTokenError | InvalidScriptError> {
+  private createScript(token: Token, scriptBuilder: ScriptBuilder<Script<ScriptId>>, id: ScriptId | undefined = undefined): Effect<ScriptId, DuplicateIdError | UniquenessConstraintViolatedError | InvalidTokenError | InvalidScriptError> {
     return pipe(
       this.usersService.verifyToken(token),
-      flatMap(() => scriptBuilder.build()),
+      flatMap(() => if_(id != undefined, {
+        onTrue: () => scriptBuilder.buildWithId(id!),
+        onFalse: () => scriptBuilder.build()
+      })),
       flatMap(script =>
         pipe(
           this.scriptRepository.add(script),
