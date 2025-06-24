@@ -47,6 +47,12 @@ services:
       CONDITION_PROBABILITY: 25
       CONDITION_TEST_PERIOD_MS: 5000
       PORT: 8089
+  
+  washing-machine:
+    image: marcoraggio/domoticasw-washing-machine:latest
+    network_mode: host
+    environment:
+      PORT: 8091
 
   mongo:
     ports:
