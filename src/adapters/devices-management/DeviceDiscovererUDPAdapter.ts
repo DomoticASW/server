@@ -17,7 +17,7 @@ function isAnnounceMessage(o: unknown): o is AnnounceMessage {
     return typeof o === 'object' && o !== null &&
         'id' in o && typeof o.id === 'string' &&
         'name' in o && typeof o.name === 'string' &&
-        'port' in o && typeof o.port === 'number'
+        'port' in o && Number.isInteger(o.port)
 }
 
 export interface Options {
@@ -30,7 +30,7 @@ export class DeviceDiscovererUDPAdapter implements DeviceDiscoverer {
     constructor(readonly port: number, readonly rememberDiscoveriesForSeconds: number, { logAnnounces = false }: Options = {}) {
         const socket = dgram.createSocket('udp4', (msg, rinfo) => {
             if (logAnnounces) { console.log(`Announce from ${rinfo.address} - ${msg}`) }
-            const obj = JSON.parse(JSON.stringify(msg))
+            const obj = JSON.parse(msg.toString())
             if (isAnnounceMessage(obj)) {
                 this.receivedMessages.set(obj.id, { ...obj, host: rinfo.address, arrivedAt: new Date() })
             } else {
@@ -50,14 +50,18 @@ export class DeviceDiscovererUDPAdapter implements DeviceDiscoverer {
         // Clear old messages every once in a while
         setInterval(() => {
             Array.from(this.receivedMessages.values())
-                .filter(m => m.arrivedAt.getTime() >= new Date().getTime() + this.rememberDiscoveriesForSeconds)
+                .filter(m => this.announceIsOld(m))
                 .forEach(m => this.receivedMessages.delete(m.id))
         }, rememberDiscoveriesForSeconds * 1000 * 2)
     }
 
     discoveredDevices(): Iterable<DiscoveredDevice> {
         return Array.from(this.receivedMessages.values())
-            .filter(m => m.arrivedAt.getTime() <= new Date().getTime() + this.rememberDiscoveriesForSeconds)
+            .filter(m => !this.announceIsOld(m))
             .map(m => DiscoveredDevice(DeviceId(m.id), m.name, DeviceAddress(m.host, m.port)))
+    }
+
+    private announceIsOld(a: AnnouncedDevice): boolean {
+        return a.arrivedAt.getTime() < new Date().getTime() - this.rememberDiscoveriesForSeconds * 1000
     }
 }
