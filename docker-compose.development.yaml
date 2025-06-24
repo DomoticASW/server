@@ -14,6 +14,7 @@ services:
     network_mode: host
     environment:
       - PORT=8085
+      - SERVER_DISCOVERY_PORT=30000
 
   mongo:
     ports:
