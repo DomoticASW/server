@@ -4,6 +4,7 @@ import { PermissionError } from "../permissions-management/Errors.js";
 import { Token } from "../../domain/users-management/Token.js";
 import { Effect } from "effect/Effect";
 import { InvalidTokenError, TokenError } from "../users-management/Errors.js";
+import { DiscoveredDevice } from "../../domain/devices-management/DiscoveredDevice.js";
 
 export interface DevicesService {
     add(token: Token, deviceAddress: DeviceAddress): Effect<DeviceId, DeviceAlreadyRegisteredError | DeviceUnreachableError | TokenError>;
@@ -20,7 +21,9 @@ export interface DevicesService {
     setDeviceStatusUnsafe(deviceId: DeviceId, status: DeviceStatus): Effect<void, DeviceNotFoundError>
     subscribeForDevicePropertyUpdates(subscriber: DevicePropertyUpdatesSubscriber): void;
     unsubscribeForDevicePropertyUpdates(subscriber: DevicePropertyUpdatesSubscriber): void;
+    discoveredDevices(token: Token): Effect<Iterable<DiscoveredDevice>, InvalidTokenError>
 }
+
 export interface DevicePropertyUpdatesSubscriber {
     devicePropertyChanged(deviceId: DeviceId, propertyId: DevicePropertyId, value: unknown): void;
 }

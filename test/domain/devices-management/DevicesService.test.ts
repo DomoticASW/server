@@ -14,9 +14,11 @@ import { UsersService } from "../../../src/ports/users-management/UsersService.j
 import { PermissionsService } from "../../../src/ports/permissions-management/PermissionsService.js"
 import { PermissionError } from "../../../src/ports/permissions-management/Errors.js"
 import { DeviceCommunicationProtocol } from "../../../src/ports/devices-management/DeviceCommunicationProtocol.js"
+import { DeviceDiscoverer } from "../../../src/ports/devices-management/DeviceDiscoverer.js"
 
 let service: DevicesService
 let deviceFactory: DeviceFactory
+let deviceDiscoverer: DeviceDiscoverer & { callsToDiscoveredDevices: number }
 let repo: DeviceRepository
 const deviceCommunicationProtocol: DeviceCommunicationProtocol = {
     executeDeviceAction: () => Effect.succeed(undefined),
@@ -50,7 +52,14 @@ beforeEach(() => {
             return Effect.succeed(Device(DeviceId(deviceAddress.toString()), "device", deviceAddress, DeviceStatus.Online, properties, actions, events))
         }
     }
-    service = new DevicesServiceImpl(repo, deviceFactory, alwaysValidTokenUsersService, freePermissionsService, deviceCommunicationProtocol)
+    deviceDiscoverer = {
+        discoveredDevices() {
+            this.callsToDiscoveredDevices += 1
+            return []
+        },
+        callsToDiscoveredDevices: 0
+    }
+    service = new DevicesServiceImpl(repo, deviceFactory, alwaysValidTokenUsersService, freePermissionsService, deviceCommunicationProtocol, deviceDiscoverer)
 })
 
 test("has 0 devices initially", () => {
@@ -410,6 +419,16 @@ test("unsubscribeForDevicePropertyUpdates unregisters subscribers", () => {
     )
 })
 
+test("discoveredDevices delegates to the given DeviceDiscoverer", () => {
+    expect(deviceDiscoverer.callsToDiscoveredDevices).toEqual(0)
+    const result = pipe(
+        service.discoveredDevices(makeToken()),
+        Effect.runSync
+    )
+    expect(result).toEqual(deviceDiscoverer.discoveredDevices())
+    expect(deviceDiscoverer.callsToDiscoveredDevices).toEqual(2)
+})
+
 describe("executeAction", () => {
     const deviceId = DeviceId("1")
     const actionId = DeviceActionId("1")
@@ -441,7 +460,7 @@ describe("executeAction", () => {
                 else return Effect.fail(PermissionError())
             }
         } as unknown as PermissionsService
-        service = new DevicesServiceImpl(repo, deviceFactory, alwaysValidTokenUsersService, permissionsService, deviceCommunicationProtocol)
+        service = new DevicesServiceImpl(repo, deviceFactory, alwaysValidTokenUsersService, permissionsService, deviceCommunicationProtocol, deviceDiscoverer)
     })
 
     test("executes the given action on the given device with the given input", () => {
@@ -506,7 +525,7 @@ describe("executeAutomationAction", () => {
                 })
             }
         }
-        service = new DevicesServiceImpl(repo, deviceFactory, alwaysValidTokenUsersService, freePermissionsService, deviceCommunicationProtocol)
+        service = new DevicesServiceImpl(repo, deviceFactory, alwaysValidTokenUsersService, freePermissionsService, deviceCommunicationProtocol, deviceDiscoverer)
     })
 
     test("executes the given action on the given device with the given input", () => {
@@ -541,7 +560,8 @@ describe("all methods requiring a token fail if the token is invalid", () => {
         (s) => s.rename(token, deviceId, "Oven"),
         (s) => s.find(token, deviceId),
         (s) => s.getAllDevices(token),
-        (s) => s.executeAction(token, deviceId, DeviceActionId("action"), undefined)
+        (s) => s.executeAction(token, deviceId, DeviceActionId("action"), undefined),
+        (s) => s.discoveredDevices(token)
     ]
 
     beforeEach(() => {
@@ -550,7 +570,7 @@ describe("all methods requiring a token fail if the token is invalid", () => {
                 return Effect.fail({ __brand: "InvalidTokenError", message: "" })
             }
         } as unknown as UsersService
-        service = new DevicesServiceImpl(repo, deviceFactory, alwaysInvalidTokenUsersService, freePermissionsService, deviceCommunicationProtocol)
+        service = new DevicesServiceImpl(repo, deviceFactory, alwaysInvalidTokenUsersService, freePermissionsService, deviceCommunicationProtocol, deviceDiscoverer)
     })
 
     allMethods.forEach(m => {
