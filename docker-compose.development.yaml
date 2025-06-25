@@ -55,12 +55,16 @@ services:
     network_mode: host
     environment:
       PORT: 8091
+      SERVER_DISCOVERY_PORT: 30000
+      SERVER_DISCOVERY_ADDR: 255.255.255.255
   
   smart-window:
     image: marcoraggio/domoticasw-window:latest
     network_mode: host
     environment:
       PORT: 8092
+      SERVER_DISCOVERY_PORT: 30000
+      SERVER_DISCOVERY_ADDR: 255.255.255.255
 
   mongo:
     ports:
