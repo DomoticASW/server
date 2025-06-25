@@ -53,6 +53,12 @@ services:
     network_mode: host
     environment:
       PORT: 8091
+  
+  smart-window:
+    image: marcoraggio/domoticasw-window:latest
+    network_mode: host
+    environment:
+      PORT: 8092
 
   mongo:
     ports:
