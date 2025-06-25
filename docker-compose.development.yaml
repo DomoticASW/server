@@ -66,6 +66,22 @@ services:
       SERVER_DISCOVERY_PORT: 30000
       SERVER_DISCOVERY_ADDR: 255.255.255.255
 
+  lamp:
+    image: fracarluccii/domoticasw-lamp:latest
+    network_mode: host
+    environment:
+      PORT: 8093
+      SERVER_DISCOVERY_PORT: 30000
+      SERVER_DISCOVERY_ADDR: 255.255.255.255
+
+  thermometer:
+    image: fracarluccii/domoticasw-thermometer:latest
+    network_mode: host
+    environment:
+      PORT: 8090
+      SERVER_DISCOVERY_PORT: 30000
+      SERVER_DISCOVERY_ADDR: 255.255.255.255
+
   mongo:
     ports:
       - 27017:27017
