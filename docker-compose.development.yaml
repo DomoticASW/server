@@ -1,0 +1,30 @@
+name: server-development
+
+services:
+  roomba:
+    image: ventus218/domoticasw-roomba
+    # Setting network_mode to "host" let's the container access the host network
+    # and is fundamental to let the device send updates to the host.
+    # Another way would be to run the server inside a container on the same virtual
+    # network as the device but this would make development/debuggin much harder.
+    # This feature must be enabled in Docker Desktop under Settings -> Resources ->
+    # Network -> Enable host networking
+    # This option does not allow to publish a different port than the one exposed
+    # by the container and so it should provide a way to customize that.
+    network_mode: host
+    environment:
+      - PORT=8085
+      - SERVER_DISCOVERY_PORT=30000
+
+  mongo:
+    ports:
+      - 27017:27017
+
+  mongo-express:
+    image: mongo-express
+    restart: always
+    ports:
+      - 8081:8081
+    environment:
+      ME_CONFIG_MONGODB_URL: mongodb://mongo:27017/
+      ME_CONFIG_BASICAUTH: false

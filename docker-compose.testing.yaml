@@ -1,0 +1,8 @@
+name: server-testing
+
+services:
+  mongo:
+    ports:
+      # binds to a different port than development so that it
+      # doesn't conflict with a possible instance already running.
+      - 27018:27017
