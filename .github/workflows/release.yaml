@@ -19,5 +19,5 @@ jobs:
       - name: semantic-release
         uses: DomoticASW/semantic-release@3.0.0
         with:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.VENTUS_PAT }}
           NPM_TOKEN: ${{ secrets.NPM_DOMOTICASW_ACCESS_TOKEN }}
