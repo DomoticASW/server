@@ -1,5 +1,15 @@
 # DomoticASW server
 
+## Configuration
+
+The following environment variables can be used to configure the server (the ones that are mandatory in a production environment are marked with a \*):
+
+| Variable       | Default | Explanation                                | Format               |
+| -------------- | ------- | ------------------------------------------ | -------------------- |
+| SERVER_PORT    | 3000    | The port to which bind the web server      | Any valid port       |
+| DISCOVERY_PORT | 30000   | The port to listen to for device announces | Any valid port       |
+| \*JWT_SECRET   |         | The secret used to sign JWTs               | Any non empty string |
+
 ## Npm scripts reference
 
 ### `start`
@@ -11,15 +21,6 @@
 1. Stops the development docker compose environment
 
 Subsequent runs will have containers using the same volumes in order to not lose the application state.
-
-#### Configuration
-
-The following environment variables can be used to configure the server:
-
-| Variable       | Default | Explanation                                | Format         |
-| -------------- | ------- | ------------------------------------------ | -------------- |
-| SERVER_PORT    | 3000    | The port to which bind the web server      | Any valid port |
-| DISCOVERY_PORT | 30000   | The port to listen to for device announces | Any valid port |
 
 ### `start-clean`
 
