@@ -4,6 +4,9 @@ import { DevicesService } from "../../ports/devices-management/DevicesService.js
 import { DeviceStatusChangesSubscriber, DeviceStatusesService } from "../../ports/devices-management/DeviceStatusesService.js";
 import { DeviceStatus } from "./Device.js";
 
+interface Options {
+    logDeviceStatusChanges?: boolean
+}
 /**
  * Objects of this class when created start polling each device to check whether they are online or not.
  * 
@@ -14,13 +17,15 @@ export class DeviceStatusesServiceImpl implements DeviceStatusesService {
     private devicesService: DevicesService
     private protocol: DeviceCommunicationProtocol
 
+    private logDeviceStatusChanges: boolean
     private shouldStop = false
     private subscribers: DeviceStatusChangesSubscriber[] = []
 
-    constructor(pollingRateMillis: number, devicesService: DevicesService, protocol: DeviceCommunicationProtocol) {
+    constructor(pollingRateMillis: number, devicesService: DevicesService, protocol: DeviceCommunicationProtocol, { logDeviceStatusChanges = false }: Options = {}) {
         this.pollingRateMillis = pollingRateMillis
         this.devicesService = devicesService
         this.protocol = protocol
+        this.logDeviceStatusChanges = logDeviceStatusChanges
         this.startPolling()
     }
 
@@ -56,13 +61,16 @@ export class DeviceStatusesServiceImpl implements DeviceStatusesService {
                 Effect.bind("device", () => this.devicesService.findUnsafe(r.deviceId)),
                 Effect.flatMap(({ device }) => Effect.if(device.status == r.status, {
                     onTrue: () => Effect.void,
-                    onFalse: () => pipe(
-                        this.subscribers,
-                        Effect.forEach(s => s.deviceStatusChanged(r.deviceId, r.status), { concurrency: "unbounded" }),
-                        Effect.flatMap(() => this.devicesService.setDeviceStatusUnsafe(r.deviceId, r.status)),
-                        // If the device is not found at this point there's no reason to throw errors
-                        Effect.catchAll(() => Effect.void)
-                    )
+                    onFalse: () => {
+                        if (this.logDeviceStatusChanges) { console.log(`Devide ${device.name} is now ${r.status}\n`) }
+                        return pipe(
+                            this.subscribers,
+                            Effect.forEach(s => s.deviceStatusChanged(r.deviceId, r.status), { concurrency: "unbounded" }),
+                            Effect.flatMap(() => this.devicesService.setDeviceStatusUnsafe(r.deviceId, r.status)),
+                            // If the device is not found at this point there's no reason to throw errors
+                            Effect.catchAll(() => Effect.void)
+                        )
+                    }
                 })),
                 // If the device is not found it's possible that it was deleted and therefore we shouldn't do anything
                 Effect.catchAll(() => Effect.void)
