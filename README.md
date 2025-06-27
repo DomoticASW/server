@@ -12,6 +12,15 @@
 
 Subsequent runs will have containers using the same volumes in order to not lose the application state.
 
+#### Configuration
+
+The following environment variables can be used to configure the server:
+
+| Variable       | Default | Explanation                                | Format         |
+| -------------- | ------- | ------------------------------------------ | -------------- |
+| SERVER_PORT    | 3000    | The port to which bind the web server      | Any valid port |
+| DISCOVERY_PORT | 30000   | The port to listen to for device announces | Any valid port |
+
 ### `start-clean`
 
 The same as [`start`](#start) but every time it is executed it will clean container volumes in order to start in a clean state.
