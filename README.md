@@ -8,7 +8,7 @@ The following environment variables can be used to configure the server (the one
 | -------------- | ------- | ------------------------------------------ | -------------------- |
 | SERVER_PORT    | 3000    | The port to which bind the web server      | Any valid port       |
 | DISCOVERY_PORT | 30000   | The port to listen to for device announces | Any valid port       |
-| \*JWT_SECRET   |         | The secret used to sign JWTs               | Any non empty string |
+| \*JWT_SECRET   | secret  | The secret used to sign JWTs               | Any non empty string |
 
 ## Npm scripts reference
 
