@@ -3,11 +3,14 @@
   "version": "0.1.0",
   "type": "module",
   "description": "DomoticASW server",
-  "main": "src/index.ts",
+  "main": "dist/src/index.js",
   "publishConfig": {
     "access": "public"
   },
   "scripts": {
+    "prestart-prod": "tsc && npm run build-client && docker compose -f docker-compose.yaml -f docker-compose.production.yaml up -d --wait",
+    "start-prod": "node . || exit 0",
+    "poststart-prod": "docker compose -f docker-compose.yaml -f docker-compose.production.yaml down",
     "prestart": "tsc && npm run build-client && docker compose -f docker-compose.yaml -f docker-compose.development.yaml up -d --wait",
     "start": "cross-env DEV=true nodemon || exit 0",
     "poststart": "docker compose -f docker-compose.yaml -f docker-compose.development.yaml stop",

@@ -108,3 +108,8 @@ function parsePortEnvVar(varName: string, defaultPort: number): number {
         Effect.runSync
     )
 }
+
+process.on("SIGINT", () => {
+    mongoDBConnection.close()
+    process.exit(1)
+})
