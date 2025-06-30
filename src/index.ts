@@ -22,6 +22,10 @@ import { UsersServiceImpl } from "./domain/users-management/UsersServiceImpl.js"
 import { UserRepositoryAdapter } from "./adapters/users-management/UserRepositoryAdapter.js";
 import { RegistrationRequestRepositoryAdapter } from "./adapters/users-management/RegistrationRequestRepositoryAdapter.js";
 import { DeviceActionsServiceImpl } from "./domain/devices-management/DeviceActionsServiceImpl.js";
+import { PermissionsServiceImpl } from "./domain/permissions-management/PermissionsServiceImpl.js";
+import { UserDevicePermissionRepositoryMongoAdapter } from "./adapters/permissions-management/UserDevicePermissionRepositoryMongoAdapter.js";
+import { TaskListsRepositoryMongoAdapter } from "./adapters/permissions-management/TaskListsRepositoryMongoAdapter.js";
+import { EditListRepositoryMongoAdapter } from "./adapters/permissions-management/EditListRepositoryMongoAdapter.js";
 
 const isDev = parseBooleanEnvVar("DEV") ?? false
 
@@ -41,31 +45,38 @@ if (!jwtSecret || jwtSecret.trim() == "") {
     }
 }
 const usersService: UsersService = new UsersServiceImpl(userRepository, registrationRequestRepository, jwtSecret)
-// TODO: replace with production impl
-const permissionsService: PermissionsService = {
-    canExecuteActionOnDevice: () => Effect.succeed(undefined),
-    canExecuteTask: () => Effect.succeed(undefined),
-    canEdit: () => Effect.succeed(undefined)
-} as unknown as PermissionsService
 
 const deviceCommunicationProtocol: DeviceCommunicationProtocol = new DeviceCommunicationProtocolHttpAdapter(serverPort)
 
 const deviceFactory = new DeviceFactoryImpl(deviceCommunicationProtocol)
-const deviceGroupRepository = new DeviceGroupRepositoryMongoAdapter(mongoDBConnection)
 const deviceRepository = new DeviceRepositoryMongoAdapter(mongoDBConnection)
-const deviceOfflineNotificationSubscriptionRepository = new DeviceOfflineNotificationSubscriptionRepositoryMongoAdapter(mongoDBConnection)
-const scriptRepository = new ScriptRepositoryMongoAdapter(mongoDBConnection)
 const deviceDiscoverer = new DeviceDiscovererUDPAdapter(parsePortEnvVar("DISCOVERY_PORT", 30000), 5, { logAnnounces: parseBooleanEnvVar("LOG_ANNOUNCES") })
 const devicesService = new DevicesServiceImpl(deviceRepository, deviceFactory, usersService, deviceDiscoverer)
+
+const userDevicePermissionRepo = new UserDevicePermissionRepositoryMongoAdapter(mongoDBConnection)
+const taskListsRepo = new TaskListsRepositoryMongoAdapter(mongoDBConnection)
+const editListRepo = new EditListRepositoryMongoAdapter(mongoDBConnection)
+const permissionsService: PermissionsService = new PermissionsServiceImpl(userDevicePermissionRepo, taskListsRepo, editListRepo, usersService, devicesService)
+
 const deviceActionsService = new DeviceActionsServiceImpl(devicesService, usersService, permissionsService, deviceCommunicationProtocol)
+
 const logDeviceStatusChanges = parseBooleanEnvVar("LOG_DEVICE_STATUS_CHANGES") ?? false
 const deviceStatusesService: DeviceStatusesService = new DeviceStatusesServiceImpl(5000, devicesService, deviceCommunicationProtocol, { logDeviceStatusChanges })
+
+const deviceGroupRepository = new DeviceGroupRepositoryMongoAdapter(mongoDBConnection)
 const deviceGroupsService = new DeviceGroupsServiceImpl(deviceGroupRepository, devicesService, usersService)
+
 const deviceEventsService = new DeviceEventsServiceImpl(devicesService)
+
+const deviceOfflineNotificationSubscriptionRepository = new DeviceOfflineNotificationSubscriptionRepositoryMongoAdapter(mongoDBConnection)
 const notificationsService = NotificationsService(deviceStatusesService, devicesService, usersService, deviceOfflineNotificationSubscriptionRepository)
+
+const scriptRepository = new ScriptRepositoryMongoAdapter(mongoDBConnection)
 const scriptsService = new ScriptsServiceImpl(scriptRepository, devicesService, deviceActionsService, notificationsService, usersService, permissionsService, deviceEventsService)
+
 const logRequestUrls = parseBooleanEnvVar("LOG_REQ_URLS") ?? false
 const logRequestBodies = parseBooleanEnvVar("LOG_REQ_BODIES") ?? false
+// Http server is started as a side effect
 new HTTPServerAdapter("localhost", serverPort, deviceGroupsService, devicesService, deviceActionsService, deviceEventsService, usersService, notificationsService, scriptsService, { logRequestUrls, logRequestBodies })
 
 function parseEnvVar(varName: string): string | undefined {
