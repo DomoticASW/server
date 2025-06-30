@@ -23,6 +23,7 @@ import { DeviceOfflineNotificationSubscriptionRepository } from "../../src/ports
 import { DeviceOfflineNotificationSubscription } from "../../src/domain/notifications-management/DeviceOfflineNotificationSubscription.js";
 import { DuplicateIdError, NotFoundError } from "../../src/ports/Repository.js";
 import { DeviceEventsService, DeviceEventsSubscriber } from "../../src/ports/devices-management/DeviceEventsService.js";
+import { DeviceActionsService } from "../../src/ports/devices-management/DeviceActionsService.js";
 
 export function UserNotFoundErrorMock(cause?: string): UserNotFoundError {
   return { message: "The user has not been found", cause: cause, __brand: "UserNotFoundError" }
@@ -79,9 +80,9 @@ export function SpyTaskMock(hasToFail: boolean = false): Spy<Task> {
         id: TaskId("id"),
         name: "",
         instructions: [],
-        execute: function (notificationsService: NotificationsService, scriptsService: ScriptsService, permissionsService: PermissionsService, devicesService: DevicesService, token?: Token): Effect<ExecutionEnvironment, ScriptError> {
+        execute: function (notificationsService: NotificationsService, scriptsService: ScriptsService, permissionsService: PermissionsService, devicesService: DevicesService, deviceActionsService: DeviceActionsService, token?: Token): Effect<ExecutionEnvironment, ScriptError> {
           call++
-          return hasToFail ? fail(ScriptError()) : succeed(ExecutionEnvironment(notificationsService, scriptsService, permissionsService, devicesService, token))
+          return hasToFail ? fail(ScriptError()) : succeed(ExecutionEnvironment(notificationsService, scriptsService, permissionsService, devicesService, deviceActionsService, token))
         }
       }
     }
@@ -233,25 +234,32 @@ function DeviceEventMock(name: string): DeviceEvent {
   }
 }
 
-export function DevicesServiceSpy(device: Device = DeviceMock(), testingAction: boolean = true): Spy<DevicesService> {
+export function DevicesServiceSpy(device: Device = DeviceMock()): Spy<DevicesService> {
   let call = 0
   return {
     call: () => call,
     get: () => {
       return {
         findUnsafe: function (deviceId: DeviceId): Effect<Device, DeviceNotFoundError> {
-          if (!testingAction) {
-            call++
-          }
+          call++
           return device.id == deviceId ? succeed(device) : fail(DeviceNotFoundError())
-        },
-        executeAutomationAction: function (deviceId: DeviceId, actionId: DeviceActionId, input: unknown): Effect<void, InvalidInputError | DeviceActionError | DeviceActionNotFound | DeviceNotFoundError> {
-          if (testingAction) {
-            call++
-          }
-          return deviceId == device.id ? succeed(null) : fail(DeviceNotFoundError())
         }
       } as unknown as DevicesService
+    }
+  }
+}
+
+export function DeviceActionsServiceSpy(device: Device = DeviceMock()): Spy<DeviceActionsService> {
+  let call = 0
+  return {
+    call: () => call,
+    get: () => {
+      return {
+        executeAutomationAction: function (deviceId: DeviceId, actionId: DeviceActionId, input: unknown): Effect<void, InvalidInputError | DeviceActionError | DeviceActionNotFound | DeviceNotFoundError> {
+          call++
+          return deviceId == device.id ? succeed(null) : fail(DeviceNotFoundError())
+        }
+      } as unknown as DeviceActionsService
     }
   }
 }

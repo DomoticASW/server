@@ -10,13 +10,13 @@ const user = UserMock(token.userEmail)
 const device = DeviceMock()
 const deviceId = device.id
 let deviceStatusesServiceSpy = DeviceStatusesServiceSpy()
-let devicesServiceSpy = DevicesServiceSpy(device, false)
+let devicesServiceSpy = DevicesServiceSpy(device)
 let usersServiceSpy = UsersServiceSpy(user, token)
 let subscriptionRepositorySpy = DeviceOfflineNotificationSubscriptionRepositorySpy(RepoOperation.NONE, DeviceOfflineNotificationSubscription(Email("test"), DeviceId("testDevice")))
 
 beforeEach(() => {
   deviceStatusesServiceSpy = DeviceStatusesServiceSpy()
-  devicesServiceSpy = DevicesServiceSpy(device, false)
+  devicesServiceSpy = DevicesServiceSpy(device)
   usersServiceSpy = UsersServiceSpy(user, token)
   subscriptionRepositorySpy = DeviceOfflineNotificationSubscriptionRepositorySpy(RepoOperation.NONE, DeviceOfflineNotificationSubscription(Email("test"), DeviceId("testDevice")))
 })

@@ -1,16 +1,13 @@
 import { Effect, pipe } from "effect";
 import { DevicePropertyUpdatesSubscriber, DevicesService } from "../../ports/devices-management/DevicesService.js";
-import { DeviceUnreachableError, DeviceNotFoundError, InvalidInputError, DeviceActionError, DeviceActionNotFound, DevicePropertyNotFound, DeviceAlreadyRegisteredError } from "../../ports/devices-management/Errors.js";
-import { PermissionError } from "../../ports/permissions-management/Errors.js";
+import { DeviceUnreachableError, DeviceNotFoundError, DevicePropertyNotFound, DeviceAlreadyRegisteredError } from "../../ports/devices-management/Errors.js";
 import { TokenError, InvalidTokenError, UnauthorizedError } from "../../ports/users-management/Errors.js";
-import { DeviceId, Device, DeviceActionId, DevicePropertyId, DeviceAddress, DeviceStatus } from "./Device.js";
+import { DeviceId, Device, DevicePropertyId, DeviceAddress, DeviceStatus } from "./Device.js";
 import { Token } from "../users-management/Token.js";
 import { Role } from "../users-management/User.js";
 import { DeviceFactory } from "../../ports/devices-management/DeviceFactory.js";
 import { DeviceRepository } from "../../ports/devices-management/DeviceRepository.js";
 import { UsersService } from "../../ports/users-management/UsersService.js";
-import { PermissionsService } from "../../ports/permissions-management/PermissionsService.js";
-import { DeviceCommunicationProtocol } from "../../ports/devices-management/DeviceCommunicationProtocol.js";
 import { DeviceDiscoverer } from "../../ports/devices-management/DeviceDiscoverer.js";
 import { DiscoveredDevice } from "./DiscoveredDevice.js";
 
@@ -20,8 +17,6 @@ export class DevicesServiceImpl implements DevicesService {
         private repo: DeviceRepository,
         private deviceFactory: DeviceFactory,
         private usersService: UsersService,
-        private permissionsService: PermissionsService,
-        private deviceCommunicationProtocol: DeviceCommunicationProtocol,
         private deviceDiscoverer: DeviceDiscoverer) {
     }
 
@@ -120,19 +115,6 @@ export class DevicesServiceImpl implements DevicesService {
      */
     getAllDevicesUnsafe(): Effect.Effect<Iterable<Device>, never> {
         return this.repo.getAll()
-    }
-    executeAction(token: Token, deviceId: DeviceId, actionId: DeviceActionId, input: unknown): Effect.Effect<void, InvalidInputError | DeviceActionError | DeviceActionNotFound | DeviceNotFoundError | InvalidTokenError | PermissionError> {
-        return Effect.Do.pipe(
-            Effect.bind("_", () => this.usersService.verifyToken(token)),
-            Effect.bind("__", () => this.permissionsService.canExecuteActionOnDevice(token, deviceId)),
-            Effect.bind("___", () => this.executeAutomationAction(deviceId, actionId, input))
-        )
-    }
-    executeAutomationAction(deviceId: DeviceId, actionId: DeviceActionId, input: unknown): Effect.Effect<void, InvalidInputError | DeviceActionError | DeviceActionNotFound | DeviceNotFoundError> {
-        return Effect.Do.pipe(
-            Effect.bind("device", () => this.findUnsafe(deviceId)),
-            Effect.bind("_", ({ device }) => device.executeAction(actionId, input, this.deviceCommunicationProtocol))
-        )
     }
 
     /**

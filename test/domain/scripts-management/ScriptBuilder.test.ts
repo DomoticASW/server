@@ -1,6 +1,6 @@
 import { runPromise } from "effect/Effect"
 import { AutomationBuilderWithDeviceEventTrigger, AutomationBuilderWithPeriodtrigger, TaskBuilder } from "../../../src/domain/scripts-management/ScriptBuilder.js"
-import { DeviceMock, DevicesServiceSpy, NotificationsServiceSpy, PermissionsServiceSpy, ScriptsServiceSpy, SpyTaskMock, TokenMock, UserMock } from "../../utils/mocks.js"
+import { DeviceActionsServiceSpy, DeviceMock, DevicesServiceSpy, NotificationsServiceSpy, PermissionsServiceSpy, ScriptsServiceSpy, SpyTaskMock, TokenMock, UserMock } from "../../utils/mocks.js"
 import { Type } from "../../../src/ports/devices-management/Types.js"
 import { ConstantInstruction } from "../../../src/domain/scripts-management/Instruction.js"
 import { NumberEOperator, NumberLOperator, StringEOperator } from "../../../src/domain/scripts-management/Operators.js"
@@ -20,6 +20,7 @@ const device = DeviceMock()
 const deviceId = device.id
 const notificationService = NotificationsServiceSpy(user.email).get()
 const devicesService = DevicesServiceSpy().get()
+const deviceActionsService = DeviceActionsServiceSpy().get()
 const scriptsService = ScriptsServiceSpy().get()
 const permissionsService = PermissionsServiceSpy(token).get()
 
@@ -40,7 +41,7 @@ test("A wait instruction can be added", async () => {
   const task = await runPromise(taskBuilderWait.build())
   const start = Date.now()
 
-  await runPromise(task.execute(notificationService, scriptsService, permissionsService, devicesService, token))
+  await runPromise(task.execute(notificationService, scriptsService, permissionsService, devicesService, deviceActionsService, token))
   expect(Date.now()).toBeGreaterThanOrEqual(start + 0.5 * 1000)
 })
 
@@ -49,8 +50,8 @@ test("A SendNotificationInstruction can be added", async () => {
   const taskBuilderSendNotification = taskBuilder.addSendNotification(root, user.email, "message")
   const task = await runPromise(taskBuilderSendNotification.build())
   const notificationService = NotificationsServiceSpy(user.email)
-  
-  await runPromise(task.execute(notificationService.get(), scriptsService, permissionsService, devicesService, token))
+
+  await runPromise(task.execute(notificationService.get(), scriptsService, permissionsService, devicesService, deviceActionsService, token))
   expect(notificationService.call()).toBe(1)
 })
 
@@ -59,17 +60,17 @@ test("Adding instructions does not modify the builder (it is immutable, returnin
   const task = await runPromise(taskBuilder.build())
   const notificationService = NotificationsServiceSpy(user.email)
 
-  await runPromise(task.execute(notificationService.get(), scriptsService, permissionsService, devicesService, token))
+  await runPromise(task.execute(notificationService.get(), scriptsService, permissionsService, devicesService, deviceActionsService, token))
   expect(notificationService.call()).toBe(0)
 })
 
 test("A DeviceActionInstruction can be added", async () => {
-  const devicesService = DevicesServiceSpy(device)
-  const taskBuilderDeviceAction  = taskBuilder.addDeviceAction(root, deviceId, device.actions.at(0)!.id, 10)
+  const deviceActionsService = DeviceActionsServiceSpy(device)
+  const taskBuilderDeviceAction = taskBuilder.addDeviceAction(root, deviceId, device.actions.at(0)!.id, 10)
   const task = await runPromise(taskBuilderDeviceAction.build())
 
-  await runPromise(task.execute(notificationService, scriptsService, permissionsService, devicesService.get(), token))
-  expect(devicesService.call()).toBe(1)
+  await runPromise(task.execute(notificationService, scriptsService, permissionsService, devicesService, deviceActionsService.get(), token))
+  expect(deviceActionsService.call()).toBe(1)
 })
 
 test("A StartTaskInstruction can be added", async () => {
@@ -80,7 +81,7 @@ test("A StartTaskInstruction can be added", async () => {
   const taskBuilderStartTask = taskBuilder.addStartTask(root, startedTask.get().id)
   const task = await runPromise(taskBuilderStartTask.build())
 
-  await runPromise(task.execute(notificationService, scriptsService.get(), permissionsService.get(), devicesService, token))
+  await runPromise(task.execute(notificationService, scriptsService.get(), permissionsService.get(), devicesService, deviceActionsService, token))
 
   expect(permissionsService.call()).toBe(1)
   expect(scriptsService.call()).toBe(1)
@@ -94,7 +95,7 @@ test("A CreateConstantInstruction can be added", async () => {
 
   const task = await runPromise(taskBuilderCreateConstant.build())
 
-  const env = await runPromise(task.execute(notificationService, scriptsService, permissionsService, devicesService, token))
+  const env = await runPromise(task.execute(notificationService, scriptsService, permissionsService, devicesService, deviceActionsService, token))
 
   expect(env.constants.size).toBe(1)
 
@@ -109,14 +110,14 @@ test("A CreateConstantInstruction can be added", async () => {
 })
 
 test("A CreateDevicePropertyConstantInstruction can be added", async () => {
-  const devicesService = DevicesServiceSpy(device, false)
+  const devicesService = DevicesServiceSpy(device)
   const builderAndConstant = taskBuilder.addCreateDevicePropertyConstant(root, "constantName", Type.IntType, deviceId, device.properties.at(0)!.id)
   const taskBuilderPropertyConstant = builderAndConstant[0]
   const ref = builderAndConstant[1]
 
   const task = await runPromise(taskBuilderPropertyConstant.build())
 
-  const env = await runPromise(task.execute(notificationService, scriptsService, permissionsService, devicesService.get(), token))
+  const env = await runPromise(task.execute(notificationService, scriptsService, permissionsService, devicesService.get(), deviceActionsService, token))
 
   expect(env.constants.size).toBe(1)
   expect(devicesService.call()).toBe(1)
@@ -149,7 +150,7 @@ test("An IfInstruction can be added", async () => {
 
   const start = Date.now()
 
-  await runPromise(task.execute(notificationService, scriptsService, permissionsService, devicesService, token))
+  await runPromise(task.execute(notificationService, scriptsService, permissionsService, devicesService, deviceActionsService, token))
 
   expect(Date.now()).toBeGreaterThanOrEqual(start + 0.2 * 1000)
 })
@@ -170,9 +171,9 @@ test("An IfInstruction does not execute instructions if is evaluated to false", 
   // [C1 = 10, C2 = 10, If C1 != C2 then [Wait]]
 
   const startNegate = Date.now()
-  
-  await runPromise(taskNegate.execute(notificationService, scriptsService, permissionsService, devicesService, token))
-  
+
+  await runPromise(taskNegate.execute(notificationService, scriptsService, permissionsService, devicesService, deviceActionsService, token))
+
   expect(Date.now()).toBeLessThan(startNegate + 0.5 * 1000)
 })
 
@@ -197,7 +198,7 @@ test("A big test with the if instruction", async () => {
   const task = await runPromise(completeBuilder.build())
   const start = Date.now()
 
-  await runPromise(task.execute(notificationService.get(), scriptsService, permissionsService, devicesService, token))
+  await runPromise(task.execute(notificationService.get(), scriptsService, permissionsService, devicesService, deviceActionsService, token))
 
   expect(Date.now()).toBeGreaterThanOrEqual(start + 0.7 * 1000)
   expect(notificationService.call()).toBe(3)
@@ -224,7 +225,7 @@ test("Another big test with the if instruction", async () => {
 
   const task = await runPromise(completeBuilder.build())
 
-  await runPromise(task.execute(notificationService.get(), scriptsService, permissionsService, devicesService, token))
+  await runPromise(task.execute(notificationService.get(), scriptsService, permissionsService, devicesService, deviceActionsService, token))
 
   expect(notificationService.call()).toBe(3)
   expect(notificationService.getMessages()).toStrictEqual(["firstMessage", "secondMessage", "thirdMessage"])
@@ -250,7 +251,7 @@ test("If as last instruction", async () => {
 
   const task = await runPromise(completeBuilder.build())
 
-  await runPromise(task.execute(notificationService.get(), scriptsService, permissionsService, devicesService, token))
+  await runPromise(task.execute(notificationService.get(), scriptsService, permissionsService, devicesService, deviceActionsService, token))
 
   expect(notificationService.call()).toBe(2)
   expect(notificationService.getMessages()).toStrictEqual(["firstMessage", "secondMessage"])
@@ -277,7 +278,7 @@ test("Consecutive ifs on same scope", async () => {
 
   const task = await runPromise(completeBuilder.build())
 
-  await runPromise(task.execute(notificationService.get(), scriptsService, permissionsService, devicesService, token))
+  await runPromise(task.execute(notificationService.get(), scriptsService, permissionsService, devicesService, deviceActionsService, token))
 
   expect(notificationService.call()).toBe(3)
   expect(notificationService.getMessages()).toStrictEqual(["firstMessage", "secondMessage", "thirdMessage"])
@@ -304,7 +305,7 @@ test("Consecutive ifs on root scope, with the second if just after a inner if of
 
   const task = await runPromise(completeBuilder.build())
 
-  await runPromise(task.execute(notificationService.get(), scriptsService, permissionsService, devicesService, token))
+  await runPromise(task.execute(notificationService.get(), scriptsService, permissionsService, devicesService, deviceActionsService, token))
 
   expect(notificationService.getMessages()).toStrictEqual(["firstMessage", "secondMessage", "thirdMessage"])
   expect(notificationService.call()).toBe(3)
@@ -335,7 +336,7 @@ test("Consecutive ifs on inner scope", async () => {
 
   const task = await runPromise(completeBuilder.build())
 
-  await runPromise(task.execute(notificationService.get(), scriptsService, permissionsService, devicesService, token))
+  await runPromise(task.execute(notificationService.get(), scriptsService, permissionsService, devicesService, deviceActionsService, token))
 
   expect(notificationService.getMessages()).toStrictEqual(["firstMessage", "secondMessage", "thirdMessage"])
   expect(notificationService.call()).toBe(3)
@@ -356,7 +357,7 @@ test("An InvalidScriptError is returned if using a constant not defined ", async
   const builderAndConstant4 = builderAndConstant3[0].addCreateConstant(ifRef, "constantName4", Type.StringType, "anotherString")
   const builderAndRef2 = builderAndConstant4[0].addIf(root, builderAndConstant3[1], builderAndConstant4[1], StringEOperator(), true)
   const taskBuilderComplete = builderAndRef2[0].addSendNotification(builderAndRef2[1], user.email, "secondMessage")
-  
+
   // [C1 = 10, C2 = 10, If C1 == C2 then [ Send, C3 = "string", C4 = "anotherString" ], If C3 != C4 then [ Send ] ]
   await runPromise(pipe(
     taskBuilderComplete.build(),
@@ -409,7 +410,7 @@ test("An IfElse instruction can be created", async () => {
 
   const task = await runPromise(completeBuilder.build())
 
-  await runPromise(task.execute(notificationService.get(), scriptsService, permissionsService, devicesService, token))
+  await runPromise(task.execute(notificationService.get(), scriptsService, permissionsService, devicesService, deviceActionsService, token))
 
   expect(notificationService.getMessages()).toStrictEqual(["firstMessage", "secondMessage", "thirdMessage"])
   expect(notificationService.call()).toBe(3)
@@ -430,7 +431,7 @@ test("An InvalidScriptError is returned if using a constant not defined also wit
   const builderAndConstant4 = builderAndConstant3[0].addCreateConstant(ifRef, "constantName4", Type.StringType, "anotherString")
   const builderAndRef2 = builderAndConstant4[0].addIfElse(root, builderAndConstant3[1], builderAndConstant4[1], StringEOperator(), true)
   const taskBuilderComplete = builderAndRef2[0].addSendNotification(builderAndRef2[1], user.email, "secondMessage").addSendNotification(builderAndRef2[2], user.email, "notSent")
-  
+
   // [C1 = 10, C2 = 10, If C1 == C2 then [ Send, C3 = "string", C4 = "anotherString" ], If C3 != C4 then [ Send ] else [ Send ] ]
   await runPromise(pipe(
     taskBuilderComplete.build(),
@@ -486,7 +487,7 @@ test("An automationBuilder can be created", async () => {
 
   const automation = await runPromise(completeBuilder.build())
 
-  await runPromise(automation.execute(notificationService.get(), scriptsService, permissionsService, devicesService, token))
+  await runPromise(automation.execute(notificationService.get(), scriptsService, permissionsService, devicesService, deviceActionsService, token))
 
   expect(notificationService.getMessages()).toStrictEqual(["firstMessage", "secondMessage", "thirdMessage"])
   expect(notificationService.call()).toBe(3)
@@ -510,7 +511,7 @@ test("An InvalidScriptError is returned if using a constant not defined also wit
   const builderAndConstant4 = builderAndConstant3[0].addCreateConstant(ifRef, "constantName4", Type.StringType, "anotherString")
   const builderAndRef2 = builderAndConstant4[0].addIf(root, builderAndConstant3[1], builderAndConstant4[1], StringEOperator(), true)
   const automationBuilderComplete = builderAndRef2[0].addSendNotification(builderAndRef2[1], user.email, "secondMessage")
-  
+
   // [C1 = 10, C2 = 10, If C1 == C2 then [ Send, C3 = "string", C4 = "anotherString" ], If C3 != C4 then [ Send ] ]
   await runPromise(pipe(
     automationBuilderComplete.build(),

@@ -21,6 +21,7 @@ import { DeviceDiscovererUDPAdapter } from "./adapters/devices-management/Device
 import { UsersServiceImpl } from "./domain/users-management/UsersServiceImpl.js";
 import { UserRepositoryAdapter } from "./adapters/users-management/UserRepositoryAdapter.js";
 import { RegistrationRequestRepositoryAdapter } from "./adapters/users-management/RegistrationRequestRepositoryAdapter.js";
+import { DeviceActionsServiceImpl } from "./domain/devices-management/DeviceActionsServiceImpl.js";
 
 const isDev = parseBooleanEnvVar("DEV") ?? false
 
@@ -55,16 +56,17 @@ const deviceRepository = new DeviceRepositoryMongoAdapter(mongoDBConnection)
 const deviceOfflineNotificationSubscriptionRepository = new DeviceOfflineNotificationSubscriptionRepositoryMongoAdapter(mongoDBConnection)
 const scriptRepository = new ScriptRepositoryMongoAdapter(mongoDBConnection)
 const deviceDiscoverer = new DeviceDiscovererUDPAdapter(parsePortEnvVar("DISCOVERY_PORT", 30000), 5, { logAnnounces: parseBooleanEnvVar("LOG_ANNOUNCES") })
-const devicesService = new DevicesServiceImpl(deviceRepository, deviceFactory, usersService, permissionsService, deviceCommunicationProtocol, deviceDiscoverer)
+const devicesService = new DevicesServiceImpl(deviceRepository, deviceFactory, usersService, deviceDiscoverer)
+const deviceActionsService = new DeviceActionsServiceImpl(devicesService, usersService, permissionsService, deviceCommunicationProtocol)
 const logDeviceStatusChanges = parseBooleanEnvVar("LOG_DEVICE_STATUS_CHANGES") ?? false
 const deviceStatusesService: DeviceStatusesService = new DeviceStatusesServiceImpl(5000, devicesService, deviceCommunicationProtocol, { logDeviceStatusChanges })
 const deviceGroupsService = new DeviceGroupsServiceImpl(deviceGroupRepository, devicesService, usersService)
 const deviceEventsService = new DeviceEventsServiceImpl(devicesService)
 const notificationsService = NotificationsService(deviceStatusesService, devicesService, usersService, deviceOfflineNotificationSubscriptionRepository)
-const scriptsService = new ScriptsServiceImpl(scriptRepository, devicesService, notificationsService, usersService, permissionsService, deviceEventsService)
+const scriptsService = new ScriptsServiceImpl(scriptRepository, devicesService, deviceActionsService, notificationsService, usersService, permissionsService, deviceEventsService)
 const logRequestUrls = parseBooleanEnvVar("LOG_REQ_URLS") ?? false
 const logRequestBodies = parseBooleanEnvVar("LOG_REQ_BODIES") ?? false
-new HTTPServerAdapter("localhost", serverPort, deviceGroupsService, devicesService, deviceEventsService, usersService, notificationsService, scriptsService, { logRequestUrls, logRequestBodies })
+new HTTPServerAdapter("localhost", serverPort, deviceGroupsService, devicesService, deviceActionsService, deviceEventsService, usersService, notificationsService, scriptsService, { logRequestUrls, logRequestBodies })
 
 function parseEnvVar(varName: string): string | undefined {
     return process.env[varName]

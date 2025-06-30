@@ -63,6 +63,7 @@ class StartTaskInstructionImpl implements StartTaskInstruction {
                 env.scriptsService,
                 env.permissionsService,
                 env.devicesService,
+                env.deviceActionsService,
                 env.taskToken
               ),
               andThen(() => succeed(env))
@@ -91,7 +92,7 @@ class DeviceActionInstructionImpl implements DeviceActionInstruction {
 
   execute(env: ExecutionEnvironment): Effect<ExecutionEnvironment, ScriptError> {
     return pipe(
-      env.devicesService.executeAutomationAction(this.deviceId, this.deviceActionId, this.input),
+      env.deviceActionsService.executeAutomationAction(this.deviceId, this.deviceActionId, this.input),
       map(() => env),
       mapError(error => ScriptError(error.message + ", " + error.cause))
     )

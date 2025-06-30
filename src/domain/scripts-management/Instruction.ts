@@ -9,6 +9,7 @@ import { DevicesService } from "../../ports/devices-management/DevicesService.js
 import { PermissionsService } from "../../ports/permissions-management/PermissionsService.js"
 import { Token } from "../users-management/Token.js"
 import { NotificationsService } from "../../ports/notifications-management/NotificationsService.js"
+import { DeviceActionsService } from "../../ports/devices-management/DeviceActionsService.js"
 
 export interface Instruction {
   execute(env: ExecutionEnvironment): Effect<ExecutionEnvironment, ScriptError>
@@ -79,6 +80,7 @@ export interface ExecutionEnvironment {
   readonly scriptsService: ScriptsService
   readonly permissionsService: PermissionsService
   readonly devicesService: DevicesService
+  readonly deviceActionsService: DeviceActionsService
   readonly constants: Map<ConstantInstruction<unknown>, ConstantValue<unknown>>
   readonly taskToken?: Token
 }
@@ -106,12 +108,13 @@ export function ConstantValue<T>(value: T): ConstantValue<T> {
   }
 }
 
-export function ExecutionEnvironment(notificationsService: NotificationsService, scriptsService: ScriptsService, permissionsService: PermissionsService, devicesService: DevicesService, token?: Token,): ExecutionEnvironment {
+export function ExecutionEnvironment(notificationsService: NotificationsService, scriptsService: ScriptsService, permissionsService: PermissionsService, devicesService: DevicesService, deviceActionsService: DeviceActionsService, token?: Token,): ExecutionEnvironment {
   return {
     notificationsService: notificationsService,
     scriptsService: scriptsService,
     permissionsService: permissionsService,
     devicesService: devicesService,
+    deviceActionsService: deviceActionsService,
     constants: new Map<ConstantInstruction<unknown>, ConstantValue<unknown>>(),
     taskToken: token
   }
@@ -123,6 +126,7 @@ export function ExecutionEnvironmentCopy(env: ExecutionEnvironment): ExecutionEn
     scriptsService: env.scriptsService,
     permissionsService: env.permissionsService,
     devicesService: env.devicesService,
+    deviceActionsService: env.deviceActionsService,
     constants: new Map(env.constants),
     taskToken: env.taskToken
   }

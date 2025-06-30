@@ -13,6 +13,7 @@ import { registerScriptsServiceRoutes } from './routes/ScriptsService.js';
 import { ScriptsService } from '../../ports/scripts-management/ScriptsService.js';
 import { NotificationProtocolSocketIOAdapter } from '../notifications-management/NotificationProtocolSocketIOAdapter.js';
 import { registerNotificationsServiceRoutes } from './routes/NotificationsService.js';
+import { DeviceActionsService } from '../../ports/devices-management/DeviceActionsService.js';
 
 interface Options {
     logRequestUrls?: boolean
@@ -26,6 +27,7 @@ export class HTTPServerAdapter {
         port: number,
         deviceGroupsService: DeviceGroupsService,
         devicesService: DevicesService,
+        deviceActionsService: DeviceActionsService,
         deviceEventsService: DeviceEventsService,
         usersService: UsersService,
         notificationsService: NotificationsService,
@@ -43,7 +45,7 @@ export class HTTPServerAdapter {
             if (logRequestUrls || logRequestBodies) { console.log() }
             next()
         })
-        registerDevicesServiceRoutes(app, devicesService, usersService)
+        registerDevicesServiceRoutes(app, devicesService, deviceActionsService, usersService)
         registerDeviceGroupsServiceRoutes(app, deviceGroupsService, usersService)
         registerDeviceEventsServiceRoutes(app, deviceEventsService)
         registerScriptsServiceRoutes(app, scriptsService, usersService)
