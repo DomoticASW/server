@@ -14,6 +14,8 @@ import { ScriptsService } from '../../ports/scripts-management/ScriptsService.js
 import { NotificationProtocolSocketIOAdapter } from '../notifications-management/NotificationProtocolSocketIOAdapter.js';
 import { registerNotificationsServiceRoutes } from './routes/NotificationsService.js';
 import { DeviceActionsService } from '../../ports/devices-management/DeviceActionsService.js';
+import { registerPermissionsServiceRoutes } from './routes/PermissionsService.js';
+import { PermissionsService } from '../../ports/permissions-management/PermissionsService.js';
 
 interface Options {
     logRequestUrls?: boolean
@@ -32,6 +34,7 @@ export class HTTPServerAdapter {
         usersService: UsersService,
         notificationsService: NotificationsService,
         scriptsService: ScriptsService,
+        permissionsService: PermissionsService,
         { logRequestBodies = false, logRequestUrls = false }: Options = {}
     ) {
         const app = express();
@@ -51,6 +54,7 @@ export class HTTPServerAdapter {
         registerScriptsServiceRoutes(app, scriptsService, usersService)
         registerNotificationsServiceRoutes(app, notificationsService, usersService)
         registerNotificationsServiceProtocol(server, notificationsService)
+        registerPermissionsServiceRoutes(app, permissionsService, usersService)
 
         server.listen(port, async () => {
             return console.log(`Express is listening at http://${host}:${port}`);

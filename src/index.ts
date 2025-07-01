@@ -77,7 +77,7 @@ const scriptsService = new ScriptsServiceImpl(scriptRepository, devicesService, 
 const logRequestUrls = parseBooleanEnvVar("LOG_REQ_URLS") ?? false
 const logRequestBodies = parseBooleanEnvVar("LOG_REQ_BODIES") ?? false
 // Http server is started as a side effect
-new HTTPServerAdapter("localhost", serverPort, deviceGroupsService, devicesService, deviceActionsService, deviceEventsService, usersService, notificationsService, scriptsService, { logRequestUrls, logRequestBodies })
+new HTTPServerAdapter("localhost", serverPort, deviceGroupsService, devicesService, deviceActionsService, deviceEventsService, usersService, notificationsService, scriptsService, permissionsService, { logRequestUrls, logRequestBodies })
 
 function parseEnvVar(varName: string): string | undefined {
     return process.env[varName]
