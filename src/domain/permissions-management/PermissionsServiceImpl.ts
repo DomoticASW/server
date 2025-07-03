@@ -14,6 +14,8 @@ import { EditListRepository } from "../../ports/permissions-management/EditListR
 import { UserDevicePermission } from "./UserDevicePermission.js";
 import { ScriptId, TaskId } from "../scripts-management/Script.js";
 import { ScriptNotFoundError } from "../../ports/scripts-management/Errors.js";
+import { EditList } from "./EditList.js";
+import { TaskLists } from "./TaskLists.js";
 
 export class PermissionsServiceImpl implements PermissionsService {
 
@@ -128,7 +130,10 @@ export class PermissionsServiceImpl implements PermissionsService {
       Effect.flatMap(() => this.editListRepo.find(scriptId)),
       Effect.catch("__brand", {
         failure: "NotFoundError",
-        onFailure: () => Effect.fail(ScriptNotFoundError())
+        onFailure: () => { 
+          this.editListRepo.add(EditList(scriptId, []))
+          return Effect.succeed(EditList(scriptId, []));
+        }
       }),
       Effect.flatMap((editList) => {
         editList.addUserToUsers(token.userEmail);
@@ -173,7 +178,10 @@ export class PermissionsServiceImpl implements PermissionsService {
       Effect.flatMap(() => this.taskListsRepo.find(taskId)),
       Effect.catch("__brand", {
         failure: "NotFoundError",
-        onFailure: () => Effect.fail(ScriptNotFoundError())
+        onFailure: () => {
+          this.taskListsRepo.add(TaskLists(taskId, [], []))
+          return Effect.succeed(TaskLists(taskId, [], []));
+        }
       }),
       Effect.flatMap((taskList) => {
         return Effect.if(taskList.blacklist.includes(email), {
@@ -222,7 +230,10 @@ export class PermissionsServiceImpl implements PermissionsService {
       Effect.flatMap(() => this.taskListsRepo.find(taskId)),
       Effect.catch("__brand", {
         failure: "NotFoundError",
-        onFailure: () => Effect.fail(ScriptNotFoundError())
+        onFailure: () => {
+          this.taskListsRepo.add(TaskLists(taskId, [], []))
+          return Effect.succeed(TaskLists(taskId, [], []));
+        }
       }),
       Effect.flatMap((taskList) => {
         return Effect.if(taskList.whitelist.includes(email), {

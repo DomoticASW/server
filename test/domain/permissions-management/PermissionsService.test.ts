@@ -202,14 +202,13 @@ test("addToEditList", async () => {
     expect(editListRepo.callsToUpdate).toBe(1)
 })
 
-test("addToEditList, expect a ScriptNotFoundError", async () => {
+test("addToEditList to a list that doesn't exist", async () => {
     expect(editListRepo.callsToUpdate).toBe(0)
-    await expect(
-        Effect.runPromise(
-            service.addToEditlist(makeToken(), Email("test@test.com") ,TaskId("200")),
-        )
-    ).rejects.toThrow("ScriptNotFoundError");
-    expect(editListRepo.callsToUpdate).toBe(0)
+    await pipe(
+        service.addToEditlist(makeToken(), Email("test@test.com") ,TaskId("200")),
+        Effect.runPromise
+    );
+    expect(editListRepo.callsToUpdate).toBe(1)
 })
 
 test("addToEditList, expect a UserNotFoundError", async () => {
@@ -297,13 +296,13 @@ test("addToWhiteList", async () => {
     expect(taskListsRepo.callsToUpdate).toBe(1)
 })
 
-test("addToWhiteList, expect ScriptNotFoundError", async () => {
+test("addToWhiteList to a list that doesn't exist", async () => {
     expect(taskListsRepo.callsToUpdate).toBe(0)
-    await expect(
-        Effect.runPromise(
-            service.addToWhitelist(makeToken(), Email("test@test.com") , TaskId("200")),    
-        )
-    ).rejects.toThrow("ScriptNotFoundError");
+    await pipe(
+        service.addToWhitelist(makeToken(), Email("test@test.com") , TaskId("200")),    
+        Effect.runPromise
+    )
+    expect(taskListsRepo.callsToUpdate).toBe(1)
 })
 
 test("addToWhiteList, expect UnauthorizedError", async () => {
@@ -403,13 +402,13 @@ test("addToBlackList", async () => {
     expect(taskListsRepo.callsToUpdate).toBe(1)
 })
 
-test("addToBlackList, expect ScriptNotFoundError", async () => {
+test("addToBlackList to a list that doesn't exist", async () => {
     expect(taskListsRepo.callsToUpdate).toBe(0)
-    await expect(
-        Effect.runPromise(
-            service.addToBlacklist(makeToken(), Email("test@test.com") , TaskId("200")),
-        )
-    ).rejects.toThrow("ScriptNotFoundError");
+    await pipe(
+        service.addToBlacklist(makeToken(), Email("test@test.com") , TaskId("200")),
+        Effect.runPromise
+    );
+    expect(taskListsRepo.callsToUpdate).toBe(1)
 })
 
 test("addToBlackList, expect UserNotFoundError", async () => {
