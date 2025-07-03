@@ -22,8 +22,7 @@ import { DeviceDiscovererUDPAdapter } from "./adapters/devices-management/Device
 
 
 const mongoDBConnection = mongoose.createConnection("mongodb://localhost:27017/DomoticASW")
-const defaultServerPort = 3000
-const serverPort = getServerPortFromEnv(defaultServerPort)
+const serverPort = parsePortEnvVar("SERVER_PORT", 3000)
 // TODO: replace with production impl
 const usersServiceMock: UsersService = {
     makeToken() { return Effect.succeed({ role: Role.Admin, userEmail: Email("a@email.com") }) },
@@ -44,14 +43,17 @@ const deviceGroupRepository = new DeviceGroupRepositoryMongoAdapter(mongoDBConne
 const deviceRepository = new DeviceRepositoryMongoAdapter(mongoDBConnection)
 const deviceOfflineNotificationSubscriptionRepository = new DeviceOfflineNotificationSubscriptionRepositoryMongoAdapter(mongoDBConnection)
 const scriptRepository = new ScriptRepositoryMongoAdapter(mongoDBConnection)
-const deviceDiscoverer = new DeviceDiscovererUDPAdapter(30000, 5, { logAnnounces: parseBooleanEnvVar("LOG_ANNOUNCES") })
+const deviceDiscoverer = new DeviceDiscovererUDPAdapter(parsePortEnvVar("DISCOVERY_PORT", 30000), 5, { logAnnounces: parseBooleanEnvVar("LOG_ANNOUNCES") })
 const devicesService = new DevicesServiceImpl(deviceRepository, deviceFactory, usersServiceMock, permissionsService, deviceCommunicationProtocol, deviceDiscoverer)
-const deviceStatusesService: DeviceStatusesService = new DeviceStatusesServiceImpl(5000, devicesService, deviceCommunicationProtocol)
+const logDeviceStatusChanges = parseBooleanEnvVar("LOG_DEVICE_STATUS_CHANGES") ?? false
+const deviceStatusesService: DeviceStatusesService = new DeviceStatusesServiceImpl(5000, devicesService, deviceCommunicationProtocol, { logDeviceStatusChanges })
 const deviceGroupsService = new DeviceGroupsServiceImpl(deviceGroupRepository, devicesService, usersServiceMock)
 const deviceEventsService = new DeviceEventsServiceImpl(devicesService)
 const notificationsService = NotificationsService(deviceStatusesService, devicesService, usersServiceMock, deviceOfflineNotificationSubscriptionRepository)
 const scriptsService = new ScriptsServiceImpl(scriptRepository, devicesService, notificationsService, usersServiceMock, permissionsService, deviceEventsService)
-new HTTPServerAdapter("localhost", serverPort, deviceGroupsService, devicesService, deviceEventsService, usersServiceMock, notificationsService, scriptsService)
+const logRequestUrls = parseBooleanEnvVar("LOG_REQ_URLS") ?? false
+const logRequestBodies = parseBooleanEnvVar("LOG_REQ_BODIES") ?? false
+new HTTPServerAdapter("localhost", serverPort, deviceGroupsService, devicesService, deviceEventsService, usersServiceMock, notificationsService, scriptsService, { logRequestUrls, logRequestBodies })
 
 function parseBooleanEnvVar(varName: string): boolean | undefined {
     const str = process.env[varName]?.toLocaleLowerCase()
@@ -66,28 +68,28 @@ function parseBooleanEnvVar(varName: string): boolean | undefined {
     }
     return undefined
 }
-function getServerPortFromEnv(defaultServerPort: number): number {
+function parsePortEnvVar(varName: string, defaultPort: number): number {
     type EnvVarNotSet = "EnvVarNotSet"
     type InvalidEnvVar = "InvalidEnvVar"
 
     return Effect.Do.pipe(
-        Effect.bind("serverPortStr", () => process.env.SERVER_PORT ? Effect.succeed(process.env.SERVER_PORT) : Effect.fail<EnvVarNotSet>("EnvVarNotSet")),
-        Effect.bind("serverPortInt", ({ serverPortStr }) => {
-            const portInt = Number.parseInt(serverPortStr)
+        Effect.bind("portStr", () => process.env[varName] ? Effect.succeed(process.env[varName]) : Effect.fail<EnvVarNotSet>("EnvVarNotSet")),
+        Effect.bind("portInt", ({ portStr }) => {
+            const portInt = Number.parseInt(portStr)
             return !isNaN(portInt) ? Effect.succeed(portInt) : Effect.fail<InvalidEnvVar>("InvalidEnvVar")
         }),
-        Effect.bind("_", ({ serverPortInt }) => serverPortInt >= 0 && serverPortInt <= 65535 ? Effect.void : Effect.fail<InvalidEnvVar>("InvalidEnvVar")),
-        Effect.map(({ serverPortInt }) => serverPortInt),
+        Effect.bind("_", ({ portInt }) => portInt >= 0 && portInt <= 65535 ? Effect.void : Effect.fail<InvalidEnvVar>("InvalidEnvVar")),
+        Effect.map(({ portInt }) => portInt),
         Effect.catchAll(err => {
             switch (err) {
                 case "EnvVarNotSet":
-                    console.log(`SERVER_PORT environment variable was not set, using default: ${defaultServerPort}`)
+                    console.log(`${varName} environment variable was not set, using default: ${defaultPort}`)
                     break
                 case "InvalidEnvVar":
-                    console.log(`SERVER_PORT=${process.env.SERVER_PORT} was not a valid port, using default: ${defaultServerPort}`)
+                    console.log(`${varName}=${process.env[varName]} was not a valid port, using default: ${defaultPort}`)
                     break
             }
-            return Effect.succeed(defaultServerPort)
+            return Effect.succeed(defaultPort)
         }),
         Effect.runSync
     )
