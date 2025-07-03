@@ -3,7 +3,6 @@ import { HTTPServerAdapter } from "./adapters/http/HTTPServerAdapter.js";
 import { DeviceGroupRepositoryMongoAdapter } from "./adapters/devices-management/DeviceGroupRepositoryMongoAdapter.js";
 import { UsersService } from "./ports/users-management/UsersService.js";
 import { Effect } from "effect";
-import { Email, Role } from "./domain/users-management/User.js";
 import { DeviceGroupsServiceImpl } from "./domain/devices-management/DeviceGroupsServiceImpl.js";
 import { DeviceRepositoryMongoAdapter } from "./adapters/devices-management/DeviceRepositoryMongoAdapter.js";
 import { DevicesServiceImpl } from "./domain/devices-management/DevicesServiceImpl.js";
@@ -19,42 +18,70 @@ import { DeviceFactoryImpl } from "./domain/devices-management/DeviceFactoryImpl
 import { DeviceCommunicationProtocolHttpAdapter } from "./adapters/devices-management/DeviceCommunicationProtocolHttpAdapter.js";
 import { DeviceStatusesServiceImpl } from "./domain/devices-management/DeviceStatusesServiceImpl.js";
 import { DeviceDiscovererUDPAdapter } from "./adapters/devices-management/DeviceDiscovererUDPAdapter.js";
+import { UsersServiceImpl } from "./domain/users-management/UsersServiceImpl.js";
+import { UserRepositoryAdapter } from "./adapters/users-management/UserRepositoryAdapter.js";
+import { RegistrationRequestRepositoryAdapter } from "./adapters/users-management/RegistrationRequestRepositoryAdapter.js";
+import { DeviceActionsServiceImpl } from "./domain/devices-management/DeviceActionsServiceImpl.js";
+import { PermissionsServiceImpl } from "./domain/permissions-management/PermissionsServiceImpl.js";
+import { UserDevicePermissionRepositoryMongoAdapter } from "./adapters/permissions-management/UserDevicePermissionRepositoryMongoAdapter.js";
+import { TaskListsRepositoryMongoAdapter } from "./adapters/permissions-management/TaskListsRepositoryMongoAdapter.js";
+import { EditListRepositoryMongoAdapter } from "./adapters/permissions-management/EditListRepositoryMongoAdapter.js";
 
+const isDev = parseBooleanEnvVar("DEV") ?? false
 
 const mongoDBConnection = mongoose.createConnection("mongodb://localhost:27017/DomoticASW")
 const serverPort = parsePortEnvVar("SERVER_PORT", 3000)
-// TODO: replace with production impl
-const usersServiceMock: UsersService = {
-    makeToken() { return Effect.succeed({ role: Role.Admin, userEmail: Email("a@email.com") }) },
-    verifyToken() { return Effect.succeed(null) },
-    getUserDataUnsafe() { return Effect.succeed({}) }
-} as unknown as UsersService
-// TODO: replace with production impl
-const permissionsService: PermissionsService = {
-    canExecuteActionOnDevice: () => Effect.succeed(undefined),
-    canExecuteTask: () => Effect.succeed(undefined),
-    canEdit: () => Effect.succeed(undefined)
-} as unknown as PermissionsService
+const userRepository = new UserRepositoryAdapter(mongoDBConnection)
+const registrationRequestRepository = new RegistrationRequestRepositoryAdapter(mongoDBConnection)
+let jwtSecret = parseEnvVar("JWT_SECRET")
+// JWT secret must be specified in production environment
+if (!jwtSecret || jwtSecret.trim() == "") {
+    if (isDev) {
+        jwtSecret = "secret"
+        console.log(`Missing JWT_SECRET in development environment, using "${jwtSecret}" instead`)
+    } else {
+        console.error("Missing JWT_SECRET")
+        process.exit(1)
+    }
+}
+const usersService: UsersService = new UsersServiceImpl(userRepository, registrationRequestRepository, jwtSecret)
 
 const deviceCommunicationProtocol: DeviceCommunicationProtocol = new DeviceCommunicationProtocolHttpAdapter(serverPort)
 
 const deviceFactory = new DeviceFactoryImpl(deviceCommunicationProtocol)
-const deviceGroupRepository = new DeviceGroupRepositoryMongoAdapter(mongoDBConnection)
 const deviceRepository = new DeviceRepositoryMongoAdapter(mongoDBConnection)
-const deviceOfflineNotificationSubscriptionRepository = new DeviceOfflineNotificationSubscriptionRepositoryMongoAdapter(mongoDBConnection)
-const scriptRepository = new ScriptRepositoryMongoAdapter(mongoDBConnection)
 const deviceDiscoverer = new DeviceDiscovererUDPAdapter(parsePortEnvVar("DISCOVERY_PORT", 30000), 5, { logAnnounces: parseBooleanEnvVar("LOG_ANNOUNCES") })
-const devicesService = new DevicesServiceImpl(deviceRepository, deviceFactory, usersServiceMock, permissionsService, deviceCommunicationProtocol, deviceDiscoverer)
+const devicesService = new DevicesServiceImpl(deviceRepository, deviceFactory, usersService, deviceDiscoverer)
+
+const userDevicePermissionRepo = new UserDevicePermissionRepositoryMongoAdapter(mongoDBConnection)
+const taskListsRepo = new TaskListsRepositoryMongoAdapter(mongoDBConnection)
+const editListRepo = new EditListRepositoryMongoAdapter(mongoDBConnection)
+const permissionsService: PermissionsService = new PermissionsServiceImpl(userDevicePermissionRepo, taskListsRepo, editListRepo, usersService, devicesService)
+
+const deviceActionsService = new DeviceActionsServiceImpl(devicesService, usersService, permissionsService, deviceCommunicationProtocol)
+
 const logDeviceStatusChanges = parseBooleanEnvVar("LOG_DEVICE_STATUS_CHANGES") ?? false
 const deviceStatusesService: DeviceStatusesService = new DeviceStatusesServiceImpl(5000, devicesService, deviceCommunicationProtocol, { logDeviceStatusChanges })
-const deviceGroupsService = new DeviceGroupsServiceImpl(deviceGroupRepository, devicesService, usersServiceMock)
+
+const deviceGroupRepository = new DeviceGroupRepositoryMongoAdapter(mongoDBConnection)
+const deviceGroupsService = new DeviceGroupsServiceImpl(deviceGroupRepository, devicesService, usersService)
+
 const deviceEventsService = new DeviceEventsServiceImpl(devicesService)
-const notificationsService = NotificationsService(deviceStatusesService, devicesService, usersServiceMock, deviceOfflineNotificationSubscriptionRepository)
-const scriptsService = new ScriptsServiceImpl(scriptRepository, devicesService, notificationsService, usersServiceMock, permissionsService, deviceEventsService)
+
+const deviceOfflineNotificationSubscriptionRepository = new DeviceOfflineNotificationSubscriptionRepositoryMongoAdapter(mongoDBConnection)
+const notificationsService = NotificationsService(deviceStatusesService, devicesService, usersService, deviceOfflineNotificationSubscriptionRepository)
+
+const scriptRepository = new ScriptRepositoryMongoAdapter(mongoDBConnection)
+const scriptsService = new ScriptsServiceImpl(scriptRepository, devicesService, deviceActionsService, notificationsService, usersService, permissionsService, deviceEventsService)
+
 const logRequestUrls = parseBooleanEnvVar("LOG_REQ_URLS") ?? false
 const logRequestBodies = parseBooleanEnvVar("LOG_REQ_BODIES") ?? false
-new HTTPServerAdapter("localhost", serverPort, deviceGroupsService, devicesService, deviceEventsService, usersServiceMock, notificationsService, scriptsService, { logRequestUrls, logRequestBodies })
+// Http server is started as a side effect
+new HTTPServerAdapter("localhost", serverPort, deviceGroupsService, devicesService, deviceActionsService, deviceEventsService, usersService, notificationsService, scriptsService, permissionsService, { logRequestUrls, logRequestBodies })
 
+function parseEnvVar(varName: string): string | undefined {
+    return process.env[varName]
+}
 function parseBooleanEnvVar(varName: string): boolean | undefined {
     const str = process.env[varName]?.toLocaleLowerCase()
     if (str) {
@@ -94,3 +121,8 @@ function parsePortEnvVar(varName: string, defaultPort: number): number {
         Effect.runSync
     )
 }
+
+process.on("SIGINT", () => {
+    mongoDBConnection.close()
+    process.exit(1)
+})

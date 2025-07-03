@@ -17,6 +17,7 @@ import { DeviceEventsService, DeviceEventsSubscriber } from "../../ports/devices
 import { DeviceId, DeviceEvent } from "../devices-management/Device.js";
 import { DeviceEventTrigger, DeviceEventTriggerImpl, PeriodTrigger, PeriodTriggerImpl } from "./Trigger.js";
 import { millis, seconds } from "effect/Duration";
+import { DeviceActionsService } from "../../ports/devices-management/DeviceActionsService.js";
 
 export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscriber {
   private automationsFiberMap: Map<AutomationId, Fiber.RuntimeFiber<undefined, ScriptError | NotFoundError>> = new Map()
@@ -24,6 +25,7 @@ export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscribe
   constructor(
     private scriptRepository: ScriptRepository, 
     private devicesService: DevicesService,
+    private deviceActionsService: DeviceActionsService,
     private notificationsService: NotificationsService,
     private usersService: UsersService,
     private permissionsService: PermissionsService,
@@ -95,7 +97,7 @@ export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscribe
     return pipe(
       this.permissionsService.canExecuteTask(token, taskId),
       flatMap(() => this.findTask(token, taskId)),
-      flatMap(task => forkDaemon(task.execute(this.notificationsService, this, this.permissionsService, this.devicesService, token)))
+      flatMap(task => forkDaemon(task.execute(this.notificationsService, this, this.permissionsService, this.devicesService, this.deviceActionsService, token)))
     )
   }
 
@@ -198,7 +200,7 @@ export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscribe
   }
 
   private startAutomation(automation: Automation) {
-    return automation.execute(this.notificationsService, this, this.permissionsService, this.devicesService)
+    return automation.execute(this.notificationsService, this, this.permissionsService, this.devicesService, this.deviceActionsService)
   }
 
   editAutomation(token: Token, automationId: AutomationId, automation: AutomationBuilder): Effect<void, InvalidTokenError | PermissionError | ScriptNotFoundError | AutomationNameAlreadyInUseError | InvalidScriptError> {

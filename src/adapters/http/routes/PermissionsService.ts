@@ -8,7 +8,7 @@ import { TaskId } from "../../../domain/scripts-management/Script.js";
 import { DeviceId } from "../../../domain/devices-management/Device.js";
 import { Email } from "../../../domain/users-management/User.js";
 
-export function registerDevicesServiceRoutes(app: express.Express, service: PermissionsService, usersService: UsersService) {
+export function registerPermissionsServiceRoutes(app: express.Express, service: PermissionsService, usersService: UsersService) {
   
   // add to user device permission
   app.post('/api/permissions/user-device/:id', async (req, res) => {

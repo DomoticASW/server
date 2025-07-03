@@ -7,8 +7,9 @@ import { deserializeToken, BadRequest, handleCommonErrors, sendResponse, Respons
 import { Device, DeviceAction, DeviceActionId, DeviceEvent, DeviceId, DeviceProperty, DevicePropertyId, DeviceStatus, DeviceAddress } from "../../../domain/devices-management/Device.js";
 import { Type } from "../../../ports/devices-management/Types.js";
 import { TypeConstraints } from "../../../domain/devices-management/Types.js";
+import { DeviceActionsService } from "../../../ports/devices-management/DeviceActionsService.js";
 
-export function registerDevicesServiceRoutes(app: express.Express, service: DevicesService, usersService: UsersService) {
+export function registerDevicesServiceRoutes(app: express.Express, service: DevicesService, actionsService: DeviceActionsService, usersService: UsersService) {
 
     // create
     app.post('/api/devices', async (req, res) => {
@@ -166,7 +167,7 @@ export function registerDevicesServiceRoutes(app: express.Express, service: Devi
                 if (req.body && key in req.body) { return Effect.succeed(req.body[key]) }
                 else { return Effect.fail(BadRequest(`Expected body format is: {${key}: ???}`)) }
             }),
-            Effect.bind("_", ({ token, input }) => service.executeAction(token, DeviceId(req.params.id), DeviceActionId(req.params.actionId), input)),
+            Effect.bind("_", ({ token, input }) => actionsService.executeAction(token, DeviceId(req.params.id), DeviceActionId(req.params.actionId), input)),
             Effect.map(() => Response(StatusCodes.OK)),
             Effect.catch("__brand", {
                 failure: "DeviceNotFoundError",

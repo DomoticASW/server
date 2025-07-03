@@ -13,6 +13,10 @@ import { registerScriptsServiceRoutes } from './routes/ScriptsService.js';
 import { ScriptsService } from '../../ports/scripts-management/ScriptsService.js';
 import { NotificationProtocolSocketIOAdapter } from '../notifications-management/NotificationProtocolSocketIOAdapter.js';
 import { registerNotificationsServiceRoutes } from './routes/NotificationsService.js';
+import { DeviceActionsService } from '../../ports/devices-management/DeviceActionsService.js';
+import { registerPermissionsServiceRoutes } from './routes/PermissionsService.js';
+import { PermissionsService } from '../../ports/permissions-management/PermissionsService.js';
+import { registerUsersServiceRoutes } from './routes/UsersService.js';
 
 interface Options {
     logRequestUrls?: boolean
@@ -26,10 +30,12 @@ export class HTTPServerAdapter {
         port: number,
         deviceGroupsService: DeviceGroupsService,
         devicesService: DevicesService,
+        deviceActionsService: DeviceActionsService,
         deviceEventsService: DeviceEventsService,
         usersService: UsersService,
         notificationsService: NotificationsService,
         scriptsService: ScriptsService,
+        permissionsService: PermissionsService,
         { logRequestBodies = false, logRequestUrls = false }: Options = {}
     ) {
         const app = express();
@@ -43,12 +49,14 @@ export class HTTPServerAdapter {
             if (logRequestUrls || logRequestBodies) { console.log() }
             next()
         })
-        registerDevicesServiceRoutes(app, devicesService, usersService)
+        registerDevicesServiceRoutes(app, devicesService, deviceActionsService, usersService)
         registerDeviceGroupsServiceRoutes(app, deviceGroupsService, usersService)
         registerDeviceEventsServiceRoutes(app, deviceEventsService)
         registerScriptsServiceRoutes(app, scriptsService, usersService)
         registerNotificationsServiceRoutes(app, notificationsService, usersService)
         registerNotificationsServiceProtocol(server, notificationsService)
+        registerPermissionsServiceRoutes(app, permissionsService, usersService)
+        registerUsersServiceRoutes(app, usersService);
 
         server.listen(port, async () => {
             return console.log(`Express is listening at http://${host}:${port}`);

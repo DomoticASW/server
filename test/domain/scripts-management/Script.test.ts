@@ -3,7 +3,7 @@ import { CreateConstantInstruction, IfElseInstruction, SendNotificationInstructi
 import { Automation, AutomationId, Task, TaskId } from "../../../src/domain/scripts-management/Script.js"
 import { Type } from "../../../src/ports/devices-management/Types.js"
 import { ScriptError, ScriptNotFoundError } from "../../../src/ports/scripts-management/Errors.js"
-import { DevicesServiceSpy, NotificationsServiceSpy, PermissionsServiceSpy, ScriptsServiceSpy, SpyTaskMock, TokenMock } from "../../utils/mocks.js"
+import { DeviceActionsServiceSpy, DevicesServiceSpy, NotificationsServiceSpy, PermissionsServiceSpy, ScriptsServiceSpy, SpyTaskMock, TokenMock } from "../../utils/mocks.js"
 import { pipe } from "effect"
 import { PermissionError } from "../../../src/ports/permissions-management/Errors.js"
 import { PeriodTrigger } from "../../../src/domain/scripts-management/Trigger.js"
@@ -56,7 +56,7 @@ test("A task can be executed", async () => {
   ]
 
   const task = Task(taskId, "taskName", instructions)
-  const env = await runPromise(task.execute(notificationService.get(), ScriptsServiceSpy().get(), PermissionsServiceSpy().get(), DevicesServiceSpy().get(), TokenMock("email")))
+  const env = await runPromise(task.execute(notificationService.get(), ScriptsServiceSpy().get(), PermissionsServiceSpy().get(), DevicesServiceSpy().get(), DeviceActionsServiceSpy().get(), TokenMock("email")))
 
   expect(env.constants.get(instruction1)).toBeDefined()
   expect(env.constants.get(instruction2)).toBeDefined()
@@ -75,7 +75,7 @@ test("A task cannot execute another task if token has not the permissions", asyn
   const task = Task(taskId, "taskName", [startTaskInstruction])
   
   await pipe(
-    task.execute(NotificationsServiceSpy(requiredToken.userEmail).get(),scriptsService, permissionsService, DevicesServiceSpy().get(), TokenMock("otherEmail")),
+    task.execute(NotificationsServiceSpy(requiredToken.userEmail).get(),scriptsService, permissionsService, DevicesServiceSpy().get(), DeviceActionsServiceSpy().get(), TokenMock("otherEmail")),
     match({
       onSuccess() { throw Error("Should not be here") },
       onFailure(err) {
@@ -98,7 +98,7 @@ test("A task can be started by another task if the token has the permissions", a
   const taskId = TaskId("1")
   const task = Task(taskId, "taskName", [startTaskInstruction])
 
-  await runPromise(task.execute(NotificationsServiceSpy(requiredToken.userEmail).get(), scriptsService, permissionsService, DevicesServiceSpy().get(), requiredToken))
+  await runPromise(task.execute(NotificationsServiceSpy(requiredToken.userEmail).get(), scriptsService, permissionsService, DevicesServiceSpy().get(), DeviceActionsServiceSpy().get(), requiredToken))
 
   expect(spyTask.call()).toBe(1)
 })
@@ -126,7 +126,7 @@ test("An automation can be executed", async () => {
   ]
 
   const automation = Automation(automationId, "automationName", periodTrigger, instructions)
-  const env = await runPromise(automation.execute(NotificationsServiceSpy(Email("email")).get(), ScriptsServiceSpy().get(), PermissionsServiceSpy().get(), DevicesServiceSpy().get()))
+  const env = await runPromise(automation.execute(NotificationsServiceSpy(Email("email")).get(), ScriptsServiceSpy().get(), PermissionsServiceSpy().get(), DevicesServiceSpy().get(), DeviceActionsServiceSpy().get()))
 
   expect(env.constants.get(instruction1)).toBeDefined()
   expect(env.constants.get(instruction2)).toBeDefined()
