@@ -115,7 +115,7 @@ export function registerUsersServiceRoutes(app: express.Application, service: Us
     });
 
     // update
-    app.patch('/api/users/:id', async (req, res) => {
+    app.patch('/api/users', async (req, res) => {
         const response = await Effect.Do.pipe(
             Effect.bind("token", () => deserializeToken(req, service)),
             Effect.bind("nicknameVal", () => {

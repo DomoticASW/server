@@ -83,14 +83,14 @@ services:
     <<: *devices-common
     environment:
       <<: *devices-common-environment
-      PORT: 8093
+      DEVICE_PORT: 8093
 
   thermometer:
     image: fracarluccii/domoticasw-thermometer:latest
     <<: *devices-common
     environment:
       <<: *devices-common-environment
-      PORT: 8090
+      DEVICE_PORT: 8090
 
   mongo-express:
     image: mongo-express
