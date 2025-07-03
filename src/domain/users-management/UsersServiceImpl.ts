@@ -180,7 +180,7 @@ export class UsersServiceImpl implements UsersService {
     makeToken(value: string): Effect<Token, InvalidTokenFormatError> {
         return pipe(
             Eff.try({
-                try: () => jwt.decode(value) as { email: string, role: Role },
+                try: () => jwt.decode(value) as { userEmail: string, role: Role },
                 catch: () => InvalidTokenFormatError(),
             }),
             Eff.flatMap((decoded) =>
