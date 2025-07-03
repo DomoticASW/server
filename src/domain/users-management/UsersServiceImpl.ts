@@ -87,6 +87,9 @@ export class UsersServiceImpl implements UsersService {
                 if (token.role == Role.Admin && token.userEmail == email) {
                     return Eff.fail(UnauthorizedError())
                 }
+                else if (token.role != Role.Admin && token.userEmail != email) {
+                    return Eff.fail(UnauthorizedError())
+                }
                 return Eff.succeed(null)
             }),
             Eff.flatMap(() => this.userRepository.remove(email)),
