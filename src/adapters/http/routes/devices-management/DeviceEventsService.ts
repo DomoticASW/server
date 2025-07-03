@@ -1,9 +1,9 @@
 import express from "express";
-import { DeviceEventsService } from "../../../ports/devices-management/DeviceEventsService.js";
+import { DeviceEventsService } from "../../../../ports/devices-management/DeviceEventsService.js";
 import { Effect } from "effect";
 import { StatusCodes } from "http-status-codes";
-import { DeviceId } from "../../../domain/devices-management/Device.js";
-import { BadRequest, handleCommonErrors, sendResponse, Response } from "./HttpUtils.js";
+import { DeviceId } from "../../../../domain/devices-management/Device.js";
+import { BadRequest, handleCommonErrors, sendResponse, Response } from "../HttpUtils.js";
 
 
 export function registerDeviceEventsServiceRoutes(app: express.Express, service: DeviceEventsService) {
