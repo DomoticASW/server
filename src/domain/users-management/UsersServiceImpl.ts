@@ -164,17 +164,19 @@ export class UsersServiceImpl implements UsersService {
     verifyToken(token: Token): Effect<void, InvalidTokenError> {
         return pipe(
             Eff.try({
-                try: () => jwt.verify(token.source, this.secret),
+                try: () => jwt.verify(token.source, this.secret, {
+                    ignoreExpiration: false,
+                    algorithms: ['HS256']
+                }),
                 catch: () => InvalidTokenError(),
             }),
             Eff.flatMap((decoded) => {
-                if (decoded) {
-                    return Eff.succeed(null);
-                } else {
-                    return Eff.fail(InvalidTokenError())
+                if (typeof decoded === 'object' && decoded !== null && !('exp' in decoded)) {
+                    return Eff.fail(InvalidTokenError());
                 }
-            }
-            ));
+                return Eff.succeed(null);
+            })
+        );
     }
 
     makeToken(value: string): Effect<Token, InvalidTokenFormatError> {
