@@ -154,7 +154,7 @@ export class UsersServiceImpl implements UsersService {
                 if (user.passwordHash !== password) {
                     return Eff.fail(InvalidCredentialsError())
                 }
-                const source = jwt.sign({ email: user.email, role: user.role }, this.secret, { expiresIn: '1h' });
+                const source = jwt.sign({ userEmail: user.email, role: user.role }, this.secret, { expiresIn: '1h' });
                 return Eff.succeed(Token(user.email, user.role, source));
             }),
             Eff.mapError(() => InvalidCredentialsError())
@@ -185,7 +185,7 @@ export class UsersServiceImpl implements UsersService {
             }),
             Eff.flatMap((decoded) =>
                 decoded
-                    ? Eff.succeed(Token(Email(decoded.email), decoded.role, value))
+                    ? Eff.succeed(Token(Email(decoded.userEmail), decoded.role, value))
                     : Eff.fail(InvalidTokenFormatError())
             )
         );
