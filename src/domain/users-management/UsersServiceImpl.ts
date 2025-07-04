@@ -24,17 +24,27 @@ export class UsersServiceImpl implements UsersService {
             Eff.flatMap(() => this.regReqRepository.getAll())
         )
     }
-
+    /**
+     * If no user is registered then the first published request will result in creating the admin user
+     */
     publishRegistrationRequest(
         nickname: Nickname,
         email: Email,
         password: PasswordHash,
     ): Effect<void, EmailAlreadyInUseError> {
-        const newRegReq = RegistrationRequest(nickname, email, password);
-        return pipe(
-            this.regReqRepository.add(newRegReq),
-            Eff.mapError(() => EmailAlreadyInUseError()
-            ))
+        return Eff.Do.pipe(
+            Eff.bind("users", () => this.userRepository.getAll()),
+            Eff.bind("_", ({ users }) =>
+                Eff.if(Array.from(users).length == 0, {
+                    onTrue: () => this.userRepository.add(User(nickname, email, password, Role.Admin)),
+                    onFalse: () => this.regReqRepository.add(RegistrationRequest(nickname, email, password))
+                })),
+            Eff.mapError(e => {
+                switch (e.__brand) {
+                    case "DuplicateIdError": return EmailAlreadyInUseError()
+                }
+            })
+        )
     }
 
     approveRegistrationRequest(token: Token, email: Email): Effect<void, EmailAlreadyInUseError | RegistrationRequestNotFoundError | TokenError> {
