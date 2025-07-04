@@ -16,6 +16,7 @@ import { ScriptId, TaskId } from "../scripts-management/Script.js";
 import { ScriptNotFoundError } from "../../ports/scripts-management/Errors.js";
 import { EditList } from "./EditList.js";
 import { TaskLists } from "./TaskLists.js";
+import { ScriptsService } from "../../ports/scripts-management/ScriptsService.js";
 
 export class PermissionsServiceImpl implements PermissionsService {
 
@@ -24,6 +25,7 @@ export class PermissionsServiceImpl implements PermissionsService {
   private editListRepo: EditListRepository;
   private usersService: UsersService
   private deviceService: DevicesService;
+  private scriptService: ScriptsService
 
   constructor(userDevicePermissionRepo: UserDevicePermissionRepository, taskListsRepo: TaskListsRepository, editListRepo: EditListRepository, usersService: UsersService, devicesService: DevicesService) {
     this.userDevicePermissionRepo = userDevicePermissionRepo;
@@ -33,6 +35,9 @@ export class PermissionsServiceImpl implements PermissionsService {
     this.deviceService = devicesService;
   }
 
+  registerScriptService(scriptService: ScriptsService): void {
+    this.scriptService = scriptService;
+  }
 
   addUserDevicePermission(token: Token, email: Email, deviceId: DeviceId): Effect.Effect<void, UserNotFoundError | DeviceNotFoundError | TokenError> {
     return pipe(

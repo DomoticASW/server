@@ -7,8 +7,10 @@ import { Token } from "../../domain/users-management/Token.js";
 import { ScriptId, TaskId } from "../../domain/scripts-management/Script.js"
 import { DeviceId } from "../../domain/devices-management/Device.js";
 import { ScriptNotFoundError } from "../scripts-management/Errors.js";
+import { ScriptsService } from "../scripts-management/ScriptsService.js";
 
 export interface PermissionsService {
+  registerScriptService(scriptService: ScriptsService): void;
   addUserDevicePermission(token: Token, email: Email, devideId: DeviceId): Effect<void, UserNotFoundError | DeviceNotFoundError | TokenError>;
   removeUserDevicePermission(token: Token, email: Email, deviceId: DeviceId): Effect<void, UserNotFoundError | DeviceNotFoundError | TokenError>;
   canExecuteActionOnDevice(token: Token, deviceId: DeviceId): Effect<void, PermissionError | InvalidTokenError>;
