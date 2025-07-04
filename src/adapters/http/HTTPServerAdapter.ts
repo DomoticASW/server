@@ -1,12 +1,12 @@
 import express, { NextFunction, Request, Response } from 'express';
-import { registerDeviceGroupsServiceRoutes } from './routes/DeviceGroupsService.js';
+import { registerDeviceGroupsServiceRoutes } from './routes/devices-management/DeviceGroupsService.js';
 import { DeviceGroupsService } from '../../ports/devices-management/DeviceGroupsService.js';
 import { UsersService } from '../../ports/users-management/UsersService.js';
 import bodyParser from 'body-parser';
-import { registerDevicesServiceRoutes } from './routes/DevicesService.js';
+import { registerDevicesServiceRoutes } from './routes/devices-management/DevicesService.js';
 import { DevicesService } from '../../ports/devices-management/DevicesService.js';
 import { DeviceEventsService } from '../../ports/devices-management/DeviceEventsService.js';
-import { registerDeviceEventsServiceRoutes } from './routes/DeviceEventsService.js';
+import { registerDeviceEventsServiceRoutes } from './routes/devices-management/DeviceEventsService.js';
 import { createServer, Server } from 'node:http';
 import { NotificationsService } from '../../ports/notifications-management/NotificationsService.js';
 import { registerScriptsServiceRoutes } from './routes/ScriptsService.js';
@@ -50,7 +50,7 @@ export class HTTPServerAdapter {
             next()
         })
         registerDevicesServiceRoutes(app, devicesService, deviceActionsService, usersService)
-        registerDeviceGroupsServiceRoutes(app, deviceGroupsService, usersService)
+        registerDeviceGroupsServiceRoutes(app, deviceGroupsService, devicesService, usersService)
         registerDeviceEventsServiceRoutes(app, deviceEventsService)
         registerScriptsServiceRoutes(app, scriptsService, usersService)
         registerNotificationsServiceRoutes(app, notificationsService, usersService)
