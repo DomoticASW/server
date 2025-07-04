@@ -85,10 +85,10 @@ export class UsersServiceImpl implements UsersService {
             this.verifyToken(token),
             Eff.flatMap(() => {
                 if (token.role == Role.Admin && token.userEmail == email) {
-                    return Eff.fail(UnauthorizedError())
+                    return Eff.fail(UnauthorizedError("The admin cannot be removed from the system"))
                 }
                 else if (token.role != Role.Admin && token.userEmail != email) {
-                    return Eff.fail(UnauthorizedError())
+                    return Eff.fail(UnauthorizedError("You cannot remove other users from the system, only the admin is allowed"))
                 }
                 return Eff.succeed(null)
             }),
@@ -130,8 +130,7 @@ export class UsersServiceImpl implements UsersService {
     getAllUsers(token: Token): Effect<Iterable<User>, InvalidTokenError> {
         return pipe(
             this.verifyToken(token),
-            Eff.flatMap(() => this.userRepository.getAll()),
-            Eff.mapError(() => InvalidTokenError())
+            Eff.flatMap(() => this.userRepository.getAll())
         );
     }
 
@@ -171,11 +170,11 @@ export class UsersServiceImpl implements UsersService {
                     ignoreExpiration: false,
                     algorithms: ['HS256']
                 }),
-                catch: () => InvalidTokenError(),
+                catch: (e) => InvalidTokenError((e as Error).message),
             }),
             Eff.flatMap((decoded) => {
                 if (typeof decoded === 'object' && decoded !== null && !('exp' in decoded)) {
-                    return Eff.fail(InvalidTokenError());
+                    return Eff.fail(InvalidTokenError("Token format was wrong"));
                 }
                 return Eff.succeed(null);
             })
@@ -186,7 +185,7 @@ export class UsersServiceImpl implements UsersService {
         return pipe(
             Eff.try({
                 try: () => jwt.decode(value) as { userEmail: string, role: Role },
-                catch: () => InvalidTokenFormatError(),
+                catch: (e) => InvalidTokenFormatError((e as Error).message),
             }),
             Eff.flatMap((decoded) =>
                 decoded
