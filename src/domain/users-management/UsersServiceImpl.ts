@@ -134,11 +134,14 @@ export class UsersServiceImpl implements UsersService {
         );
     }
 
-    getUserData(token: Token): Effect<User, InvalidTokenError> {
+    getUserData(token: Token): Effect<User, InvalidTokenError | UserNotFoundError> {
         return pipe(
             this.verifyToken(token),
             Eff.flatMap(() => this.userRepository.find(token.userEmail)),
-            Eff.mapError(() => InvalidTokenError())
+            Eff.catch("__brand", {
+                failure: "NotFoundError",
+                onFailure: () => Eff.fail(UserNotFoundError())
+            })
         );
     }
 

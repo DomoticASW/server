@@ -12,7 +12,7 @@ export interface UsersService {
     removeUser(token: Token, email: Email): Effect<void, UserNotFoundError | TokenError>;
     updateUserData(token: Token, nickname?: Nickname, password?: PasswordHash): Effect<void, UserNotFoundError | TokenError>;
     getAllUsers(token: Token): Effect<Iterable<User>, InvalidTokenError>;
-    getUserData(token: Token): Effect<User, InvalidTokenError>;
+    getUserData(token: Token): Effect<User, InvalidTokenError | UserNotFoundError>;
     getUserDataUnsafe(email: Email): Effect<User, UserNotFoundError>;
     login(email: Email, password: PasswordHash): Effect<Token, InvalidCredentialsError>;
     verifyToken(token: Token): Effect<void, InvalidTokenError>;
