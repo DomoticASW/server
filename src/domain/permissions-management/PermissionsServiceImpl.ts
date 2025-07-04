@@ -122,18 +122,21 @@ export class PermissionsServiceImpl implements PermissionsService {
 
   addToEditlist(token: Token, email: Email, scriptId: ScriptId): Effect.Effect<void, TokenError | UserNotFoundError | ScriptNotFoundError> {
     return pipe(
-      Effect.if(token.role == Role.Admin, {
+      Effect.if(token.role === Role.Admin, {
         onTrue: () => this.usersService.verifyToken(token),
         onFalse: () => Effect.fail(UnauthorizedError())
       }),
       Effect.flatMap(() => this.usersService.getUserDataUnsafe(email)),
-      Effect.flatMap(() => this.editListRepo.find(scriptId)),
-      Effect.catch("__brand", {
-        failure: "NotFoundError",
-        onFailure: () => { 
-          this.editListRepo.add(EditList(scriptId, []))
-          return Effect.succeed(EditList(scriptId, []));
-        }
+      Effect.flatMap(() => {
+        const list = EditList(scriptId, []);
+        return pipe(
+          this.editListRepo.add(list),
+          Effect.flatMap(() => Effect.succeed(list)),
+          Effect.catch("__brand", {
+            failure: "DuplicateIdError",
+            onFailure: () => this.editListRepo.find(scriptId)
+          })
+        );
       }),
       Effect.flatMap((editList) => {
         editList.addUserToUsers(token.userEmail);
@@ -143,7 +146,7 @@ export class PermissionsServiceImpl implements PermissionsService {
         failure: "NotFoundError",
         onFailure: () => Effect.fail(ScriptNotFoundError())
       })
-    )
+    );
   }
   removeFromEditlist(token: Token, email: Email, scriptId: ScriptId): Effect.Effect<void, TokenError | UserNotFoundError | ScriptNotFoundError> {
     return pipe(
@@ -175,13 +178,16 @@ export class PermissionsServiceImpl implements PermissionsService {
         onFalse: () => Effect.fail(UnauthorizedError())
       }),
       Effect.flatMap(() => this.usersService.getUserDataUnsafe(email)),
-      Effect.flatMap(() => this.taskListsRepo.find(taskId)),
-      Effect.catch("__brand", {
-        failure: "NotFoundError",
-        onFailure: () => {
-          this.taskListsRepo.add(TaskLists(taskId, [], []))
-          return Effect.succeed(TaskLists(taskId, [], []));
-        }
+      Effect.flatMap(() => {
+        const list = TaskLists(taskId, [], []);
+        return pipe(
+          this.taskListsRepo.add(list),
+          Effect.flatMap(() => Effect.succeed(list)),
+          Effect.catch("__brand", {
+            failure: "DuplicateIdError",
+            onFailure: () => this.taskListsRepo.find(taskId)
+          })
+        );
       }),
       Effect.flatMap((taskList) => {
         return Effect.if(taskList.blacklist.includes(email), {
@@ -227,13 +233,16 @@ export class PermissionsServiceImpl implements PermissionsService {
         onFalse: () => Effect.fail(UnauthorizedError())
       }),
       Effect.flatMap(() => this.usersService.getUserDataUnsafe(email)),
-      Effect.flatMap(() => this.taskListsRepo.find(taskId)),
-      Effect.catch("__brand", {
-        failure: "NotFoundError",
-        onFailure: () => {
-          this.taskListsRepo.add(TaskLists(taskId, [], []))
-          return Effect.succeed(TaskLists(taskId, [], []));
-        }
+      Effect.flatMap(() => {
+        const list = TaskLists(taskId, [], []);
+        return pipe(
+          this.taskListsRepo.add(list),
+          Effect.flatMap(() => Effect.succeed(list)),
+          Effect.catch("__brand", {
+            failure: "DuplicateIdError",
+            onFailure: () => this.taskListsRepo.find(taskId)
+          })
+        );
       }),
       Effect.flatMap((taskList) => {
         return Effect.if(taskList.whitelist.includes(email), {
