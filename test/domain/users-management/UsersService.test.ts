@@ -30,8 +30,8 @@ describe("UsersServiceImpl", () => {
     const testEmail = Email("test@example.com");
     const testNickname = Nickname("TestUser");
     const testPassword = PasswordHash("hashedPassword");
-    const adminToken = Token(testEmail, Role.Admin, jwt.sign({ userEmail: testEmail, role: Role.Admin }, secret));
-    const userToken = Token(testEmail, Role.User, jwt.sign({ userEmail: testEmail, role: Role.User }, secret));
+    const adminToken = Token(testEmail, Role.Admin, jwt.sign({ userEmail: testEmail, role: Role.Admin }, secret, { expiresIn: '1h' }));
+    const userToken = Token(testEmail, Role.User, jwt.sign({ userEmail: testEmail, role: Role.User }, secret, { expiresIn: '1h' }));
 
     test("getAllRegistrationRequests - should return no registration requests initially", async () => {
         const requests = await Effect.runPromise(usersService.getAllRegistrationRequests(adminToken));

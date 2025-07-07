@@ -95,7 +95,10 @@ export class UsersServiceImpl implements UsersService {
             this.verifyToken(token),
             Eff.flatMap(() => {
                 if (token.role == Role.Admin && token.userEmail == email) {
-                    return Eff.fail(UnauthorizedError())
+                    return Eff.fail(UnauthorizedError("The admin cannot be removed from the system"))
+                }
+                else if (token.role != Role.Admin && token.userEmail != email) {
+                    return Eff.fail(UnauthorizedError("You cannot remove other users from the system, only the admin is allowed"))
                 }
                 return Eff.succeed(null)
             }),
@@ -137,16 +140,18 @@ export class UsersServiceImpl implements UsersService {
     getAllUsers(token: Token): Effect<Iterable<User>, InvalidTokenError> {
         return pipe(
             this.verifyToken(token),
-            Eff.flatMap(() => this.userRepository.getAll()),
-            Eff.mapError(() => InvalidTokenError())
+            Eff.flatMap(() => this.userRepository.getAll())
         );
     }
 
-    getUserData(token: Token): Effect<User, InvalidTokenError> {
+    getUserData(token: Token): Effect<User, InvalidTokenError | UserNotFoundError> {
         return pipe(
             this.verifyToken(token),
             Eff.flatMap(() => this.userRepository.find(token.userEmail)),
-            Eff.mapError(() => InvalidTokenError())
+            Eff.catch("__brand", {
+                failure: "NotFoundError",
+                onFailure: () => Eff.fail(UserNotFoundError())
+            })
         );
     }
 
@@ -174,24 +179,26 @@ export class UsersServiceImpl implements UsersService {
     verifyToken(token: Token): Effect<void, InvalidTokenError> {
         return pipe(
             Eff.try({
-                try: () => jwt.verify(token.source, this.secret),
-                catch: () => InvalidTokenError(),
+                try: () => jwt.verify(token.source, this.secret, {
+                    ignoreExpiration: false,
+                    algorithms: ['HS256']
+                }),
+                catch: (e) => InvalidTokenError((e as Error).message),
             }),
             Eff.flatMap((decoded) => {
-                if (decoded) {
-                    return Eff.succeed(null);
-                } else {
-                    return Eff.fail(InvalidTokenError())
+                if (typeof decoded === 'object' && decoded !== null && !('exp' in decoded)) {
+                    return Eff.fail(InvalidTokenError("Token format was wrong"));
                 }
-            }
-            ));
+                return Eff.succeed(null);
+            })
+        );
     }
 
     makeToken(value: string): Effect<Token, InvalidTokenFormatError> {
         return pipe(
             Eff.try({
                 try: () => jwt.decode(value) as { userEmail: string, role: Role },
-                catch: () => InvalidTokenFormatError(),
+                catch: (e) => InvalidTokenFormatError((e as Error).message),
             }),
             Eff.flatMap((decoded) =>
                 decoded
