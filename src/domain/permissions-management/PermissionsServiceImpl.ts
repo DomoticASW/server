@@ -12,11 +12,12 @@ import { InvalidTokenError, TokenError, UnauthorizedError, UserNotFoundError } f
 import { TaskListsRepository } from "../../ports/permissions-management/TaskListsRepository.js";
 import { EditListRepository } from "../../ports/permissions-management/EditListRepository.js";
 import { UserDevicePermission } from "./UserDevicePermission.js";
-import { ScriptId, TaskId } from "../scripts-management/Script.js";
+import { ScriptId, Task, TaskId } from "../scripts-management/Script.js";
 import { ScriptNotFoundError } from "../../ports/scripts-management/Errors.js";
 import { EditList } from "./EditList.js";
 import { TaskLists } from "./TaskLists.js";
 import { ScriptsService } from "../../ports/scripts-management/ScriptsService.js";
+import { DeviceActionInstruction, Instruction } from "../scripts-management/Instruction.js";
 
 export class PermissionsServiceImpl implements PermissionsService {
 
@@ -25,7 +26,7 @@ export class PermissionsServiceImpl implements PermissionsService {
   private editListRepo: EditListRepository;
   private usersService: UsersService
   private deviceService: DevicesService;
-  private scriptService: ScriptsService
+  private scriptService!: ScriptsService;
 
   constructor(userDevicePermissionRepo: UserDevicePermissionRepository, taskListsRepo: TaskListsRepository, editListRepo: EditListRepository, usersService: UsersService, devicesService: DevicesService) {
     this.userDevicePermissionRepo = userDevicePermissionRepo;
@@ -86,21 +87,55 @@ export class PermissionsServiceImpl implements PermissionsService {
   canExecuteTask(token: Token, taskId: TaskId): Effect.Effect<void, PermissionError | InvalidTokenError | ScriptNotFoundError> {
     return pipe(
       this.usersService.verifyToken(token),
-      Effect.flatMap(() => this.taskListsRepo.find(taskId)),
-      Effect.flatMap((task) =>
-        Effect.if(task.blacklist.includes(token.userEmail), {
-          onTrue: () => Effect.fail(PermissionError("User is blacklisted")),
-          onFalse: () => Effect.succeed(task)
-        }),
+      Effect.flatMap(() => 
+        pipe(
+          this.taskListsRepo.find(taskId),
+          Effect.flatMap((taskList): Effect.Effect<Task | undefined, PermissionError | InvalidTokenError | ScriptNotFoundError> => {
+            if (taskList.whitelist?.includes(token.userEmail)) {
+              return Effect.succeed(undefined);
+            }
+            if (taskList.blacklist?.includes(token.userEmail)) {
+              return Effect.fail(PermissionError("User is blacklisted"));
+            }
+            return pipe(
+              this.scriptService.findTask(token, taskId),
+            );
+          }),
+          Effect.catch("__brand", {
+            failure: "NotFoundError",
+            onFailure: () =>
+              pipe(
+                this.scriptService.findTask(token, taskId),
+              )
+          })
+        )
       ),
+      Effect.flatMap((task) => {
+        if (task === undefined) {
+          return Effect.succeed(undefined);
+        } 
+        
+        const deviceChecks = task.instructions
+          .filter(isDeviceActionInstruction)
+          .map(instruction => 
+            this.canExecuteActionOnDevice(token, instruction.deviceId)
+          );
+        
+        return pipe(
+          Effect.all(deviceChecks),
+          Effect.map(() => undefined as void)
+        );
+      }),
       Effect.mapError(e => {
-        switch (e.__brand) {
-          case "NotFoundError":
-            return ScriptNotFoundError(e.cause)
-          default:
-            return e
-        }
-      })
+          switch (e.__brand) {
+            case "ScriptNotFoundError":
+              return ScriptNotFoundError(e.cause)
+            case "PermissionError":
+              return PermissionError(e.cause)
+            default:
+              return e
+          }
+        })
     )
   }
 
@@ -287,4 +322,12 @@ export class PermissionsServiceImpl implements PermissionsService {
     )
   }
 
+}
+
+function isDeviceActionInstruction(instruction: Instruction): instruction is DeviceActionInstruction {
+  return instruction && 
+         typeof instruction === 'object' &&
+         'deviceId' in instruction && 
+         'deviceActionId' in instruction && 
+         'input' in instruction;
 }
