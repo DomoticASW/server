@@ -1,4 +1,4 @@
-import { match, runPromise } from "effect/Effect"
+import { bind, Do, match, runPromise } from "effect/Effect"
 import { ScriptsServiceImpl } from "../../../src/domain/scripts-management/ScriptsServiceImpl.js"
 import { DevicesService } from "../../../src/ports/devices-management/DevicesService.js"
 import { NotificationsService } from "../../../src/ports/notifications-management/NotificationsService.js"
@@ -21,6 +21,7 @@ import { DeviceEventsService } from "../../../src/ports/devices-management/Devic
 import { DeviceEventsServiceImpl } from "../../../src/domain/devices-management/DeviceEventsServiceImpl.js"
 import { ScriptsService } from "../../../src/ports/scripts-management/ScriptsService.js"
 import { DeviceActionsService } from "../../../src/ports/devices-management/DeviceActionsService.js"
+import { DeviceActionId, DeviceId } from "../../../src/domain/devices-management/Device.js"
 
 const user = UserMock()
 const email = user.email
@@ -532,4 +533,64 @@ test("An automation can be removed", async () => {
   expect(automations).toHaveLength(0)
   expect(repoAutomations).toHaveLength(0)
 
+})
+
+test("Can be possible to create an automation with action device instruction if token has the permission to execute it", async () => {
+  const automationBuilderNew = automationBuilder.addDeviceAction(root, deviceId, DeviceActionId("1"), 10)
+  const automation = await runPromise(pipe(
+    scriptsService.createAutomation(token, automationBuilderNew),
+    flatMap(id => scriptsService.findAutomation(token, id))
+  ))
+
+  const automations = await runPromise(scriptsService.getAllAutomations(token))
+  const repoAutomations = await runPromise(scriptsRepository.getAll())
+
+  expect(automations).toContain(automation)
+  expect(repoAutomations).toContain(automation)
+})
+
+test("Can be possible to edit an automation with action device instruction if token has the permission to execute it", async () => {
+  const automationBuilderNew = automationBuilder.addDeviceAction(root, deviceId, DeviceActionId("1"), 10)
+  const automation = await runPromise(Do.pipe(
+    bind("id", () => scriptsService.createAutomation(token, automationBuilder)),
+    bind("_" , ({ id }) => scriptsService.editAutomation(token, id, automationBuilderNew)),
+    flatMap(({ id }) => scriptsService.findAutomation(token, id))
+  ))
+
+  const automations = await runPromise(scriptsService.getAllAutomations(token))
+  const repoAutomations = await runPromise(scriptsRepository.getAll())
+
+  expect(automations).toContain(automation)
+  expect(repoAutomations).toContain(automation)
+})
+
+test("Cannot create an automation if the token has not permissions on device action used inside it", async () => {
+  scriptsService = new ScriptsServiceImpl(scriptsRepository, devicesServiceSpy.get(), deviceActionsServiceSpy.get(), notificationsServiceSpy.get(), usersServiceSpy.get(), permissionsServiceSpy.get(), deviceEventsService)
+  const automationBuilderNew = automationBuilder.addDeviceAction(root, DeviceId("10"), DeviceActionId("1"), 10)
+
+  await runPromise(pipe(
+    scriptsService.createAutomation(token, automationBuilderNew),
+    match({
+      onSuccess: () => { throw Error("Should not be here") },
+      onFailure: err => {
+        expect(err).toStrictEqual(PermissionError())
+      }
+    })
+  ))
+})
+
+test("Cannot edit an automation if the token has not permissions on device action used inside it", async () => {
+  scriptsService = new ScriptsServiceImpl(scriptsRepository, devicesServiceSpy.get(), deviceActionsServiceSpy.get(), notificationsServiceSpy.get(), usersServiceSpy.get(), permissionsServiceSpy.get(), deviceEventsService)
+  const automationBuilderNew = automationBuilder.addDeviceAction(root, DeviceId("10"), DeviceActionId("1"), 10)
+  const automationId = await runPromise(scriptsService.createAutomation(token, automationBuilder))
+
+  await runPromise(pipe(
+    scriptsService.editAutomation(token, automationId, automationBuilderNew),
+    match({
+      onSuccess: () => { throw Error("Should not be here") },
+      onFailure: err => {
+        expect(err).toStrictEqual(PermissionError())
+      }
+    })
+  ))
 })

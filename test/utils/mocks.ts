@@ -143,7 +143,7 @@ export function ScriptsServiceSpy(task: Task = SpyTaskMock().get(), isTask: bool
   }
 }
 
-export function PermissionsServiceSpy(userToken: Token = TokenMock("email"), testEdit: boolean = false, testInvalidToken: boolean = false): Spy<PermissionsService> {
+export function PermissionsServiceSpy(userToken: Token = TokenMock("email"), testEdit: boolean = false, testInvalidToken: boolean = false, deviceIdInput: DeviceId = DeviceMock().id): Spy<PermissionsService> {
   let call = 0
   return {
     call: () => call,
@@ -156,7 +156,7 @@ export function PermissionsServiceSpy(userToken: Token = TokenMock("email"), tes
           throw new Error("Function not implemented.");
         },
         canExecuteActionOnDevice: function (token: Token, deviceId: DeviceId): Effect<void, PermissionError | InvalidTokenError> {
-          throw new Error("Function not implemented.");
+          return deviceIdInput == deviceId ? succeed(undefined) : fail(PermissionError())
         },
         canExecuteTask: function (token: Token, taskId: TaskId): Effect<void, PermissionError | InvalidTokenError | ScriptNotFoundError> {
           if (!testEdit) call++

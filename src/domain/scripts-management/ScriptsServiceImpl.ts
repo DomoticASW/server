@@ -12,12 +12,13 @@ import { NotificationsService } from "../../ports/notifications-management/Notif
 import { PermissionsService } from "../../ports/permissions-management/PermissionsService.js";
 import { UsersService } from "../../ports/users-management/UsersService.js";
 import { Fiber, pipe } from "effect";
-import { DuplicateIdError, NotFoundError, UniquenessConstraintViolatedError } from "../../ports/Repository.js";
+import { NotFoundError, UniquenessConstraintViolatedError } from "../../ports/Repository.js";
 import { DeviceEventsService, DeviceEventsSubscriber } from "../../ports/devices-management/DeviceEventsService.js";
 import { DeviceId, DeviceEvent } from "../devices-management/Device.js";
 import { DeviceEventTrigger, DeviceEventTriggerImpl, PeriodTrigger, PeriodTriggerImpl } from "./Trigger.js";
 import { millis, seconds } from "effect/Duration";
 import { DeviceActionsService } from "../../ports/devices-management/DeviceActionsService.js";
+import { isDeviceActionInstruction } from "./Instruction.js";
 
 export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscriber {
   private automationsFiberMap: Map<AutomationId, Fiber.RuntimeFiber<undefined, ScriptError | NotFoundError>> = new Map()
@@ -64,6 +65,12 @@ export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscribe
   createTask(token: Token, task: TaskBuilder): Effect<TaskId, InvalidTokenError | TaskNameAlreadyInUseError | InvalidScriptError> {
     return pipe(
       this.createScript(token, task),
+      flatMap(script =>
+        pipe(
+          this.scriptRepository.add(script),
+          flatMap(() => succeed(script.id)) 
+        )
+      ),
       map(id => id as TaskId),
       mapError(err => {
         if ("__brand" in err) {
@@ -118,9 +125,16 @@ export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscribe
     )
   }
 
-  createAutomation(token: Token, automation: AutomationBuilder, id: AutomationId | undefined = undefined): Effect<AutomationId, InvalidTokenError | AutomationNameAlreadyInUseError | InvalidScriptError> {
+  createAutomation(token: Token, automation: AutomationBuilder, id: AutomationId | undefined = undefined): Effect<AutomationId, InvalidTokenError | AutomationNameAlreadyInUseError | InvalidScriptError | PermissionError> {
     return pipe(
       this.createScript(token, automation, id),
+      flatMap((automation) => this.checkAutomationActionsPermissions(token, automation as Automation)),
+      flatMap(automation =>
+        pipe(
+          this.scriptRepository.add(automation),
+          flatMap(() => succeed(automation.id)) 
+        )
+      ),
       map(id => id as AutomationId),
       flatMap(id => pipe(
         this.setAutomationState(token, id, true),
@@ -140,6 +154,18 @@ export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscribe
         }
         return err
       })
+    )
+  }
+
+  checkAutomationActionsPermissions(token: Token, automation: Automation): Effect<Automation, PermissionError | InvalidTokenError> {
+    return pipe(
+      forEach(automation.instructions, (instruction) => {
+        if (isDeviceActionInstruction(instruction)) {
+          return this.permissionsService.canExecuteActionOnDevice(token, instruction.deviceId)
+        }
+        return succeed(null)
+      }),
+      map(() => automation)
     )
   }
 
@@ -258,19 +284,13 @@ export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscribe
     )
   }
 
-  private createScript(token: Token, scriptBuilder: ScriptBuilder<Script<ScriptId>>, id: ScriptId | undefined = undefined): Effect<ScriptId, DuplicateIdError | UniquenessConstraintViolatedError | InvalidTokenError | InvalidScriptError> {
+  private createScript(token: Token, scriptBuilder: ScriptBuilder<Script<ScriptId>>, id: ScriptId | undefined = undefined): Effect<Script<ScriptId>, InvalidTokenError | InvalidScriptError> {
     return pipe(
       this.usersService.verifyToken(token),
       flatMap(() => if_(id != undefined, {
         onTrue: () => scriptBuilder.buildWithId(id!),
         onFalse: () => scriptBuilder.build()
-      })),
-      flatMap(script =>
-        pipe(
-          this.scriptRepository.add(script),
-          flatMap(() => succeed(script.id)) 
-        )
-      )
+      }))
     )
   }
 
