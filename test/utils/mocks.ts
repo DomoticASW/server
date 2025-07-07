@@ -183,6 +183,9 @@ export function PermissionsServiceSpy(userToken: Token = TokenMock("email"), tes
         },
         removeFromBlacklist: function (token: Token, email: Email, taskId: TaskId): Effect<void, TokenError | UserNotFoundError | ScriptNotFoundError> {
           throw new Error("Function not implemented.");
+        },
+        registerScriptService: (scriptService: ScriptsService) => {
+          throw new Error("Function not implemented.");
         }
       }
     }
