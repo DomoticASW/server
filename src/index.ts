@@ -73,6 +73,7 @@ const notificationsService = NotificationsService(deviceStatusesService, devices
 
 const scriptRepository = new ScriptRepositoryMongoAdapter(mongoDBConnection)
 const scriptsService = new ScriptsServiceImpl(scriptRepository, devicesService, deviceActionsService, notificationsService, usersService, permissionsService, deviceEventsService)
+permissionsService.registerScriptService(scriptsService)
 
 const logRequestUrls = parseBooleanEnvVar("LOG_REQ_URLS") ?? false
 const logRequestBodies = parseBooleanEnvVar("LOG_REQ_BODIES") ?? false

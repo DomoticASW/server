@@ -7,17 +7,27 @@ import { Token } from "../../domain/users-management/Token.js";
 import { ScriptId, TaskId } from "../../domain/scripts-management/Script.js"
 import { DeviceId } from "../../domain/devices-management/Device.js";
 import { ScriptNotFoundError } from "../scripts-management/Errors.js";
+import { ScriptsService } from "../scripts-management/ScriptsService.js";
 
 export interface PermissionsService {
+  registerScriptService(scriptService: ScriptsService): void;
   addUserDevicePermission(token: Token, email: Email, devideId: DeviceId): Effect<void, UserNotFoundError | DeviceNotFoundError | TokenError>;
+  addUserDevicePermissionUnsafe(token: Token, email: Email, devideId: DeviceId): Effect<void, UserNotFoundError | DeviceNotFoundError | TokenError>;
   removeUserDevicePermission(token: Token, email: Email, deviceId: DeviceId): Effect<void, UserNotFoundError | DeviceNotFoundError | TokenError>;
+  removeUserDevicePermissionUnsafe(token: Token, email: Email, deviceId: DeviceId): Effect<void, UserNotFoundError | DeviceNotFoundError | TokenError>;
   canExecuteActionOnDevice(token: Token, deviceId: DeviceId): Effect<void, PermissionError | InvalidTokenError>;
   canExecuteTask(token: Token, taskId: TaskId): Effect<void, PermissionError | InvalidTokenError | ScriptNotFoundError>;
   canEdit(token: Token, scriptId: ScriptId): Effect<void, PermissionError | InvalidTokenError | ScriptNotFoundError>;
   addToEditlist(token: Token, email: Email, scriptId: ScriptId): Effect<void, TokenError | UserNotFoundError | ScriptNotFoundError>;
+  addToEditlistUnsafe(token: Token, email: Email, scriptId: ScriptId): Effect<void, TokenError | UserNotFoundError | ScriptNotFoundError>;
   removeFromEditlist(token: Token, email: Email, scriptId: ScriptId): Effect<void, TokenError | UserNotFoundError | ScriptNotFoundError>;
+  removeFromEditlistUnsafe(token: Token, email: Email, scriptId: ScriptId): Effect<void, TokenError | UserNotFoundError | ScriptNotFoundError>;
   addToWhitelist(token: Token, email: Email, taskId: TaskId): Effect<void, TokenError | UserNotFoundError | ScriptNotFoundError | InvalidOperationError>;
+  addToWhitelistUnsafe(token: Token, email: Email, taskId: TaskId): Effect<void, TokenError | UserNotFoundError | ScriptNotFoundError | InvalidOperationError>;
   removeFromWhitelist(token: Token, email: Email, taskId: TaskId): Effect<void, TokenError | UserNotFoundError | ScriptNotFoundError>;
+  removeFromWhitelistUnsafe(token: Token, email: Email, taskId: TaskId): Effect<void, TokenError | UserNotFoundError | ScriptNotFoundError>;
   addToBlacklist(token: Token, email: Email, taskId: TaskId): Effect<void, TokenError | UserNotFoundError | ScriptNotFoundError | InvalidOperationError>;
+  addToBlacklistUnsafe(token: Token, email: Email, taskId: TaskId): Effect<void, TokenError | UserNotFoundError | ScriptNotFoundError | InvalidOperationError>;
   removeFromBlacklist(token: Token, email: Email, taskId: TaskId): Effect<void, TokenError | UserNotFoundError | ScriptNotFoundError>;
+  removeFromBlacklistUnsafe(token: Token, email: Email, taskId: TaskId): Effect<void, TokenError | UserNotFoundError | ScriptNotFoundError>;
 }
