@@ -68,6 +68,15 @@ export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscribe
       flatMap(script =>
         pipe(
           this.scriptRepository.add(script),
+          flatMap(() => this.permissionsService.addToEditlistUnsafe(token, token.userEmail, script.id)),
+          catch_("__brand", {
+            failure: "ScriptNotFoundError",
+            onFailure: () => succeed(undefined)
+          }),
+          catch_("__brand", {
+            failure: "UserNotFoundError",
+            onFailure: () => succeed(undefined)
+          }),
           flatMap(() => succeed(script.id)) 
         )
       ),
@@ -132,6 +141,15 @@ export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscribe
       flatMap(automation =>
         pipe(
           this.scriptRepository.add(automation),
+          flatMap(() => this.permissionsService.addToEditlistUnsafe(token, token.userEmail, automation.id)),
+          catch_("__brand", {
+            failure: "ScriptNotFoundError",
+            onFailure: () => succeed(undefined)
+          }),
+          catch_("__brand", {
+            failure: "UserNotFoundError",
+            onFailure: () => succeed(undefined)
+          }),
           flatMap(() => succeed(automation.id)) 
         )
       ),

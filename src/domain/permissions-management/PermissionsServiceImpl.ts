@@ -210,7 +210,7 @@ export class PermissionsServiceImpl implements PermissionsService {
       })
     );
   }
-  addToEditlistUnsafe(token: Token, email: Email, scriptId: ScriptId): Effect.Effect<void, TokenError | UserNotFoundError | ScriptNotFoundError> {
+  addToEditlistUnsafe(token: Token, email: Email, scriptId: ScriptId): Effect.Effect<void, UserNotFoundError | ScriptNotFoundError> {
     return pipe(
       this.usersService.getUserDataUnsafe(email),
       Effect.flatMap(() => {

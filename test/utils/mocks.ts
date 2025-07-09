@@ -173,10 +173,11 @@ export function PermissionsServiceSpy(userToken: Token = TokenMock("email"), tes
           return token == userToken ? succeed(true) : fail(testInvalidToken ? InvalidTokenError() : PermissionError())
         },
         addToEditlist: function (token: Token, email: Email, scriptId: ScriptId): Effect<void, TokenError | UserNotFoundError | ScriptNotFoundError> {
-          throw new Error("Function not implemented.");
+          throw new Error("Function not implemented");
         },
-        addToEditlistUnsafe: function (token: Token, email: Email, scriptId: ScriptId): Effect<void, TokenError | UserNotFoundError | ScriptNotFoundError> {
-          throw new Error("Function not implemented.");
+        addToEditlistUnsafe: function (token: Token, email: Email, scriptId: ScriptId): Effect<void, UserNotFoundError | ScriptNotFoundError> {
+          call++
+          return succeed(undefined)
         },
         removeFromEditlist: function (token: Token, email: Email, scriptId: ScriptId): Effect<void, TokenError | UserNotFoundError | ScriptNotFoundError> {
           throw new Error("Function not implemented.");

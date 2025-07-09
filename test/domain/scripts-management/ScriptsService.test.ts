@@ -251,7 +251,7 @@ test("A task can be edited", async () => {
 
   expect(notificationsServiceSpy.call()).toBe(2)
   expect(notificationsServiceSpy.getMessages()).toStrictEqual(["message", "newMessage"])
-  expect(permissionsServiceSpy.call()).toBe(1)
+  expect(permissionsServiceSpy.call()).toBe(2)
 })
 
 test("Cannot edit a task if the token is invalid", async () => {
@@ -367,7 +367,7 @@ test("An automation can be edited", async () => {
 
   expect(notificationsServiceSpy.call()).toBe(2)
   expect(notificationsServiceSpy.getMessages()).toStrictEqual(["message", "newMessage"])
-  expect(permissionsServiceSpy.call()).toBe(1)
+  expect(permissionsServiceSpy.call()).toBe(3)
 })
 
 test("Cannot edit an automation if the token is invalid", async () => {
@@ -488,7 +488,7 @@ test("Cannot start a task if the token is not valid", async () => {
       }
     })
   ))
-  expect(permissionsServiceSpy.call()).toBe(1)
+  expect(permissionsServiceSpy.call()).toBe(2)
 })
 
 test("Cannot start a task if the user has not the right permissions", async () => {
@@ -505,7 +505,7 @@ test("Cannot start a task if the user has not the right permissions", async () =
     })
   ))
 
-  expect(permissionsServiceSpy.call()).toBe(1)
+  expect(permissionsServiceSpy.call()).toBe(2)
 })
 
 test("A task can be removed", async () => {
