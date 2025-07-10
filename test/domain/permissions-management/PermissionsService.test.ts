@@ -5,18 +5,22 @@ import { Token } from "../../../src/domain/users-management/Token.js"
 import { DevicesService } from "../../../src/ports/devices-management/DevicesService.js"
 import { DeviceNotFoundError } from "../../../src/ports/devices-management/Errors.js"
 import { UsersService } from "../../../src/ports/users-management/UsersService.js"
-import { Device, DeviceAddress, DeviceId, DeviceStatus } from "../../../src/domain/devices-management/Device.js"
+import { Device, DeviceActionId, DeviceAddress, DeviceId, DeviceStatus } from "../../../src/domain/devices-management/Device.js"
 import { TaskLists } from "../../../src/domain/permissions-management/TaskLists.js"
 import { EditList } from "../../../src/domain/permissions-management/EditList.js"
 import { PermissionsServiceImpl } from "../../../src/domain/permissions-management/PermissionsServiceImpl.js"
 import { PermissionsService } from "../../../src/ports/permissions-management/PermissionsService.js"
-import { ScriptId, TaskId } from "../../../src/domain/scripts-management/Script.js"
+import { ScriptId, Task, TaskId } from "../../../src/domain/scripts-management/Script.js"
 import { UserDevicePermission } from "../../../src/domain/permissions-management/UserDevicePermission.js"
 import { UserNotFoundError } from "../../../src/ports/users-management/Errors.js"
+import { DeviceActionInstruction } from "../../../src/domain/scripts-management/InstructionImpl.js"
+import { ScriptsService } from "../../../src/ports/scripts-management/ScriptsService.js"
+import { ScriptNotFoundError } from "../../../src/ports/scripts-management/Errors.js"
 
 
 let service: PermissionsService
 let devicesService: DevicesService
+let scriptsService: ScriptsService
 let userDevicePermissionRepo: InMemoryRepositoryMock<[Email, DeviceId], UserDevicePermission>
 let taskListsRepo: InMemoryRepositoryMock<TaskId, TaskLists>
 let editListRepo: InMemoryRepositoryMock<ScriptId, EditList>
@@ -74,11 +78,23 @@ beforeEach(async () => {
             }
         }
     } as unknown as UsersService
+    scriptsService = {
+        findTask(token: Token, taskId: TaskId) {
+            if (taskId === TaskId("2")) {
+                return Effect.succeed(Task(TaskId("2"), "Test Script", [DeviceActionInstruction(DeviceId("1"), DeviceActionId("1"), "")]))
+            } else {
+                return Effect.fail(ScriptNotFoundError("NotFoundError"))
+            }
+        }
+    } as unknown as ScriptsService
     service = new PermissionsServiceImpl(userDevicePermissionRepo, taskListsRepo, editListRepo, alwaysValidTokenUsersService, devicesService)
+    service.registerScriptService(scriptsService)
     // Setting data for tests
     Effect.runSync(taskListsRepo.add(TaskLists(TaskId("1"), [], [])))
     Effect.runSync(taskListsRepo.add(TaskLists(TaskId("3"), [Email("test@test.com")], [])))
+    Effect.runSync(taskListsRepo.add(TaskLists(TaskId("4"), [], [Email("test@test.com")])))
     Effect.runSync(editListRepo.add(EditList(TaskId("1"), [Email("test@test.com")])))
+    Effect.runSync(userDevicePermissionRepo.add(UserDevicePermission(Email("test@test.com"), DeviceId("1"))))
     devicesService.add(makeToken(), DeviceAddress("localhost", 8080))
 
 })
@@ -143,10 +159,19 @@ test("canExecuteAction, expect PermissionError", async () => {
     ).rejects.toThrow("PermissionError");
 })
 
-test("canExecuteTask with an existing task and user has permissions ", async () => {
+test("canExecuteTask with an existing taskList and user is whitelisted ", async () => {
     expect(async () =>
         await pipe(
-            service.canExecuteTask(makeToken(), TaskId("1")),
+            service.canExecuteTask(makeToken(), TaskId("4")),
+            Effect.runPromise
+        )
+    ).not.toThrow();
+})
+
+test("canExecuteTask without a TaskLists but with the permissions of every device instruction", async () => {
+    expect(async () =>
+        await pipe(
+            service.canExecuteTask(makeToken(), TaskId("2")),
             Effect.runPromise
         )
     ).not.toThrow();
@@ -155,12 +180,12 @@ test("canExecuteTask with an existing task and user has permissions ", async () 
 test("canExecuteTask, expect a ScriptNotFoundError ", async () => {
     await expect(
         Effect.runPromise(
-          service.canExecuteTask(makeToken(), TaskId("2"))
+          service.canExecuteTask(makeToken(), TaskId("5"))
         )
     ).rejects.toThrow("ScriptNotFoundError");
 })
 
-test("canExecuteTask, expect a PermissionError ", async () => {
+test("canExecuteTask, expect a PermissionError because user is blacklisted ", async () => {
     await expect(
         Effect.runPromise(
           service.canExecuteTask(makeToken(), TaskId("3"))
@@ -202,14 +227,13 @@ test("addToEditList", async () => {
     expect(editListRepo.callsToUpdate).toBe(1)
 })
 
-test("addToEditList, expect a ScriptNotFoundError", async () => {
+test("addToEditList to a list that doesn't exist", async () => {
     expect(editListRepo.callsToUpdate).toBe(0)
-    await expect(
-        Effect.runPromise(
-            service.addToEditlist(makeToken(), Email("test@test.com") ,TaskId("200")),
-        )
-    ).rejects.toThrow("ScriptNotFoundError");
-    expect(editListRepo.callsToUpdate).toBe(0)
+    await pipe(
+        service.addToEditlist(makeToken(), Email("test@test.com") ,TaskId("200")),
+        Effect.runPromise
+    );
+    expect(editListRepo.callsToUpdate).toBe(1)
 })
 
 test("addToEditList, expect a UserNotFoundError", async () => {
@@ -297,13 +321,13 @@ test("addToWhiteList", async () => {
     expect(taskListsRepo.callsToUpdate).toBe(1)
 })
 
-test("addToWhiteList, expect ScriptNotFoundError", async () => {
+test("addToWhiteList to a list that doesn't exist", async () => {
     expect(taskListsRepo.callsToUpdate).toBe(0)
-    await expect(
-        Effect.runPromise(
-            service.addToWhitelist(makeToken(), Email("test@test.com") , TaskId("200")),    
-        )
-    ).rejects.toThrow("ScriptNotFoundError");
+    await pipe(
+        service.addToWhitelist(makeToken(), Email("test@test.com") , TaskId("200")),    
+        Effect.runPromise
+    )
+    expect(taskListsRepo.callsToUpdate).toBe(1)
 })
 
 test("addToWhiteList, expect UnauthorizedError", async () => {
@@ -403,13 +427,13 @@ test("addToBlackList", async () => {
     expect(taskListsRepo.callsToUpdate).toBe(1)
 })
 
-test("addToBlackList, expect ScriptNotFoundError", async () => {
+test("addToBlackList to a list that doesn't exist", async () => {
     expect(taskListsRepo.callsToUpdate).toBe(0)
-    await expect(
-        Effect.runPromise(
-            service.addToBlacklist(makeToken(), Email("test@test.com") , TaskId("200")),
-        )
-    ).rejects.toThrow("ScriptNotFoundError");
+    await pipe(
+        service.addToBlacklist(makeToken(), Email("test@test.com") , TaskId("200")),
+        Effect.runPromise
+    );
+    expect(taskListsRepo.callsToUpdate).toBe(1)
 })
 
 test("addToBlackList, expect UserNotFoundError", async () => {
