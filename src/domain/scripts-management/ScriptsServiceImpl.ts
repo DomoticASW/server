@@ -249,12 +249,8 @@ export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscribe
 
   editAutomation(token: Token, automationId: AutomationId, automation: AutomationBuilder): Effect<void, InvalidTokenError | PermissionError | ScriptNotFoundError | AutomationNameAlreadyInUseError | InvalidScriptError> {
     return pipe(
-      this.scriptRepository.find(automationId),
+      this.createScript(token, automation, automationId),
       flatMap(script => this.checkAutomationActionsPermissions(token, (script as Automation))),
-      catch_("__brand", {
-        failure: "NotFoundError",
-        onFailure: err => fail(ScriptNotFoundError(err.cause))
-      }),
       flatMap(() => this.removeAutomation(token, automationId)),
       flatMap(() => this.createAutomation(token, automation, automationId))
     )
