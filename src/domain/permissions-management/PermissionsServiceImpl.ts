@@ -201,7 +201,7 @@ export class PermissionsServiceImpl implements PermissionsService {
         );
       }),
       Effect.flatMap((editList) => {
-        editList.addUserToUsers(token.userEmail);
+        editList.addUserToUsers(email);
         return this.editListRepo.update(editList);
       }),
       Effect.catch("__brand", {
@@ -225,7 +225,7 @@ export class PermissionsServiceImpl implements PermissionsService {
         );
       }),
       Effect.flatMap((editList) => {
-        editList.addUserToUsers(token.userEmail);
+        editList.addUserToUsers(email);
         return this.editListRepo.update(editList);
       }),
       Effect.catch("__brand", {
@@ -247,7 +247,7 @@ export class PermissionsServiceImpl implements PermissionsService {
         onFailure: () => Effect.fail(ScriptNotFoundError())
       }),
       Effect.flatMap((editList) => {
-        editList.removeUserToUsers(token.userEmail);
+        editList.removeUserToUsers(email);
         return this.editListRepo.update(editList);
       }),
       Effect.catch("__brand", {
@@ -265,7 +265,7 @@ export class PermissionsServiceImpl implements PermissionsService {
         onFailure: () => Effect.fail(ScriptNotFoundError())
       }),
       Effect.flatMap((editList) => {
-        editList.removeUserToUsers(token.userEmail);
+        editList.removeUserToUsers(email);
         return this.editListRepo.update(editList);
       }),
       Effect.catch("__brand", {
@@ -297,7 +297,7 @@ export class PermissionsServiceImpl implements PermissionsService {
         return Effect.if(taskList.blacklist.includes(email), {
           onTrue: () => Effect.fail(InvalidOperationError("User is blacklisted")),
           onFalse: () => {
-            taskList.addEmailToWhitelist(token.userEmail);
+            taskList.addEmailToWhitelist(email);
             return this.taskListsRepo.update(taskList);
           }
         })
@@ -326,7 +326,7 @@ export class PermissionsServiceImpl implements PermissionsService {
         return Effect.if(taskList.blacklist.includes(email), {
           onTrue: () => Effect.fail(InvalidOperationError("User is blacklisted")),
           onFalse: () => {
-            taskList.addEmailToWhitelist(token.userEmail);
+            taskList.addEmailToWhitelist(email);
             return this.taskListsRepo.update(taskList);
           }
         })
@@ -350,7 +350,7 @@ export class PermissionsServiceImpl implements PermissionsService {
         onFailure: () => Effect.fail(ScriptNotFoundError())
       }),
       Effect.flatMap((taskList) => {
-        taskList.removeEmailFromWhitelist(token.userEmail);
+        taskList.removeEmailFromWhitelist(email);
         return this.taskListsRepo.update(taskList);
       }),
       Effect.catch("__brand", {
@@ -368,7 +368,7 @@ export class PermissionsServiceImpl implements PermissionsService {
         onFailure: () => Effect.fail(ScriptNotFoundError())
       }),
       Effect.flatMap((taskList) => {
-        taskList.removeEmailFromWhitelist(token.userEmail);
+        taskList.removeEmailFromWhitelist(email);
         return this.taskListsRepo.update(taskList);
       }),
       Effect.catch("__brand", {
@@ -399,7 +399,7 @@ export class PermissionsServiceImpl implements PermissionsService {
         return Effect.if(taskList.whitelist.includes(email), {
           onTrue: () => Effect.fail(InvalidOperationError("User is whitelisted")),
           onFalse: () => {
-            taskList.addEmailToBlacklist(token.userEmail);
+            taskList.addEmailToBlacklist(email);
             return this.taskListsRepo.update(taskList);
           }
         });
@@ -428,7 +428,7 @@ export class PermissionsServiceImpl implements PermissionsService {
         return Effect.if(taskList.whitelist.includes(email), {
           onTrue: () => Effect.fail(InvalidOperationError("User is whitelisted")),
           onFalse: () => {
-            taskList.addEmailToBlacklist(token.userEmail);
+            taskList.addEmailToBlacklist(email);
             return this.taskListsRepo.update(taskList);
           }
         });
@@ -452,7 +452,7 @@ export class PermissionsServiceImpl implements PermissionsService {
         onFailure: () => Effect.fail(ScriptNotFoundError())
       }),
       Effect.flatMap((taskList) => {
-        taskList.removeEmailFromBlacklist(token.userEmail);
+        taskList.removeEmailFromBlacklist(email);
         return this.taskListsRepo.update(taskList);
       }),
       Effect.catch("__brand", {
@@ -470,7 +470,7 @@ export class PermissionsServiceImpl implements PermissionsService {
         onFailure: () => Effect.fail(ScriptNotFoundError())
       }),
       Effect.flatMap((taskList) => {
-        taskList.removeEmailFromBlacklist(token.userEmail);
+        taskList.removeEmailFromBlacklist(email);
         return this.taskListsRepo.update(taskList);
       }),
       Effect.catch("__brand", {
