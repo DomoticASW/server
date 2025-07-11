@@ -122,6 +122,9 @@ export function ScriptsServiceSpy(task: Task = SpyTaskMock().get(), isTask: bool
         findAutomation: function (token: Token, automationId: AutomationId): Effect<Automation, InvalidTokenError | ScriptNotFoundError> {
           throw new Error("Function not implemented.");
         },
+        findAutomationUnsafe: function (automationId: AutomationId): Effect<Automation, ScriptNotFoundError> {
+          throw new Error("Function not implemented.");
+        },
         getAllAutomations: function (token: Token): Effect<Iterable<Automation>, InvalidTokenError> {
           throw new Error("Function not implemented.");
         },
@@ -143,7 +146,7 @@ export function ScriptsServiceSpy(task: Task = SpyTaskMock().get(), isTask: bool
   }
 }
 
-export function PermissionsServiceSpy(userToken: Token = TokenMock("email"), testEdit: boolean = false, testInvalidToken: boolean = false): Spy<PermissionsService> {
+export function PermissionsServiceSpy(userToken: Token = TokenMock("email"), testEdit: boolean = false, testInvalidToken: boolean = false, deviceIdInput: DeviceId = DeviceMock().id): Spy<PermissionsService> {
   let call = 0
   return {
     call: () => call,
@@ -158,11 +161,8 @@ export function PermissionsServiceSpy(userToken: Token = TokenMock("email"), tes
         removeUserDevicePermission: function (token: Token, email: Email, deviceId: DeviceId): Effect<void, UserNotFoundError | DeviceNotFoundError | TokenError> {
           throw new Error("Function not implemented.");
         },
-        removeUserDevicePermissionUnsafe: function (token: Token, email: Email, deviceId: DeviceId): Effect<void, UserNotFoundError | DeviceNotFoundError | TokenError> {
-          throw new Error("Function not implemented.");
-        },
         canExecuteActionOnDevice: function (token: Token, deviceId: DeviceId): Effect<void, PermissionError | InvalidTokenError> {
-          throw new Error("Function not implemented.");
+          return deviceIdInput == deviceId ? succeed(undefined) : fail(PermissionError())
         },
         canExecuteTask: function (token: Token, taskId: TaskId): Effect<void, PermissionError | InvalidTokenError | ScriptNotFoundError> {
           if (!testEdit) call++
@@ -173,39 +173,25 @@ export function PermissionsServiceSpy(userToken: Token = TokenMock("email"), tes
           return token == userToken ? succeed(true) : fail(testInvalidToken ? InvalidTokenError() : PermissionError())
         },
         addToEditlist: function (token: Token, email: Email, scriptId: ScriptId): Effect<void, TokenError | UserNotFoundError | ScriptNotFoundError> {
-          throw new Error("Function not implemented.");
+          throw new Error("Function not implemented");
         },
-        addToEditlistUnsafe: function (token: Token, email: Email, scriptId: ScriptId): Effect<void, TokenError | UserNotFoundError | ScriptNotFoundError> {
-          throw new Error("Function not implemented.");
+        addToEditlistUnsafe: function (email: Email, scriptId: ScriptId): Effect<void, UserNotFoundError | ScriptNotFoundError> {
+          call++
+          return succeed(undefined)
         },
         removeFromEditlist: function (token: Token, email: Email, scriptId: ScriptId): Effect<void, TokenError | UserNotFoundError | ScriptNotFoundError> {
-          throw new Error("Function not implemented.");
-        },
-        removeFromEditlistUnsafe: function (token: Token, email: Email, scriptId: ScriptId): Effect<void, TokenError | UserNotFoundError | ScriptNotFoundError> {
           throw new Error("Function not implemented.");
         },
         addToWhitelist: function (token: Token, email: Email, taskId: TaskId): Effect<void, TokenError | UserNotFoundError | ScriptNotFoundError> {
           throw new Error("Function not implemented.");
         },
-        addToWhitelistUnsafe: function (token: Token, email: Email, taskId: TaskId): Effect<void, TokenError | UserNotFoundError | ScriptNotFoundError> {
-          throw new Error("Function not implemented.");
-        },
         removeFromWhitelist: function (token: Token, email: Email, taskId: TaskId): Effect<void, TokenError | UserNotFoundError | ScriptNotFoundError> {
-          throw new Error("Function not implemented.");
-        },
-        removeFromWhitelistUnsafe: function (token: Token, email: Email, taskId: TaskId): Effect<void, TokenError | UserNotFoundError | ScriptNotFoundError> {
           throw new Error("Function not implemented.");
         },
         addToBlacklist: function (token: Token, email: Email, taskId: TaskId): Effect<void, TokenError | UserNotFoundError | ScriptNotFoundError> {
           throw new Error("Function not implemented.");
         },
-        addToBlacklistUnsafe: function (token: Token, email: Email, taskId: TaskId): Effect<void, TokenError | UserNotFoundError | ScriptNotFoundError> {
-          throw new Error("Function not implemented.");
-        },
         removeFromBlacklist: function (token: Token, email: Email, taskId: TaskId): Effect<void, TokenError | UserNotFoundError | ScriptNotFoundError> {
-          throw new Error("Function not implemented.");
-        },
-        removeFromBlacklistUnsafe: function (token: Token, email: Email, taskId: TaskId): Effect<void, TokenError | UserNotFoundError | ScriptNotFoundError> {
           throw new Error("Function not implemented.");
         },
         registerScriptService: (scriptService: ScriptsService) => {

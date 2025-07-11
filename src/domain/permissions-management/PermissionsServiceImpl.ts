@@ -1,5 +1,5 @@
 import { DeviceNotFoundError } from "../../ports/devices-management/Errors.js";
-import { InvalidOperationError, PermissionError } from "../../ports/permissions-management/Errors.js";
+import { EditListNotFoundError, InvalidOperationError, PermissionError } from "../../ports/permissions-management/Errors.js";
 import { PermissionsService } from "../../ports/permissions-management/PermissionsService.js";
 import { DeviceId } from "../devices-management/Device.js";
 import { Token } from "../users-management/Token.js";
@@ -12,7 +12,7 @@ import { InvalidTokenError, TokenError, UnauthorizedError, UserNotFoundError } f
 import { TaskListsRepository } from "../../ports/permissions-management/TaskListsRepository.js";
 import { EditListRepository } from "../../ports/permissions-management/EditListRepository.js";
 import { UserDevicePermission } from "./UserDevicePermission.js";
-import { ScriptId, Task, TaskId } from "../scripts-management/Script.js";
+import { AutomationId, ScriptId, Task, TaskId } from "../scripts-management/Script.js";
 import { ScriptNotFoundError } from "../../ports/scripts-management/Errors.js";
 import { EditList } from "./EditList.js";
 import { TaskLists } from "./TaskLists.js";
@@ -109,7 +109,7 @@ export class PermissionsServiceImpl implements PermissionsService {
   canExecuteTask(token: Token, taskId: TaskId): Effect.Effect<void, PermissionError | InvalidTokenError | ScriptNotFoundError> {
     return pipe(
       this.usersService.verifyToken(token),
-      Effect.flatMap(() => 
+      Effect.flatMap(() =>
         pipe(
           this.taskListsRepo.find(taskId),
           Effect.flatMap((taskList): Effect.Effect<Task | undefined, PermissionError | InvalidTokenError | ScriptNotFoundError> => {
@@ -135,29 +135,29 @@ export class PermissionsServiceImpl implements PermissionsService {
       Effect.flatMap((task) => {
         if (task === undefined) {
           return Effect.succeed(undefined);
-        } 
-        
+        }
+
         const deviceChecks = task.instructions
           .filter(isDeviceActionInstruction)
-          .map(instruction => 
+          .map(instruction =>
             this.canExecuteActionOnDevice(token, instruction.deviceId)
           );
-        
+
         return pipe(
           Effect.all(deviceChecks),
           Effect.map(() => undefined as void)
         );
       }),
       Effect.mapError(e => {
-          switch (e.__brand) {
-            case "ScriptNotFoundError":
-              return ScriptNotFoundError(e.cause)
-            case "PermissionError":
-              return PermissionError(e.cause)
-            default:
-              return e
-          }
-        })
+        switch (e.__brand) {
+          case "ScriptNotFoundError":
+            return ScriptNotFoundError(e.cause)
+          case "PermissionError":
+            return PermissionError(e.cause)
+          default:
+            return e
+        }
+      })
     )
   }
 
@@ -166,9 +166,9 @@ export class PermissionsServiceImpl implements PermissionsService {
       this.usersService.verifyToken(token),
       Effect.flatMap(() => this.editListRepo.find(scriptId)),
       Effect.flatMap((editList) =>
-        Effect.if(editList.users.includes(token.userEmail), {
+        Effect.if(token.role === Role.Admin || editList.users.includes(token.userEmail), {
           onTrue: () => Effect.succeed(editList),
-          onFalse: () => Effect.fail(PermissionError("User is blacklisted"))
+          onFalse: () => Effect.fail(PermissionError("You cannot edit this script"))
         }),
       ),
       Effect.mapError(e => {
@@ -182,37 +182,19 @@ export class PermissionsServiceImpl implements PermissionsService {
     )
   }
 
-  addToEditlist(token: Token, email: Email, scriptId: ScriptId): Effect.Effect<void, TokenError | UserNotFoundError | ScriptNotFoundError> {
+  addToEditlist(token: Token, email: Email, scriptId: ScriptId): Effect.Effect<void, TokenError | UserNotFoundError | ScriptNotFoundError | EditListNotFoundError> {
     return pipe(
       Effect.if(token.role === Role.Admin, {
         onTrue: () => this.usersService.verifyToken(token),
         onFalse: () => Effect.fail(UnauthorizedError())
       }),
-      Effect.flatMap(() => this.usersService.getUserDataUnsafe(email)),
-      Effect.flatMap(() => {
-        const list = EditList(scriptId, []);
-        return pipe(
-          this.editListRepo.add(list),
-          Effect.flatMap(() => Effect.succeed(list)),
-          Effect.catch("__brand", {
-            failure: "DuplicateIdError",
-            onFailure: () => this.editListRepo.find(scriptId)
-          })
-        );
-      }),
-      Effect.flatMap((editList) => {
-        editList.addUserToUsers(email);
-        return this.editListRepo.update(editList);
-      }),
-      Effect.catch("__brand", {
-        failure: "NotFoundError",
-        onFailure: () => Effect.fail(ScriptNotFoundError())
-      })
+      Effect.flatMap(() => this.addToEditlistUnsafe(email, scriptId))
     );
   }
-  addToEditlistUnsafe(token: Token, email: Email, scriptId: ScriptId): Effect.Effect<void, TokenError | UserNotFoundError | ScriptNotFoundError> {
+  addToEditlistUnsafe(email: Email, scriptId: ScriptId): Effect.Effect<void, UserNotFoundError | ScriptNotFoundError | EditListNotFoundError> {
     return pipe(
       this.usersService.getUserDataUnsafe(email),
+      Effect.flatMap(() => this.checkScriptExistence(scriptId)),
       Effect.flatMap(() => {
         const list = EditList(scriptId, []);
         return pipe(
@@ -230,49 +212,40 @@ export class PermissionsServiceImpl implements PermissionsService {
       }),
       Effect.catch("__brand", {
         failure: "NotFoundError",
-        onFailure: () => Effect.fail(ScriptNotFoundError())
+        onFailure: () => Effect.fail(EditListNotFoundError("Something went wrong while creating the editlist of the newly created script. Maybe a concurrency issue."))
       })
     );
   }
-  removeFromEditlist(token: Token, email: Email, scriptId: ScriptId): Effect.Effect<void, TokenError | UserNotFoundError | ScriptNotFoundError> {
+  removeFromEditlist(token: Token, email: Email, scriptId: ScriptId): Effect.Effect<void, TokenError | UserNotFoundError | ScriptNotFoundError | EditListNotFoundError> {
     return pipe(
       Effect.if(token.role == Role.Admin, {
         onTrue: () => this.usersService.verifyToken(token),
         onFalse: () => Effect.fail(UnauthorizedError())
       }),
-      Effect.flatMap(() => this.usersService.getUserDataUnsafe(email)),
-      Effect.flatMap(() => this.editListRepo.find(scriptId)),
-      Effect.catch("__brand", {
-        failure: "NotFoundError",
-        onFailure: () => Effect.fail(ScriptNotFoundError())
-      }),
-      Effect.flatMap((editList) => {
-        editList.removeUserToUsers(email);
-        return this.editListRepo.update(editList);
-      }),
-      Effect.catch("__brand", {
-        failure: "NotFoundError",
-        onFailure: () => Effect.fail(ScriptNotFoundError())
-      })
+      Effect.flatMap(() => this.removeFromEditlistUnsafe(email, scriptId))
     )
   }
-  removeFromEditlistUnsafe(token: Token, email: Email, scriptId: ScriptId): Effect.Effect<void, TokenError | UserNotFoundError | ScriptNotFoundError> {
+  removeFromEditlistUnsafe(email: Email, scriptId: ScriptId): Effect.Effect<void, TokenError | UserNotFoundError | ScriptNotFoundError | EditListNotFoundError> {
     return pipe(
       this.usersService.getUserDataUnsafe(email),
+      Effect.flatMap(() => this.checkScriptExistence(scriptId)),
       Effect.flatMap(() => this.editListRepo.find(scriptId)),
-      Effect.catch("__brand", {
-        failure: "NotFoundError",
-        onFailure: () => Effect.fail(ScriptNotFoundError())
-      }),
       Effect.flatMap((editList) => {
         editList.removeUserToUsers(email);
         return this.editListRepo.update(editList);
       }),
       Effect.catch("__brand", {
         failure: "NotFoundError",
-        onFailure: () => Effect.fail(ScriptNotFoundError())
-      })
+        onFailure: () => Effect.fail(EditListNotFoundError())
+      }),
     )
+  }
+
+  checkScriptExistence(scriptId: ScriptId): Effect.Effect<void, ScriptNotFoundError> {
+    return Effect.if(scriptId.__brand === "AutomationId", {
+      onFalse: () => this.scriptService.findTaskUnsafe(scriptId as TaskId),
+      onTrue: () => this.scriptService.findAutomationUnsafe(scriptId as AutomationId)
+    })
   }
 
   addToWhitelist(token: Token, email: Email, taskId: TaskId): Effect.Effect<void, TokenError | UserNotFoundError | ScriptNotFoundError | InvalidOperationError> {
@@ -483,9 +456,9 @@ export class PermissionsServiceImpl implements PermissionsService {
 }
 
 function isDeviceActionInstruction(instruction: Instruction): instruction is DeviceActionInstruction {
-  return instruction && 
-         typeof instruction === 'object' &&
-         'deviceId' in instruction && 
-         'deviceActionId' in instruction && 
-         'input' in instruction;
+  return instruction &&
+    typeof instruction === 'object' &&
+    'deviceId' in instruction &&
+    'deviceActionId' in instruction &&
+    'input' in instruction;
 }
