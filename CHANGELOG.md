@@ -1,3 +1,79 @@
+## [0.3.0](https://github.com/DomoticASW/server/compare/0.2.0...0.3.0) (2025-07-11)
+
+### Features
+
+* add optional debug log device status changes ([4fa9d45](https://github.com/DomoticASW/server/commit/4fa9d4514db90d318e5fa80dfd6758885c223108))
+* add optional debug logging of http requests ([5627b05](https://github.com/DomoticASW/server/commit/5627b05a6d5b06d5aff519a2ae22458f6394080f))
+* add script service registration to PermissionsService ([61b7fd5](https://github.com/DomoticASW/server/commit/61b7fd54946711d90c5211fad1bafef42178e382))
+* admin is created on the first registr. req ([51eab7f](https://github.com/DomoticASW/server/commit/51eab7f4c47e16a54cbbac9d7a58d101fee43626))
+* create unsafe version of permissionsService methods ([7b0d85c](https://github.com/DomoticASW/server/commit/7b0d85c751288838512dbb21209ce27044fc5aec))
+* docker-compose.dev add presence & rain sensors ([a57b54c](https://github.com/DomoticASW/server/commit/a57b54ce3902e4e9633886e6edd4d5b1f9046887))
+* enhance canExecuteTask method to handle device action instructions and improve error handling ([5ccea30](https://github.com/DomoticASW/server/commit/5ccea3060cbf7b61d320a344aa0d3688f2065b7d))
+* enhance PermissionsService to create missing edit lists and task lists ([cd5608c](https://github.com/DomoticASW/server/commit/cd5608c7bc10ca833896bc93fed1267175ca76ac))
+* integrate PermissionsService routes into HTTPServerAdapter ([fe9f256](https://github.com/DomoticASW/server/commit/fe9f256a9581394748edd3928d94654ab2a42d6e))
+* use actual impl for PermissionsService ([3349508](https://github.com/DomoticASW/server/commit/3349508bb79df6763ea022e6f6acdf2c7d17907e))
+
+### Bug Fixes
+
+* add expiration time to tokens in UsersService tests ([1dafc0e](https://github.com/DomoticASW/server/commit/1dafc0e1852e49f4aaa258ebbb91a3c79d935af9))
+* add new methods in mock ([4cf50bd](https://github.com/DomoticASW/server/commit/4cf50bdf9b57be14cb49c13c0b42d2bbc3b1fc45))
+* add registerScriptService method to PermissionsServiceSpy ([d1ec04e](https://github.com/DomoticASW/server/commit/d1ec04e56a053f618289d0310cee655323aec09b))
+* align createAutomation & createTask behaviors ([b3c5033](https://github.com/DomoticASW/server/commit/b3c5033e667819ca68fb88a12b1380345c68b0cc))
+* check of wrong automation in edit ([cf7eb0a](https://github.com/DomoticASW/server/commit/cf7eb0aed5548139db2ad98b901f3cb6924a7dca))
+* check user permissions on device action of automations when created or edited ([e5c733e](https://github.com/DomoticASW/server/commit/e5c733eacbde8865da76956305aefa5d41dca3c9))
+* dev device configuration variable ([8de4c17](https://github.com/DomoticASW/server/commit/8de4c17f6acd7f6f84961cfa13a9c06010dc9b1c))
+* device groups bad serialization ([6460db0](https://github.com/DomoticASW/server/commit/6460db0e098ec9222dc012db4ec2b65e56308df5))
+* edit of automation removed it before checking if the edited script had permissions ([2d2b186](https://github.com/DomoticASW/server/commit/2d2b1863828e867d82ed4a6293c0df0fa82b2321))
+* enhance token verification to include expiration check and algorithm specification ([1f3424f](https://github.com/DomoticASW/server/commit/1f3424f6047bf6c26140ca9fa4eebef50895044f))
+* error mapping was hiding actual error ([2b4a239](https://github.com/DomoticASW/server/commit/2b4a2395f9d4ec0bc029e2de498d991b9fa5a4bc))
+* errors in serializing instruction and saving script to repo ([0eca0f4](https://github.com/DomoticASW/server/commit/0eca0f448e1a2ad1bc6d829a60e37dfb1e1ce2fe))
+* fix implementation of the new feat ([ff0c19e](https://github.com/DomoticASW/server/commit/ff0c19e5c1f1253751102099533506da10a70d54))
+* fix token format ([8febe3a](https://github.com/DomoticASW/server/commit/8febe3a6fea315c32acea94bf94eb136c2202191))
+* fix token format ([51250dd](https://github.com/DomoticASW/server/commit/51250ddf0a01b4fc894e27cc7f6e59d4b89a0a81))
+* improve authorization checks in removeUser ([4344afe](https://github.com/DomoticASW/server/commit/4344afe3c393be6b3109af30ee9c78d4fd8f5dcf))
+* path for patching a user ([553ff1a](https://github.com/DomoticASW/server/commit/553ff1a645c2ba938323f86027d6afeb55ffb426))
+* register UsersService routes ([2c5a1b9](https://github.com/DomoticASW/server/commit/2c5a1b9b2fadd1649d5f15f2c0b527463c1a5ad4))
+* stuff regarding Permissions and Scripts ([a0175af](https://github.com/DomoticASW/server/commit/a0175afba4ede36ae1f0a65605df82a68fc2b5ec))
+* substitute token.userEmail with email passed on method args ([e2cd25b](https://github.com/DomoticASW/server/commit/e2cd25ba831fe7245aa1d93212819d1b19d0f7d0))
+* user creating script added to editlist ([b3b2648](https://github.com/DomoticASW/server/commit/b3b2648e03be769e55ae91a1e4f369b0c433c016))
+
+### Documentation
+
+* add cofiguration variables doc ([c2bd690](https://github.com/DomoticASW/server/commit/c2bd6906973af69d679a062a3e48ece867934c9b))
+* add doc about logging env vars ([4618dd9](https://github.com/DomoticASW/server/commit/4618dd9c9e8bf187b063bea82813fb07c732584e))
+* add README with npm scripts reference ([f6e32b5](https://github.com/DomoticASW/server/commit/f6e32b58094f141794cd4e134dd07a29ddf19f76))
+* update doc about env variable ([41f2d5a](https://github.com/DomoticASW/server/commit/41f2d5a433cf38b61ee0298e457d737eb2081fd4))
+
+### Tests
+
+* fix test for UsersService ([481a619](https://github.com/DomoticASW/server/commit/481a619702df743855257e2d0ef3eb6d93d90039))
+
+### General maintenance
+
+* add config and doc in docker compose file ([39b9474](https://github.com/DomoticASW/server/commit/39b94748715ff4c0c875df32edac88790e69f763))
+* add discovery vars for washing-machine and window ([5353aac](https://github.com/DomoticASW/server/commit/5353aac71862945f781f86ea0bcc3b2842b2791a))
+* add lamp and thermometer services ([f4d75f2](https://github.com/DomoticASW/server/commit/f4d75f2176940affafe6256e5e123b0ef33092cf))
+* add music player and light sensor ([cf6f9c7](https://github.com/DomoticASW/server/commit/cf6f9c7a328dfde345af095e5e10863b70161174))
+* add real duration to musics ([e3ff8f7](https://github.com/DomoticASW/server/commit/e3ff8f75f4f377771b0606e5f2efb1a0c47c8e35))
+* add smart window device ([9653862](https://github.com/DomoticASW/server/commit/9653862ca3898f5b7bddf59ed7e75733c8c99f24))
+* add washing machine image to docker compose ([818a84a](https://github.com/DomoticASW/server/commit/818a84a92d4a1d2b1fb40a2ef8e29d3969da730b))
+* applied DRY in docker-compose ([2bd5d02](https://github.com/DomoticASW/server/commit/2bd5d0235eed1a6b4f710c12e69d1a565b675c1e))
+* applied DRY in docker-compose file ([38e160b](https://github.com/DomoticASW/server/commit/38e160b4d24a1970d804b5d9956c72aeeba4c664))
+* better container mangament in scripts ([15530e4](https://github.com/DomoticASW/server/commit/15530e4e24028436b576583cca782b3e047fc0fb))
+* better error messages in UsersService ([942fb43](https://github.com/DomoticASW/server/commit/942fb43044be16ad59774108241a414713b6761a))
+* ensure poststart is executed after nodemon ([744ce80](https://github.com/DomoticASW/server/commit/744ce80b09744b54f4dd5fbea620ba6654a52b90))
+* format code ([eba05e5](https://github.com/DomoticASW/server/commit/eba05e5c61ad937554af79dfa14aba17b283936e))
+* more descriptive error message ([f6a7866](https://github.com/DomoticASW/server/commit/f6a78662933fcae4998525989a767f8ed1d3b15a))
+* parsing discovery port from env ([c423ab0](https://github.com/DomoticASW/server/commit/c423ab0692a00cd5f0815448ccd801cd7c02f86e))
+* prepare for production usage ([45ca1ac](https://github.com/DomoticASW/server/commit/45ca1acf6c726d48ada70e5da53338cecc3488a5))
+* remove unused code ([34c2828](https://github.com/DomoticASW/server/commit/34c28284a710823e3f521611aa97a66c407473ed))
+* scripts firstly ensure code compiles ([785e1ce](https://github.com/DomoticASW/server/commit/785e1ce6cb1d55e0ad483a6d2a34ace095c15535))
+* taking JWT secret from env var ([1e42158](https://github.com/DomoticASW/server/commit/1e4215836e2c86c5d9c28ca70254684a97dcc004))
+
+### Refactoring
+
+* split device actions into own service ([4b798cd](https://github.com/DomoticASW/server/commit/4b798cd48730ac1137a8bffc6a5b5aab94cd89d7))
+
 ## [0.2.0](https://github.com/DomoticASW/server/compare/0.1.1...0.2.0) (2025-06-26)
 
 ### Features
