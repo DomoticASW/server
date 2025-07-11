@@ -150,8 +150,8 @@ export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscribe
       flatMap((automation) => this.checkAutomationActionsPermissions(token, automation as Automation)),
       flatMap(automation =>
         pipe(
-          this.permissionsService.addToEditlistUnsafe(token.userEmail, automation.id),
-          flatMap(() => this.scriptRepository.add(automation)),
+          this.scriptRepository.add(automation),
+          flatMap(() => this.permissionsService.addToEditlistUnsafe(token.userEmail, automation.id)),
           catch_("__brand", {
             failure: "ScriptNotFoundError",
             onFailure: () => succeed(undefined)
