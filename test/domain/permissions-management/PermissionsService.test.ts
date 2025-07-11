@@ -71,7 +71,7 @@ beforeEach(async () => {
             return Effect.succeed(null)
         },
         getUserDataUnsafe(email: Email) {
-            if ( email === Email("test@test.com")) {
+            if (email === Email("test@test.com")) {
                 return Effect.succeed(User(Nickname("Test"), Email("test@test.com"), PasswordHash("1234"), Role.Admin))
             } else {
                 return Effect.fail(UserNotFoundError())
@@ -80,12 +80,19 @@ beforeEach(async () => {
     } as unknown as UsersService
     scriptsService = {
         findTask(token: Token, taskId: TaskId) {
-            if (taskId === TaskId("2")) {
-                return Effect.succeed(Task(TaskId("2"), "Test Script", [DeviceActionInstruction(DeviceId("1"), DeviceActionId("1"), "")]))
+            if (taskId === TaskId("2") || taskId === TaskId("1")) {
+                return Effect.succeed(Task(taskId, "Test Script", [DeviceActionInstruction(DeviceId("1"), DeviceActionId("1"), "")]))
             } else {
                 return Effect.fail(ScriptNotFoundError("NotFoundError"))
             }
-        }
+        },
+        findTaskUnsafe(taskId: TaskId) {
+            if (taskId === TaskId("2") || taskId === TaskId("1")) {
+                return Effect.succeed(Task(taskId, "Test Script", [DeviceActionInstruction(DeviceId("1"), DeviceActionId("1"), "")]))
+            } else {
+                return Effect.fail(ScriptNotFoundError("NotFoundError"))
+            }
+        },
     } as unknown as ScriptsService
     service = new PermissionsServiceImpl(userDevicePermissionRepo, taskListsRepo, editListRepo, alwaysValidTokenUsersService, devicesService)
     service.registerScriptService(scriptsService)
@@ -109,18 +116,18 @@ test("addUserDevicePermission ", async () => {
 test("addUserDevicePermission, expect to throw UserNotFoundError", async () => {
     await expect(
         Effect.runPromise(
-          service.addUserDevicePermission(makeToken(), Email("test@failed"), DeviceId("1"))
+            service.addUserDevicePermission(makeToken(), Email("test@failed"), DeviceId("1"))
         )
-      ).rejects.toThrow("UserNotFoundError");
+    ).rejects.toThrow("UserNotFoundError");
 })
 
 
 test("addUserDevicePermission, expect to throw DeviceNotFoundError", async () => {
     await expect(
         Effect.runPromise(
-          service.addUserDevicePermission(makeToken(), Email("test@test.com"), DeviceId("10"))
+            service.addUserDevicePermission(makeToken(), Email("test@test.com"), DeviceId("10"))
         )
-      ).rejects.toThrow("DeviceNotFoundError");
+    ).rejects.toThrow("DeviceNotFoundError");
 })
 
 test("remove existing userDevicePermission ", async () => {
@@ -180,7 +187,7 @@ test("canExecuteTask without a TaskLists but with the permissions of every devic
 test("canExecuteTask, expect a ScriptNotFoundError ", async () => {
     await expect(
         Effect.runPromise(
-          service.canExecuteTask(makeToken(), TaskId("5"))
+            service.canExecuteTask(makeToken(), TaskId("5"))
         )
     ).rejects.toThrow("ScriptNotFoundError");
 })
@@ -188,7 +195,7 @@ test("canExecuteTask, expect a ScriptNotFoundError ", async () => {
 test("canExecuteTask, expect a PermissionError because user is blacklisted ", async () => {
     await expect(
         Effect.runPromise(
-          service.canExecuteTask(makeToken(), TaskId("3"))
+            service.canExecuteTask(makeToken(), TaskId("3"))
         )
     ).rejects.toThrow("PermissionError");
 })
@@ -210,10 +217,14 @@ test("canEdit, expect a ScriptNotFoundError", async () => {
     ).rejects.toThrow("ScriptNotFoundError");
 })
 
+test("canEdit, Admin can edit even if not in editlist", async () => {
+    await Effect.runPromise(service.canEdit(makeTokenWithUnknownUser(), TaskId("1")))
+})
+
 test("canEdit, expect a PermissionError", async () => {
     await expect(
         Effect.runPromise(
-            service.canEdit(makeTokenWithUnknownUser(), TaskId("1")),
+            service.canEdit(makeTokenWithUnknownUser(Role.User), TaskId("1")),
         )
     ).rejects.toThrow("PermissionError");
 })
@@ -221,7 +232,7 @@ test("canEdit, expect a PermissionError", async () => {
 test("addToEditList", async () => {
     expect(editListRepo.callsToUpdate).toBe(0)
     await pipe(
-        service.addToEditlist(makeToken(), Email("test@test.com") ,TaskId("1")),
+        service.addToEditlist(makeToken(), Email("test@test.com"), TaskId("1")),
         Effect.runPromise
     );
     expect(editListRepo.callsToUpdate).toBe(1)
@@ -230,7 +241,7 @@ test("addToEditList", async () => {
 test("addToEditList to a list that doesn't exist", async () => {
     expect(editListRepo.callsToUpdate).toBe(0)
     await pipe(
-        service.addToEditlist(makeToken(), Email("test@test.com") ,TaskId("200")),
+        service.addToEditlist(makeToken(), Email("test@test.com"), TaskId("2")),
         Effect.runPromise
     );
     expect(editListRepo.callsToUpdate).toBe(1)
@@ -240,7 +251,7 @@ test("addToEditList, expect a UserNotFoundError", async () => {
     expect(editListRepo.callsToUpdate).toBe(0)
     await expect(
         Effect.runPromise(
-            service.addToEditlist(makeToken(), Email("unkown@user.com") ,TaskId("1")),
+            service.addToEditlist(makeToken(), Email("unkown@user.com"), TaskId("1")),
         )
     ).rejects.toThrow("UserNotFoundError");
     expect(editListRepo.callsToUpdate).toBe(0)
@@ -250,7 +261,7 @@ test("addToEditList, expect a UnauthorizedError because user is not an admin", a
     expect(editListRepo.callsToUpdate).toBe(0)
     await expect(
         Effect.runPromise(
-            service.addToEditlist(makeTokenRole(), Email("test@test.com") ,TaskId("1")),
+            service.addToEditlist(makeTokenRole(), Email("test@test.com"), TaskId("1")),
         )
     ).rejects.toThrow("UnauthorizedError");
     expect(editListRepo.callsToUpdate).toBe(0)
@@ -259,12 +270,12 @@ test("addToEditList, expect a UnauthorizedError because user is not an admin", a
 test("removeFromEditList wiht an existing script", async () => {
     expect(editListRepo.callsToUpdate).toBe(0)
     await pipe(
-        service.addToEditlist(makeToken(), Email("test@test.com") ,TaskId("1")),
+        service.addToEditlist(makeToken(), Email("test@test.com"), TaskId("1")),
         Effect.runPromise
     );
     expect(editListRepo.callsToUpdate).toBe(1)
     await pipe(
-        service.removeFromEditlist(makeToken(), Email("test@test.com") ,TaskId("1")),
+        service.removeFromEditlist(makeToken(), Email("test@test.com"), TaskId("1")),
         Effect.runPromise
     );
     expect(editListRepo.callsToUpdate).toBe(2)
@@ -273,13 +284,13 @@ test("removeFromEditList wiht an existing script", async () => {
 test("removeFromEditList, expect ScriptNotFoundError", async () => {
     expect(editListRepo.callsToUpdate).toBe(0)
     await pipe(
-        service.addToEditlist(makeToken(), Email("test@test.com") ,TaskId("1")),
+        service.addToEditlist(makeToken(), Email("test@test.com"), TaskId("1")),
         Effect.runPromise
     );
     expect(editListRepo.callsToUpdate).toBe(1)
     await expect(
         Effect.runPromise(
-            service.removeFromEditlist(makeToken(), Email("test@test.com") ,TaskId("200")),
+            service.removeFromEditlist(makeToken(), Email("test@test.com"), TaskId("200")),
         )
     ).rejects.toThrow("ScriptNotFoundError");
 })
@@ -287,13 +298,13 @@ test("removeFromEditList, expect ScriptNotFoundError", async () => {
 test("removeFromEditList, expect UnauthorizedError", async () => {
     expect(editListRepo.callsToUpdate).toBe(0)
     await pipe(
-        service.addToEditlist(makeToken(), Email("test@test.com") ,TaskId("1")),
+        service.addToEditlist(makeToken(), Email("test@test.com"), TaskId("1")),
         Effect.runPromise
     );
     expect(editListRepo.callsToUpdate).toBe(1)
     await expect(
         Effect.runPromise(
-            service.removeFromEditlist(makeTokenRole(), Email("test@test.com") ,TaskId("1")),
+            service.removeFromEditlist(makeTokenRole(), Email("test@test.com"), TaskId("1")),
         )
     ).rejects.toThrow("UnauthorizedError");
 })
@@ -301,13 +312,13 @@ test("removeFromEditList, expect UnauthorizedError", async () => {
 test("removeFromEditList, expect UserNotFoundError", async () => {
     expect(editListRepo.callsToUpdate).toBe(0)
     await pipe(
-        service.addToEditlist(makeToken(), Email("test@test.com") ,TaskId("1")),
+        service.addToEditlist(makeToken(), Email("test@test.com"), TaskId("1")),
         Effect.runPromise
     );
     expect(editListRepo.callsToUpdate).toBe(1)
     await expect(
         Effect.runPromise(
-            service.removeFromEditlist(makeToken(), Email("unkown@user.com") ,TaskId("1")),
+            service.removeFromEditlist(makeToken(), Email("unkown@user.com"), TaskId("1")),
         )
     ).rejects.toThrow("UserNotFoundError");
 })
@@ -315,7 +326,7 @@ test("removeFromEditList, expect UserNotFoundError", async () => {
 test("addToWhiteList", async () => {
     expect(taskListsRepo.callsToUpdate).toBe(0)
     await pipe(
-        service.addToWhitelist(makeToken(), Email("test@test.com") , TaskId("1")),
+        service.addToWhitelist(makeToken(), Email("test@test.com"), TaskId("1")),
         Effect.runPromise
     );
     expect(taskListsRepo.callsToUpdate).toBe(1)
@@ -324,7 +335,7 @@ test("addToWhiteList", async () => {
 test("addToWhiteList to a list that doesn't exist", async () => {
     expect(taskListsRepo.callsToUpdate).toBe(0)
     await pipe(
-        service.addToWhitelist(makeToken(), Email("test@test.com") , TaskId("200")),    
+        service.addToWhitelist(makeToken(), Email("test@test.com"), TaskId("200")),
         Effect.runPromise
     )
     expect(taskListsRepo.callsToUpdate).toBe(1)
@@ -334,7 +345,7 @@ test("addToWhiteList, expect UnauthorizedError", async () => {
     expect(taskListsRepo.callsToUpdate).toBe(0)
     await expect(
         Effect.runPromise(
-            service.addToWhitelist(makeTokenRole(), Email("test@test.com") , TaskId("1")),    
+            service.addToWhitelist(makeTokenRole(), Email("test@test.com"), TaskId("1")),
         )
     ).rejects.toThrow("UnauthorizedError");
 })
@@ -343,7 +354,7 @@ test("addToWhiteList, expect UserNotFoundError", async () => {
     expect(taskListsRepo.callsToUpdate).toBe(0)
     await expect(
         Effect.runPromise(
-            service.addToWhitelist(makeToken(), Email("unkown@user.com") , TaskId("1")),    
+            service.addToWhitelist(makeToken(), Email("unkown@user.com"), TaskId("1")),
         )
     ).rejects.toThrow("UserNotFoundError");
 })
@@ -357,7 +368,7 @@ test("addToWhiteList, expect PermissionError", async () => {
     expect(taskListsRepo.callsToUpdate).toBe(1)
     await expect(
         Effect.runPromise(
-            service.addToWhitelist(makeToken(), Email("test@test.com") , TaskId("1")),    
+            service.addToWhitelist(makeToken(), Email("test@test.com"), TaskId("1")),
         )
     ).rejects.toThrow("InvalidOperationError");
 })
@@ -365,12 +376,12 @@ test("addToWhiteList, expect PermissionError", async () => {
 test("removeToWhiteList wiht an existing task", async () => {
     expect(taskListsRepo.callsToUpdate).toBe(0)
     await pipe(
-        service.addToWhitelist(makeToken(), Email("test@test.com") , TaskId("1")),
+        service.addToWhitelist(makeToken(), Email("test@test.com"), TaskId("1")),
         Effect.runPromise
     );
     expect(taskListsRepo.callsToUpdate).toBe(1)
     await pipe(
-        service.removeFromWhitelist(makeToken(), Email("test@test.com") , TaskId("1")),
+        service.removeFromWhitelist(makeToken(), Email("test@test.com"), TaskId("1")),
         Effect.runPromise
     );
     expect(taskListsRepo.callsToUpdate).toBe(2)
@@ -379,13 +390,13 @@ test("removeToWhiteList wiht an existing task", async () => {
 test("removeToWhiteList, expect ScriptNotFoundError", async () => {
     expect(taskListsRepo.callsToUpdate).toBe(0)
     await pipe(
-        service.addToWhitelist(makeToken(), Email("test@test.com") , TaskId("1")),
+        service.addToWhitelist(makeToken(), Email("test@test.com"), TaskId("1")),
         Effect.runPromise
     );
     expect(taskListsRepo.callsToUpdate).toBe(1)
     await expect(
         Effect.runPromise(
-            service.removeFromWhitelist(makeToken(), Email("test@test.com") , TaskId("200")),
+            service.removeFromWhitelist(makeToken(), Email("test@test.com"), TaskId("200")),
         )
     ).rejects.toThrow("ScriptNotFoundError");
 })
@@ -393,13 +404,13 @@ test("removeToWhiteList, expect ScriptNotFoundError", async () => {
 test("removeToWhiteList, expect UnauthorizedError", async () => {
     expect(taskListsRepo.callsToUpdate).toBe(0)
     await pipe(
-        service.addToWhitelist(makeToken(), Email("test@test.com") , TaskId("1")),
+        service.addToWhitelist(makeToken(), Email("test@test.com"), TaskId("1")),
         Effect.runPromise
     );
     expect(taskListsRepo.callsToUpdate).toBe(1)
     await expect(
         Effect.runPromise(
-            service.removeFromWhitelist(makeTokenRole(), Email("test@test.com") , TaskId("1")),
+            service.removeFromWhitelist(makeTokenRole(), Email("test@test.com"), TaskId("1")),
         )
     ).rejects.toThrow("UnauthorizedError");
 })
@@ -407,13 +418,13 @@ test("removeToWhiteList, expect UnauthorizedError", async () => {
 test("removeToWhiteList, expect UserNotFoundError", async () => {
     expect(taskListsRepo.callsToUpdate).toBe(0)
     await pipe(
-        service.addToWhitelist(makeToken(), Email("test@test.com") , TaskId("1")),
+        service.addToWhitelist(makeToken(), Email("test@test.com"), TaskId("1")),
         Effect.runPromise
     );
     expect(taskListsRepo.callsToUpdate).toBe(1)
     await expect(
         Effect.runPromise(
-            service.removeFromWhitelist(makeToken(), Email("unkown@user.com") , TaskId("1")),
+            service.removeFromWhitelist(makeToken(), Email("unkown@user.com"), TaskId("1")),
         )
     ).rejects.toThrow("UserNotFoundError");
 })
@@ -421,7 +432,7 @@ test("removeToWhiteList, expect UserNotFoundError", async () => {
 test("addToBlackList", async () => {
     expect(taskListsRepo.callsToUpdate).toBe(0)
     await pipe(
-        service.addToBlacklist(makeToken(), Email("test@test.com") , TaskId("1")),
+        service.addToBlacklist(makeToken(), Email("test@test.com"), TaskId("1")),
         Effect.runPromise
     );
     expect(taskListsRepo.callsToUpdate).toBe(1)
@@ -430,7 +441,7 @@ test("addToBlackList", async () => {
 test("addToBlackList to a list that doesn't exist", async () => {
     expect(taskListsRepo.callsToUpdate).toBe(0)
     await pipe(
-        service.addToBlacklist(makeToken(), Email("test@test.com") , TaskId("200")),
+        service.addToBlacklist(makeToken(), Email("test@test.com"), TaskId("200")),
         Effect.runPromise
     );
     expect(taskListsRepo.callsToUpdate).toBe(1)
@@ -440,7 +451,7 @@ test("addToBlackList, expect UserNotFoundError", async () => {
     expect(taskListsRepo.callsToUpdate).toBe(0)
     await expect(
         Effect.runPromise(
-            service.addToBlacklist(makeToken(), Email("unkown@user.com") , TaskId("1")),
+            service.addToBlacklist(makeToken(), Email("unkown@user.com"), TaskId("1")),
         )
     ).rejects.toThrow("UserNotFoundError");
 })
@@ -449,7 +460,7 @@ test("addToBlackList, expect UnauthorizedError", async () => {
     expect(taskListsRepo.callsToUpdate).toBe(0)
     await expect(
         Effect.runPromise(
-            service.addToBlacklist(makeTokenRole(), Email("test@test.com") , TaskId("1")),
+            service.addToBlacklist(makeTokenRole(), Email("test@test.com"), TaskId("1")),
         )
     ).rejects.toThrow("UnauthorizedError");
 })
@@ -463,7 +474,7 @@ test("addToBlackList, expect PermissionError", async () => {
     expect(taskListsRepo.callsToUpdate).toBe(1)
     await expect(
         Effect.runPromise(
-            service.addToBlacklist(makeToken(), Email("test@test.com") , TaskId("1")),    
+            service.addToBlacklist(makeToken(), Email("test@test.com"), TaskId("1")),
         )
     ).rejects.toThrow("InvalidOperationError");
 })
@@ -471,11 +482,11 @@ test("addToBlackList, expect PermissionError", async () => {
 test("removeFromBlackList wiht an existing task", async () => {
     expect(taskListsRepo.callsToUpdate).toBe(0)
     await pipe(
-        service.addToBlacklist(makeToken(), Email("test@test.com") , TaskId("1")),
+        service.addToBlacklist(makeToken(), Email("test@test.com"), TaskId("1")),
         Effect.runPromise
     );
     await pipe(
-        service.removeFromBlacklist(makeToken(), Email("test@test.com") , TaskId("1")),
+        service.removeFromBlacklist(makeToken(), Email("test@test.com"), TaskId("1")),
         Effect.runPromise
     );
     expect(taskListsRepo.callsToUpdate).toBe(2)
@@ -484,12 +495,12 @@ test("removeFromBlackList wiht an existing task", async () => {
 test("removeFromBlackList, expect ScriptNotFoundError", async () => {
     expect(taskListsRepo.callsToUpdate).toBe(0)
     await pipe(
-        service.addToBlacklist(makeToken(), Email("test@test.com") , TaskId("1")),
+        service.addToBlacklist(makeToken(), Email("test@test.com"), TaskId("1")),
         Effect.runPromise
     );
     await expect(
         Effect.runPromise(
-            service.removeFromBlacklist(makeToken(), Email("test@test.com") , TaskId("200")),
+            service.removeFromBlacklist(makeToken(), Email("test@test.com"), TaskId("200")),
         )
     ).rejects.toThrow("ScriptNotFoundError");
 })
@@ -497,12 +508,12 @@ test("removeFromBlackList, expect ScriptNotFoundError", async () => {
 test("removeFromBlackList, expect UnauthorizedError", async () => {
     expect(taskListsRepo.callsToUpdate).toBe(0)
     await pipe(
-        service.addToBlacklist(makeToken(), Email("test@test.com") , TaskId("1")),
+        service.addToBlacklist(makeToken(), Email("test@test.com"), TaskId("1")),
         Effect.runPromise
     );
     await expect(
         Effect.runPromise(
-            service.removeFromBlacklist(makeTokenRole(), Email("test@test.com") , TaskId("1")),
+            service.removeFromBlacklist(makeTokenRole(), Email("test@test.com"), TaskId("1")),
         )
     ).rejects.toThrow("UnauthorizedError");
 })
@@ -510,12 +521,12 @@ test("removeFromBlackList, expect UnauthorizedError", async () => {
 test("removeFromBlackList, expect UserNotFoundError", async () => {
     expect(taskListsRepo.callsToUpdate).toBe(0)
     await pipe(
-        service.addToBlacklist(makeToken(), Email("test@test.com") , TaskId("1")),
+        service.addToBlacklist(makeToken(), Email("test@test.com"), TaskId("1")),
         Effect.runPromise
     );
     await expect(
         Effect.runPromise(
-            service.removeFromBlacklist(makeToken(), Email("unkown@user.com") , TaskId("1")),
+            service.removeFromBlacklist(makeToken(), Email("unkown@user.com"), TaskId("1")),
         )
     ).rejects.toThrow("UserNotFoundError");
 })
