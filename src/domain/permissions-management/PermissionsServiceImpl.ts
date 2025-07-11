@@ -168,7 +168,7 @@ export class PermissionsServiceImpl implements PermissionsService {
       Effect.flatMap((editList) =>
         Effect.if(token.role === Role.Admin || editList.users.includes(token.userEmail), {
           onTrue: () => Effect.succeed(editList),
-          onFalse: () => Effect.fail(PermissionError("User is blacklisted"))
+          onFalse: () => Effect.fail(PermissionError("You cannot edit this script"))
         }),
       ),
       Effect.mapError(e => {
