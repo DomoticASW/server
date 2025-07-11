@@ -1,6 +1,5 @@
-import { Device, DeviceActionId, DeviceAddress, DeviceId, DevicePropertyId, DeviceStatus } from "../../domain/devices-management/Device.js";
-import { DeviceUnreachableError, DeviceNotFoundError, InvalidInputError, DeviceActionError, DeviceActionNotFound, DevicePropertyNotFound, DeviceAlreadyRegisteredError } from "./Errors.js";
-import { PermissionError } from "../permissions-management/Errors.js";
+import { Device, DeviceAddress, DeviceId, DevicePropertyId, DeviceStatus } from "../../domain/devices-management/Device.js";
+import { DeviceUnreachableError, DeviceNotFoundError, DevicePropertyNotFound, DeviceAlreadyRegisteredError } from "./Errors.js";
 import { Token } from "../../domain/users-management/Token.js";
 import { Effect } from "effect/Effect";
 import { InvalidTokenError, TokenError } from "../users-management/Errors.js";
@@ -14,8 +13,6 @@ export interface DevicesService {
     findUnsafe(deviceId: DeviceId): Effect<Device, DeviceNotFoundError>;
     getAllDevices(token: Token): Effect<Iterable<Device>, InvalidTokenError>;
     getAllDevicesUnsafe(): Effect<Iterable<Device>, never>;
-    executeAction(token: Token, deviceId: DeviceId, actionId: DeviceActionId, input: unknown): Effect<void, InvalidInputError | DeviceActionError | DeviceActionNotFound | DeviceNotFoundError | InvalidTokenError | PermissionError>;
-    executeAutomationAction(deviceId: DeviceId, actionId: DeviceActionId, input: unknown): Effect<void, InvalidInputError | DeviceActionError | DeviceActionNotFound | DeviceNotFoundError>;
     updateDeviceProperty(deviceId: DeviceId, propertyId: DevicePropertyId, value: unknown): Effect<void, DeviceNotFoundError | DevicePropertyNotFound>;
     updateDeviceProperties(deviceId: DeviceId, properties: Map<DevicePropertyId, unknown>): Effect<void, DeviceNotFoundError | DevicePropertyNotFound>;
     setDeviceStatusUnsafe(deviceId: DeviceId, status: DeviceStatus): Effect<void, DeviceNotFoundError>

@@ -8,6 +8,7 @@ import { NotificationsService } from "../../ports/notifications-management/Notif
 import { PermissionsService } from "../../ports/permissions-management/PermissionsService.js"
 import { ScriptsService } from "../../ports/scripts-management/ScriptsService.js"
 import { Trigger } from "./Trigger.js"
+import { DeviceActionsService } from "../../ports/devices-management/DeviceActionsService.js"
 
 export interface Script<Id extends ScriptId> {
   readonly id: Id
@@ -15,7 +16,7 @@ export interface Script<Id extends ScriptId> {
 
   instructions: Array<Instruction>
 
-  execute(notificationsService: NotificationsService, scriptsService: ScriptsService, permissionsService: PermissionsService, devicesService: DevicesService, token?: Token): Effect<ExecutionEnvironment, ScriptError>
+  execute(notificationsService: NotificationsService, scriptsService: ScriptsService, permissionsService: PermissionsService, devicesService: DevicesService, deviceActionsService: DeviceActionsService, token?: Token): Effect<ExecutionEnvironment, ScriptError>
 }
 
 export type Task = Script<TaskId>
@@ -48,8 +49,8 @@ export class TaskImpl implements Task {
     this.instructions = instructions
   }
 
-  execute(notificationsService: NotificationsService, scriptsService: ScriptsService, permissionsService: PermissionsService, devicesService: DevicesService, token?: Token): Effect<ExecutionEnvironment, ScriptError> {
-    return reduce(this.instructions, ExecutionEnvironment(notificationsService, scriptsService, permissionsService, devicesService, token), (env, instr) => instr.execute(env))
+  execute(notificationsService: NotificationsService, scriptsService: ScriptsService, permissionsService: PermissionsService, devicesService: DevicesService, deviceActionsService: DeviceActionsService, token?: Token): Effect<ExecutionEnvironment, ScriptError> {
+    return reduce(this.instructions, ExecutionEnvironment(notificationsService, scriptsService, permissionsService, devicesService, deviceActionsService, token), (env, instr) => instr.execute(env))
   }
 }
 
@@ -68,8 +69,8 @@ export class AutomationImpl implements Automation {
     this.enabled = enabled
   }
 
-  execute(notificationsService: NotificationsService, scriptsService: ScriptsService, permissionsService: PermissionsService, devicesService: DevicesService): Effect<ExecutionEnvironment, ScriptError> {
-    return reduce(this.instructions, ExecutionEnvironment(notificationsService, scriptsService, permissionsService, devicesService), (env, instr) => instr.execute(env))
+  execute(notificationsService: NotificationsService, scriptsService: ScriptsService, permissionsService: PermissionsService, devicesService: DevicesService, deviceActionsService: DeviceActionsService): Effect<ExecutionEnvironment, ScriptError> {
+    return reduce(this.instructions, ExecutionEnvironment(notificationsService, scriptsService, permissionsService, devicesService, deviceActionsService), (env, instr) => instr.execute(env))
   }
 }
 

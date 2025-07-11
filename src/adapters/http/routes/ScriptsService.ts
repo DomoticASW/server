@@ -305,22 +305,22 @@ function serializeInstruction(instruction: Instruction): InstructionSchema {
     }
   }
 
-  if (isIfInstruction(instruction)) {
-    return {
-      "type": InstructionType.IfInstruction,
-      "instruction": {
-        "thenInstructions": serializeInstructions(instruction.then),
-        "condition": serializeCondition(instruction.condition)
-      }
-    }
-  }
-
   if (isIfElseInstruction(instruction)) {
     return {
       "type": InstructionType.IfElseInstruction,
       "instruction": {
         "thenInstructions": serializeInstructions(instruction.then),
         "elseInstructions": serializeInstructions(instruction.else),
+        "condition": serializeCondition(instruction.condition)
+      }
+    }
+  }
+
+  if (isIfInstruction(instruction)) {
+    return {
+      "type": InstructionType.IfInstruction,
+      "instruction": {
+        "thenInstructions": serializeInstructions(instruction.then),
         "condition": serializeCondition(instruction.condition)
       }
     }
