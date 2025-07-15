@@ -1,3 +1,13 @@
+## [1.0.0](https://github.com/DomoticASW/server/compare/0.3.0...1.0.0) (2025-07-15)
+
+### ⚠ BREAKING CHANGES
+
+* **release:** force publish
+
+### General maintenance
+
+* **release:** force publish ([0bee69d](https://github.com/DomoticASW/server/commit/0bee69d959b9013d9e0ba0ff9893af25405845c7))
+
 ## [0.3.0](https://github.com/DomoticASW/server/compare/0.2.0...0.3.0) (2025-07-11)
 
 ### Features
