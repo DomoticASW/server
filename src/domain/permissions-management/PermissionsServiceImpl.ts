@@ -1,5 +1,5 @@
 import { DeviceNotFoundError } from "../../ports/devices-management/Errors.js";
-import { EditListNotFoundError, InvalidOperationError, PermissionError } from "../../ports/permissions-management/Errors.js";
+import { EditListNotFoundError, InvalidOperationError, PermissionError, TaskListsNotFoundError, UserDevicePermissionNotFoundError } from "../../ports/permissions-management/Errors.js";
 import { PermissionsService } from "../../ports/permissions-management/PermissionsService.js";
 import { DeviceId } from "../devices-management/Device.js";
 import { Token } from "../users-management/Token.js";
@@ -38,6 +38,29 @@ export class PermissionsServiceImpl implements PermissionsService {
 
   registerScriptService(scriptService: ScriptsService): void {
     this.scriptService = scriptService;
+  }
+
+  findUserDevicePermission(token: Token, deviceId: DeviceId): Effect.Effect<UserDevicePermission, TokenError | UserDevicePermissionNotFoundError> {
+    return pipe(
+      Effect.if(token.role == Role.Admin, {
+        onTrue: () => this.usersService.verifyToken(token),
+        onFalse: () => Effect.fail(UnauthorizedError())
+      }),
+      Effect.flatMap(() => this.userDevicePermissionRepo.find([token.userEmail, deviceId])),
+      Effect.catch("__brand", {
+        failure: "NotFoundError",
+        onFailure: () => Effect.fail(UserDevicePermissionNotFoundError())
+      })
+    );
+  }
+
+  getAllUserDevicePermissions(token: Token): Effect.Effect<Iterable<UserDevicePermission>, TokenError> {
+  return pipe(
+    Effect.if(token.role == Role.Admin, {
+      onTrue: () => this.usersService.verifyToken(token),
+      onFalse: () => Effect.fail(UnauthorizedError())
+    }),
+    Effect.flatMap(() => this.userDevicePermissionRepo.getAll()))
   }
 
   addUserDevicePermission(token: Token, email: Email, deviceId: DeviceId): Effect.Effect<void, UserNotFoundError | DeviceNotFoundError | TokenError> {
@@ -182,6 +205,30 @@ export class PermissionsServiceImpl implements PermissionsService {
     )
   }
 
+  findEditList(token: Token, scriptId: ScriptId): Effect.Effect<EditList, TokenError | EditListNotFoundError> {
+    return pipe(
+      Effect.if(token.role === Role.Admin, {
+        onTrue: () => this.usersService.verifyToken(token),
+        onFalse: () => Effect.fail(UnauthorizedError())
+      }),
+      Effect.flatMap(() => this.editListRepo.find(scriptId)),
+      Effect.catch("__brand", {
+        failure: "NotFoundError",
+        onFailure: () => Effect.fail(EditListNotFoundError())
+      })
+    );
+  }
+
+  getAllEditLists(token: Token): Effect.Effect<Iterable<EditList>, TokenError> {
+    return pipe(
+      Effect.if(token.role === Role.Admin, {
+        onTrue: () => this.usersService.verifyToken(token),
+        onFalse: () => Effect.fail(UnauthorizedError())
+      }),
+      Effect.flatMap(() => this.editListRepo.getAll())
+    );
+  }
+
   addToEditlist(token: Token, email: Email, scriptId: ScriptId): Effect.Effect<void, TokenError | UserNotFoundError | ScriptNotFoundError | EditListNotFoundError> {
     return pipe(
       Effect.if(token.role === Role.Admin, {
@@ -246,6 +293,30 @@ export class PermissionsServiceImpl implements PermissionsService {
       onFalse: () => this.scriptService.findTaskUnsafe(scriptId as TaskId),
       onTrue: () => this.scriptService.findAutomationUnsafe(scriptId as AutomationId)
     })
+  }
+
+  findTaskLists(token: Token, taskId: TaskId): Effect.Effect<TaskLists, TokenError | TaskListsNotFoundError> {
+    return pipe(
+      Effect.if(token.role == Role.Admin, {
+        onTrue: () => this.usersService.verifyToken(token),
+        onFalse: () => Effect.fail(UnauthorizedError())
+      }),
+      Effect.flatMap(() => this.taskListsRepo.find(taskId)),
+      Effect.catch("__brand", {
+        failure: "NotFoundError",
+        onFailure: () => Effect.fail(TaskListsNotFoundError())
+      })
+    );
+  }
+
+  getAllTaskLists(token: Token): Effect.Effect<Iterable<TaskLists>, TokenError> {
+    return pipe(
+      Effect.if(token.role == Role.Admin, {
+        onTrue: () => this.usersService.verifyToken(token),
+        onFalse: () => Effect.fail(UnauthorizedError())
+      }),
+      Effect.flatMap(() => this.taskListsRepo.getAll())
+    );   
   }
 
   addToWhitelist(token: Token, email: Email, taskId: TaskId): Effect.Effect<void, TokenError | UserNotFoundError | ScriptNotFoundError | InvalidOperationError> {
