@@ -106,6 +106,14 @@ beforeEach(async () => {
 
 })
 
+test("findUserDevicePermission with an existing permission", async () => {
+    const permission = await pipe(
+        service.findUserDevicePermission(makeToken(), DeviceId("1")),
+        Effect.runPromise
+    );
+    expect(permission.email).toEqual(Email("test@test.com"));
+})
+
 test("addUserDevicePermission ", async () => {
     await pipe(
         service.addUserDevicePermission(makeToken(), Email("test@test.com"), DeviceId("1")),
@@ -229,6 +237,14 @@ test("canEdit, expect a PermissionError", async () => {
     ).rejects.toThrow("PermissionError");
 })
 
+test("findEditList", async () => {
+    const editList = await pipe(
+        service.findEditList(makeToken(), TaskId("1")),
+        Effect.runPromise
+    );
+    expect(editList.users).toContain(Email("test@test.com"));
+})
+
 test("addToEditList", async () => {
     expect(editListRepo.callsToUpdate).toBe(0)
     await pipe(
@@ -321,6 +337,15 @@ test("removeFromEditList, expect UserNotFoundError", async () => {
             service.removeFromEditlist(makeToken(), Email("unkown@user.com"), TaskId("1")),
         )
     ).rejects.toThrow("UserNotFoundError");
+})
+
+test("findTaskLists with an existing task", async () => {
+    const taskLists = await pipe(
+        service.findTaskLists(makeToken(), TaskId("1")),
+        Effect.runPromise
+    );
+    expect(taskLists.blacklist).toEqual([]);
+    expect(taskLists.whitelist).toEqual([]);
 })
 
 test("addToWhiteList", async () => {
