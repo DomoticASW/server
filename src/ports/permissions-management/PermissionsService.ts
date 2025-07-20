@@ -1,5 +1,5 @@
 import { Effect } from "effect/Effect";
-import { Email, User } from "../../domain/users-management/User.js";
+import { Email } from "../../domain/users-management/User.js";
 import { DeviceNotFoundError } from "../devices-management/Errors.js"
 import { InvalidTokenError, TokenError, UserNotFoundError } from "../users-management/Errors.js"
 import { EditListNotFoundError, InvalidOperationError, PermissionError, TaskListsNotFoundError, UserDevicePermissionNotFoundError } from "./Errors.js";
@@ -14,7 +14,7 @@ import { TaskLists } from "../../domain/permissions-management/TaskLists.js";
 
 export interface PermissionsService {
   registerScriptService(scriptService: ScriptsService): void;
-  findUserDevicePermission(token: Token, deviceId: DeviceId): Effect<UserDevicePermission, TokenError | UserDevicePermissionNotFoundError>;
+  findUserDevicePermission(token: Token, email: Email, deviceId: DeviceId): Effect<UserDevicePermission, TokenError | UserDevicePermissionNotFoundError>;
   getAllUserDevicePermissions(token: Token): Effect<Iterable<UserDevicePermission>, TokenError>;
   addUserDevicePermission(token: Token, email: Email, devideId: DeviceId): Effect<void, UserNotFoundError | DeviceNotFoundError | TokenError>;
   removeUserDevicePermission(token: Token, email: Email, deviceId: DeviceId): Effect<void, UserNotFoundError | DeviceNotFoundError | TokenError>;

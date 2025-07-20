@@ -40,13 +40,13 @@ export class PermissionsServiceImpl implements PermissionsService {
     this.scriptService = scriptService;
   }
 
-  findUserDevicePermission(token: Token, deviceId: DeviceId): Effect.Effect<UserDevicePermission, TokenError | UserDevicePermissionNotFoundError> {
+  findUserDevicePermission(token: Token, email: Email, deviceId: DeviceId): Effect.Effect<UserDevicePermission, TokenError | UserDevicePermissionNotFoundError> {
     return pipe(
       Effect.if(token.role == Role.Admin, {
         onTrue: () => this.usersService.verifyToken(token),
         onFalse: () => Effect.fail(UnauthorizedError())
       }),
-      Effect.flatMap(() => this.userDevicePermissionRepo.find([token.userEmail, deviceId])),
+      Effect.flatMap(() => this.userDevicePermissionRepo.find([email, deviceId])),
       Effect.catch("__brand", {
         failure: "NotFoundError",
         onFailure: () => Effect.fail(UserDevicePermissionNotFoundError())

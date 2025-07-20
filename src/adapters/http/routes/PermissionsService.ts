@@ -12,9 +12,14 @@ export function registerPermissionsServiceRoutes(app: express.Express, service: 
 
   // get one user device permission
   app.get('/api/permissions/user-device/:id', async (req, res) => {
+    const key = "email"
     const response =  await Effect.Do.pipe(
       Effect.bind("token", () => deserializeToken(req, usersService)),
-      Effect.bind("userDevicePermission", ({ token }) => service.findUserDevicePermission(token, DeviceId(req.params.id))),
+       Effect.bind("email", () => {
+        if (req.body && key in req.body) { return Effect.succeed(req.body[key]) }
+        else { return Effect.fail(BadRequest(`Expected body format is: {${key}: ???}`)) }
+      }),
+      Effect.bind("userDevicePermission", ({ token, email }) => service.findUserDevicePermission(token, Email(email), DeviceId(req.params.id))),
       Effect.map(({ userDevicePermission }) => Response(StatusCodes.OK, userDevicePermission)),
       Effect.catch("__brand", {
           failure: "UserDevicePermissionNotFoundError",
