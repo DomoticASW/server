@@ -108,7 +108,7 @@ beforeEach(async () => {
 
 test("findUserDevicePermission with an existing permission", async () => {
     const permission = await pipe(
-        service.findUserDevicePermission(makeToken(), DeviceId("1")),
+        service.findUserDevicePermission(makeToken(), Email("test@test.com"), DeviceId("1")),
         Effect.runPromise
     );
     expect(permission.email).toEqual(Email("test@test.com"));
