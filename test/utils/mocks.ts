@@ -12,7 +12,7 @@ import { DeviceStatusesService, DeviceStatusChangesSubscriber } from "../../src/
 import { DeviceNotFoundError, InvalidInputError, DeviceActionError, DeviceUnreachableError, DeviceActionNotFound, DevicePropertyNotFound, DeviceAlreadyRegisteredError, NotDeviceEventError } from "../../src/ports/devices-management/Errors.js";
 import { NotificationProtocol } from "../../src/ports/notifications-management/NotificationProtocol.js";
 import { NotificationsService } from "../../src/ports/notifications-management/NotificationsService.js";
-import { PermissionError } from "../../src/ports/permissions-management/Errors.js";
+import { EditListNotFoundError, PermissionError, TaskListsNotFoundError, UserDevicePermissionNotFoundError } from "../../src/ports/permissions-management/Errors.js";
 import { PermissionsService } from "../../src/ports/permissions-management/PermissionsService.js";
 import { ScriptError, ScriptNotFoundError, TaskNameAlreadyInUseError, InvalidScriptError, AutomationNameAlreadyInUseError } from "../../src/ports/scripts-management/Errors.js";
 import { ScriptsService } from "../../src/ports/scripts-management/ScriptsService.js";
@@ -24,6 +24,9 @@ import { DeviceOfflineNotificationSubscription } from "../../src/domain/notifica
 import { DuplicateIdError, NotFoundError } from "../../src/ports/Repository.js";
 import { DeviceEventsService, DeviceEventsSubscriber } from "../../src/ports/devices-management/DeviceEventsService.js";
 import { DeviceActionsService } from "../../src/ports/devices-management/DeviceActionsService.js";
+import { UserDevicePermission } from "../../src/domain/permissions-management/UserDevicePermission.js";
+import { TaskLists } from "../../src/domain/permissions-management/TaskLists.js";
+import { EditList } from "../../src/domain/permissions-management/EditList.js";
 
 export function UserNotFoundErrorMock(cause?: string): UserNotFoundError {
   return { message: "The user has not been found", cause: cause, __brand: "UserNotFoundError" }
@@ -152,6 +155,12 @@ export function PermissionsServiceSpy(userToken: Token = TokenMock("email"), tes
     call: () => call,
     get: () => {
       return {
+        findUserDevicePermission: function (token: Token, deviceId: DeviceId): Effect<UserDevicePermission, TokenError | UserDevicePermissionNotFoundError> {
+          throw new Error("Function not implemented.");
+        },
+        getAllUserDevicePermissions: function (token: Token): Effect<Iterable<UserDevicePermission>, TokenError> {
+          throw new Error("Function not implemented.");
+        },
         addUserDevicePermission: function (token: Token, email: Email, devideId: DeviceId): Effect<void, UserNotFoundError | DeviceNotFoundError | TokenError> {
           throw new Error("Function not implemented.");
         },
@@ -172,6 +181,12 @@ export function PermissionsServiceSpy(userToken: Token = TokenMock("email"), tes
           if (testEdit) call++
           return token == userToken ? succeed(true) : fail(testInvalidToken ? InvalidTokenError() : PermissionError())
         },
+        findEditList: function (token: Token, scriptId: ScriptId): Effect<EditList, TokenError | EditListNotFoundError> {
+          throw new Error("Function not implemented.");
+        },
+        getAllEditLists: function (token: Token): Effect<Iterable<EditList>, TokenError> {
+          throw new Error("Function not implemented.");
+        },
         addToEditlist: function (token: Token, email: Email, scriptId: ScriptId): Effect<void, TokenError | UserNotFoundError | ScriptNotFoundError> {
           throw new Error("Function not implemented");
         },
@@ -180,6 +195,12 @@ export function PermissionsServiceSpy(userToken: Token = TokenMock("email"), tes
           return succeed(undefined)
         },
         removeFromEditlist: function (token: Token, email: Email, scriptId: ScriptId): Effect<void, TokenError | UserNotFoundError | ScriptNotFoundError> {
+          throw new Error("Function not implemented.");
+        },
+        findTaskLists: function (token: Token, taskId: TaskId): Effect<TaskLists, TokenError | TaskListsNotFoundError> {
+          throw new Error("Function not implemented.");
+        },
+        getAllTaskLists: function (token: Token): Effect<Iterable<TaskLists>, TokenError> {
           throw new Error("Function not implemented.");
         },
         addToWhitelist: function (token: Token, email: Email, taskId: TaskId): Effect<void, TokenError | UserNotFoundError | ScriptNotFoundError> {
