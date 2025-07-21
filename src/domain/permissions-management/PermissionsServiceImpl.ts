@@ -118,7 +118,11 @@ export class PermissionsServiceImpl implements PermissionsService {
   canExecuteActionOnDevice(token: Token, deviceId: DeviceId): Effect.Effect<void, PermissionError | InvalidTokenError> {
     return pipe(
       this.usersService.verifyToken(token),
-      Effect.flatMap(() => this.userDevicePermissionRepo.find([token.userEmail, deviceId])),
+      Effect.flatMap(() =>
+        token.role === Role.Admin
+          ? Effect.succeed(undefined as void)
+          : pipe(this.userDevicePermissionRepo.find([token.userEmail, deviceId]), Effect.asVoid)
+      ),
       Effect.mapError(e => {
         switch (e.__brand) {
           case "NotFoundError":
