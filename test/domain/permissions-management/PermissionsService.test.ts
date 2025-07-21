@@ -41,7 +41,15 @@ function makeTokenRole(role: Role = Role.User): Token {
     }
 }
 
-function makeTokenWithUnknownUser(role: Role = Role.Admin): Token {
+function makeTokenWithUnknownAdmin(role: Role = Role.Admin): Token {
+    return {
+        userEmail: Email("unkown@user.com"),
+        role: role,
+        source: ""
+    }
+}
+
+function makeTokenWithUnknownUser(role: Role = Role.User): Token {
     return {
         userEmail: Email("unkown@user.com"),
         role: role,
@@ -156,6 +164,15 @@ test("canExecuteAction on an existing device and user has permissions ", async (
     );
     expect(async () =>
         await pipe(
+            service.canExecuteActionOnDevice(makeTokenRole(), DeviceId("1")),
+            Effect.runPromise
+        )
+    ).not.toThrow();
+})
+
+test("canExecuteAction on an existing device with an admin ", async () => {
+    expect(async () =>
+        await pipe(
             service.canExecuteActionOnDevice(makeToken(), DeviceId("1")),
             Effect.runPromise
         )
@@ -226,13 +243,13 @@ test("canEdit, expect a ScriptNotFoundError", async () => {
 })
 
 test("canEdit, Admin can edit even if not in editlist", async () => {
-    await Effect.runPromise(service.canEdit(makeTokenWithUnknownUser(), TaskId("1")))
+    await Effect.runPromise(service.canEdit(makeTokenWithUnknownAdmin(), TaskId("1")))
 })
 
 test("canEdit, expect a PermissionError", async () => {
     await expect(
         Effect.runPromise(
-            service.canEdit(makeTokenWithUnknownUser(Role.User), TaskId("1")),
+            service.canEdit(makeTokenWithUnknownAdmin(Role.User), TaskId("1")),
         )
     ).rejects.toThrow("PermissionError");
 })
