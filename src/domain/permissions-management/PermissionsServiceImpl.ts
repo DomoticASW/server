@@ -140,6 +140,7 @@ export class PermissionsServiceImpl implements PermissionsService {
         pipe(
           this.taskListsRepo.find(taskId),
           Effect.flatMap((taskList): Effect.Effect<Task | undefined, PermissionError | InvalidTokenError | ScriptNotFoundError> => {
+            if (token.role === Role.Admin) {return Effect.succeed(undefined)}
             if (taskList.whitelist?.includes(token.userEmail)) {
               return Effect.succeed(undefined);
             }
@@ -160,7 +161,7 @@ export class PermissionsServiceImpl implements PermissionsService {
         )
       ),
       Effect.flatMap((task) => {
-        if (task === undefined) {
+        if (task === undefined || token.role === Role.Admin) {
           return Effect.succeed(undefined);
         }
 
@@ -432,7 +433,10 @@ export class PermissionsServiceImpl implements PermissionsService {
         onFalse: () => Effect.fail(UnauthorizedError())
       }),
       Effect.flatMap(() => this.usersService.getUserDataUnsafe(email)),
-      Effect.flatMap(() => {
+      Effect.flatMap((user) => {
+        if (user.role === Role.Admin) {
+          Effect.fail(PermissionError("An admin cannot be added to a blacklist"))
+        }
         const list = TaskLists(taskId, [], []);
         return pipe(
           this.taskListsRepo.add(list),

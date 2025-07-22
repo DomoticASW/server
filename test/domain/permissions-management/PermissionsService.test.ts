@@ -220,15 +220,24 @@ test("canExecuteTask, expect a ScriptNotFoundError ", async () => {
 test("canExecuteTask, expect a PermissionError because user is blacklisted ", async () => {
     await expect(
         Effect.runPromise(
-            service.canExecuteTask(makeToken(), TaskId("3"))
+            service.canExecuteTask(makeTokenRole(), TaskId("3"))
         )
     ).rejects.toThrow("PermissionError");
+})
+
+test("canExecuteTask, user is blacklisted but is an Admin ", async () => {
+    expect(async () =>
+    await pipe(
+        Effect.runPromise(
+            service.canExecuteTask(makeToken(), TaskId("3"))
+        )
+    )).not.toThrow();
 })
 
 test("canEdit wiht an existing script and user has permissions ", async () => {
     expect(async () =>
         await pipe(
-            service.canEdit(makeToken(), TaskId("1")),
+            service.canEdit(makeTokenRole(), TaskId("1")),
             Effect.runPromise
         )
     ).not.toThrow();
@@ -507,7 +516,7 @@ test("addToBlackList, expect UnauthorizedError", async () => {
     ).rejects.toThrow("UnauthorizedError");
 })
 
-test("addToBlackList, expect PermissionError", async () => {
+test("addToBlackList, expect InvalidOperationError", async () => {
     expect(taskListsRepo.callsToUpdate).toBe(0)
     await pipe(
         service.addToWhitelist(makeToken(), Email("test@test.com"), TaskId("1")),
