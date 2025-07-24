@@ -154,15 +154,23 @@ export class UsersServiceImpl implements UsersService {
 
     login(email: Email, password: PasswordHash): Effect<Token, InvalidCredentialsError> {
         return pipe(
-            this.userRepository.find(email),
+            this.regReqRepository.find(email),
+            Eff.flatMap(regReq => {
+                if (regReq) {
+                    return Eff.fail(InvalidCredentialsError("You have to wait for the admin approval"));
+                } else {
+                    return Eff.succeed(null);
+                }
+            }),
+            Eff.flatMap(() => this.userRepository.find(email)),
             Eff.flatMap(user => {
                 if (user.passwordHash !== password) {
-                    return Eff.fail(InvalidCredentialsError())
+                    return Eff.fail(InvalidCredentialsError("Email or password are incorrect"));
                 }
                 const source = jwt.sign({ userEmail: user.email, role: user.role }, this.secret, { expiresIn: '1h' });
                 return Eff.succeed(Token(user.email, user.role, source));
             }),
-            Eff.mapError(() => InvalidCredentialsError())
+            Eff.mapError((e) => InvalidCredentialsError((e as unknown as Error)?.message))
         );
     }
 
