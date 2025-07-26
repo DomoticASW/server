@@ -1,3 +1,4 @@
+import bcrypt from "bcrypt";
 import { pipe } from "effect";
 import jwt from 'jsonwebtoken';
 import { Token } from "./Token.js";
@@ -30,7 +31,8 @@ export class UsersServiceImpl implements UsersService {
         email: Email,
         password: PasswordHash,
     ): Effect<void, EmailAlreadyInUseError> {
-        const newRegReq = RegistrationRequest(nickname, email, password);
+        const passwordHash = bcrypt.hashSync(password, 10);
+        const newRegReq = RegistrationRequest(nickname, email, PasswordHash(passwordHash));
         return pipe(
             this.regReqRepository.add(newRegReq),
             Eff.mapError(() => EmailAlreadyInUseError()
@@ -154,17 +156,9 @@ export class UsersServiceImpl implements UsersService {
 
     login(email: Email, password: PasswordHash): Effect<Token, InvalidCredentialsError> {
         return pipe(
-            this.regReqRepository.find(email),
-            Eff.flatMap(regReq => {
-                if (regReq) {
-                    return Eff.fail(InvalidCredentialsError("You have to wait for the admin approval"));
-                } else {
-                    return Eff.succeed(null);
-                }
-            }),
-            Eff.flatMap(() => this.userRepository.find(email)),
+            this.userRepository.find(email),
             Eff.flatMap(user => {
-                if (user.passwordHash !== password) {
+                if (!bcrypt.compareSync(password, user.passwordHash)) {
                     return Eff.fail(InvalidCredentialsError("Email or password are incorrect"));
                 }
                 const source = jwt.sign({ userEmail: user.email, role: user.role }, this.secret, { expiresIn: '1h' });
