@@ -1,13 +1,15 @@
 import express from "express";
 import { Effect } from "effect";
-import { DeviceGroupId } from "../../../domain/devices-management/DeviceGroup.js";
-import { DeviceGroupsService } from "../../../ports/devices-management/DeviceGroupsService.js";
-import { UsersService } from "../../../ports/users-management/UsersService.js";
+import { DeviceGroupId } from "../../../../domain/devices-management/DeviceGroup.js";
+import { DeviceGroupsService } from "../../../../ports/devices-management/DeviceGroupsService.js";
+import { UsersService } from "../../../../ports/users-management/UsersService.js";
 import { StatusCodes } from "http-status-codes";
-import { BadRequest, deserializeToken, handleCommonErrors, sendResponse, Response } from "./HttpUtils.js";
-import { DeviceId } from "../../../domain/devices-management/Device.js";
+import { BadRequest, deserializeToken, handleCommonErrors, sendResponse, Response } from "../HttpUtils.js";
+import { DeviceId } from "../../../../domain/devices-management/Device.js";
+import { DeviceGroupDTO } from "./DTOs.js";
+import { DevicesService } from "../../../../ports/devices-management/DevicesService.js";
 
-export function registerDeviceGroupsServiceRoutes(app: express.Express, service: DeviceGroupsService, usersService: UsersService) {
+export function registerDeviceGroupsServiceRoutes(app: express.Express, service: DeviceGroupsService, devicesService: DevicesService, usersService: UsersService) {
 
     // create
     app.post('/api/deviceGroups', async (req, res) => {
@@ -34,7 +36,8 @@ export function registerDeviceGroupsServiceRoutes(app: express.Express, service:
         const response = await Effect.Do.pipe(
             Effect.bind("token", () => deserializeToken(req, usersService)),
             Effect.bind("deviceGroup", ({ token }) => service.findGroup(token, DeviceGroupId(req.params.id))),
-            Effect.map(({ deviceGroup }) => Response(StatusCodes.OK, deviceGroup)),
+            Effect.bind("deviceGroupDTO", ({ deviceGroup }) => DeviceGroupDTO(deviceGroup, devicesService)),
+            Effect.map(({ deviceGroupDTO }) => Response(StatusCodes.OK, deviceGroupDTO)),
             Effect.catch("__brand", {
                 failure: "DeviceGroupNotFoundError",
                 onFailure: (err) => Effect.succeed(Response(StatusCodes.NOT_FOUND, err))
@@ -91,7 +94,8 @@ export function registerDeviceGroupsServiceRoutes(app: express.Express, service:
         const response = await Effect.Do.pipe(
             Effect.bind("token", () => deserializeToken(req, usersService)),
             Effect.bind("deviceGroups", ({ token }) => service.getAllDeviceGroups(token)),
-            Effect.map(({ deviceGroups }) => Response(StatusCodes.CREATED, Array.from(deviceGroups))),
+            Effect.bind("deviceGroupDTOs", ({ deviceGroups }) => Effect.all(Array.from(deviceGroups).map(dg => DeviceGroupDTO(dg, devicesService)))),
+            Effect.map(({ deviceGroupDTOs }) => Response(StatusCodes.OK, Array.from(deviceGroupDTOs))),
             handleCommonErrors,
             Effect.runPromise
         )

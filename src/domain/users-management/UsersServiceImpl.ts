@@ -25,7 +25,9 @@ export class UsersServiceImpl implements UsersService {
             Eff.flatMap(() => this.regReqRepository.getAll())
         )
     }
-
+    /**
+     * If no user is registered then the first published request will result in creating the admin user
+     */
     publishRegistrationRequest(
         nickname: Nickname,
         email: Email,
@@ -37,11 +39,18 @@ export class UsersServiceImpl implements UsersService {
                 catch: (error) => new Error("Password hashing failed: " + error)
             }),
             Eff.flatMap(hashedPassword => {
-                const newRegReq = RegistrationRequest(nickname, email, PasswordHash(hashedPassword));
-                return this.regReqRepository.add(newRegReq);
+                const hashedPass = PasswordHash(hashedPassword);
+                return pipe(
+                    this.userRepository.getAll(),
+                    Eff.flatMap(users => 
+                        Array.from(users).length === 0
+                            ? this.userRepository.add(User(nickname, email, hashedPass, Role.Admin))
+                            : this.regReqRepository.add(RegistrationRequest(nickname, email, hashedPass))
+                    )
+                );
             }),
             Eff.mapError(() => EmailAlreadyInUseError())
-        );
+        )
     }
 
     approveRegistrationRequest(token: Token, email: Email): Effect<void, EmailAlreadyInUseError | RegistrationRequestNotFoundError | TokenError> {
