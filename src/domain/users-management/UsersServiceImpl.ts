@@ -31,12 +31,17 @@ export class UsersServiceImpl implements UsersService {
         email: Email,
         password: PasswordHash,
     ): Effect<void, EmailAlreadyInUseError> {
-        const passwordHash = bcrypt.hashSync(password, 10);
-        const newRegReq = RegistrationRequest(nickname, email, PasswordHash(passwordHash));
         return pipe(
-            this.regReqRepository.add(newRegReq),
-            Eff.mapError(() => EmailAlreadyInUseError()
-            ))
+            Eff.tryPromise({
+                try: () => bcrypt.hash(password, 10),
+                catch: (error) => new Error("Password hashing failed: " + error)
+            }),
+            Eff.flatMap(hashedPassword => {
+                const newRegReq = RegistrationRequest(nickname, email, PasswordHash(hashedPassword));
+                return this.regReqRepository.add(newRegReq);
+            }),
+            Eff.mapError(() => EmailAlreadyInUseError())
+        );
     }
 
     approveRegistrationRequest(token: Token, email: Email): Effect<void, EmailAlreadyInUseError | RegistrationRequestNotFoundError | TokenError> {
@@ -156,16 +161,24 @@ export class UsersServiceImpl implements UsersService {
 
     login(email: Email, password: PasswordHash): Effect<Token, InvalidCredentialsError> {
         return pipe(
-            this.userRepository.find(email),
-            Eff.flatMap(user => {
-                if (!bcrypt.compareSync(password, user.passwordHash)) {
-                    return Eff.fail(InvalidCredentialsError("Email or password are incorrect"));
-                }
-                const source = jwt.sign({ userEmail: user.email, role: user.role }, this.secret, { expiresIn: '1h' });
-                return Eff.succeed(Token(user.email, user.role, source));
-            }),
-            Eff.mapError((e) => InvalidCredentialsError((e as unknown as Error)?.message))
-        );
+        this.userRepository.find(email),
+        Eff.flatMap(user => 
+            pipe(
+                Eff.tryPromise({
+                    try: () => bcrypt.compare(password, user.passwordHash),
+                    catch: (error) => new Error(`Password comparison failed: ${error}`)
+                }),
+                Eff.flatMap(result => {
+                    if (!result) {
+                        return Eff.fail(InvalidCredentialsError("Email or password are incorrect"));
+                    }
+                    const source = jwt.sign({ userEmail: user.email, role: user.role }, this.secret, { expiresIn: '1h' });
+                    return Eff.succeed(Token(user.email, user.role, source));
+                })
+            )
+        ),
+        Eff.mapError((e) => InvalidCredentialsError((e as unknown as Error)?.message))
+    );
     }
 
     verifyToken(token: Token): Effect<void, InvalidTokenError> {
