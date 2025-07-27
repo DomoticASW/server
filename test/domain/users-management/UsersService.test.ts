@@ -6,6 +6,7 @@ import { Nickname, Email, PasswordHash, Role, User } from "../../../src/domain/u
 import { Token } from "../../../src/domain/users-management/Token.js";
 import mongoose from "mongoose";
 import jwt from "jsonwebtoken";
+import bcrypt from "bcrypt";
 
 const dbName: string = "usersServiceTests"
 let dbConnection: mongoose.Connection;
@@ -75,7 +76,7 @@ describe("UsersServiceImpl", () => {
         expect(requests).toHaveLength(1);
         expect(request.nickname).toEqual(testNickname);
         expect(request.email).toEqual(testEmail);
-        expect(request.passwordHash).toEqual(testPassword);
+        expect(bcrypt.compare(testPassword, request.passwordHash)).resolves.toBe(true);
     });
 
     test("publishRegistrationRequest - should fail if email already in use", async () => {
@@ -238,9 +239,9 @@ describe("UsersServiceImpl", () => {
     });
 
     test("login - should return token for valid credentials", async () => {
-        await Effect.runPromise(usersRepo.add(User(testNickname, testEmail, testPassword, Role.User)));
-        
-        const token = await Effect.runPromise(usersService.login(testEmail, testPassword));
+        await Effect.runPromise(usersService.publishRegistrationRequest(Nickname("Admin"), Email("admin@email.com"), testPassword));
+
+        const token = await Effect.runPromise(usersService.login(Email("admin@email.com"), testPassword));
         expect(token).toBeDefined();
     });
 
