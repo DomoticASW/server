@@ -161,24 +161,35 @@ export class UsersServiceImpl implements UsersService {
 
     login(email: Email, password: PasswordHash): Effect<Token, InvalidCredentialsError> {
         return pipe(
-        this.userRepository.find(email),
-        Eff.flatMap(user => 
-            pipe(
-                Eff.tryPromise({
-                    try: () => bcrypt.compare(password, user.passwordHash),
-                    catch: (error) => new Error(`Password comparison failed: ${error}`)
-                }),
-                Eff.flatMap(result => {
-                    if (!result) {
-                        return Eff.fail(InvalidCredentialsError("Email or password are incorrect"));
-                    }
-                    const source = jwt.sign({ userEmail: user.email, role: user.role }, this.secret, { expiresIn: '1h' });
-                    return Eff.succeed(Token(user.email, user.role, source));
-                })
-            )
-        ),
-        Eff.mapError((e) => InvalidCredentialsError((e as unknown as Error)?.message))
-    );
+            this.regReqRepository.find(email),
+            Eff.match({
+                onSuccess: () => {
+                    return Eff.fail(InvalidCredentialsError("You have to wait for admin approval"));
+                },
+                onFailure: () => {
+                    return pipe(
+                        this.userRepository.find(email),
+                        Eff.flatMap(user => 
+                            pipe(
+                                Eff.tryPromise({
+                                    try: () => bcrypt.compare(password, user.passwordHash),
+                                    catch: (error) => new Error(`Password comparison failed: ${error}`)
+                                }),
+                                Eff.flatMap(result => {
+                                    if (!result) {
+                                        return Eff.fail(InvalidCredentialsError("Invalid credentials"));
+                                    }
+                                    const source = jwt.sign({ userEmail: user.email, role: user.role }, this.secret, { expiresIn: '1h' });
+                                    return Eff.succeed(Token(user.email, user.role, source));
+                                })
+                            )
+                        ),
+                        Eff.mapError(() => InvalidCredentialsError("Invalid credentials"))
+                    );
+                }
+            }),
+            Eff.flatten
+        );
     }
 
     verifyToken(token: Token): Effect<void, InvalidTokenError> {
