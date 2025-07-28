@@ -200,10 +200,7 @@ export function registerUsersServiceRoutes(app: express.Application, service: Us
             Effect.map(({ token }) => Response(StatusCodes.OK, token)),
             Effect.catch("__brand", {
                 failure: "InvalidCredentialsError",
-                onFailure: (err) => Effect.succeed(Response(StatusCodes.UNAUTHORIZED, { 
-                    message: "Invalid credentials", 
-                    cause: err.cause 
-                }))
+                onFailure: (err) => Effect.succeed(Response(StatusCodes.UNAUTHORIZED, err))
             }),
             handleCommonErrors,
             Effect.runPromise
