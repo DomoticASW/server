@@ -55,6 +55,9 @@ export function NotificationsServiceSpy(existingEmail: Email): Spy<Notifications
         unsubscribeForDeviceOfflineNotifications: function (token: Token, deviceId: DeviceId): Effect<void, DeviceNotFoundError | UserNotFoundError | InvalidTokenError> {
           return succeed(null)
         },
+        isSubscribedForDeviceOfflineNotifications(token, deviceId) {
+          throw new Error("Function not implemented.");
+        },
         sendNotification: function (email: Email, message: string): Effect<void, UserNotFoundError> {
           call++
           messages.push(message)
@@ -339,7 +342,7 @@ export function UsersServiceSpy(user: User = UserMock(), usedToken: Token = Toke
 }
 
 export enum RepoOperation {
-  ADD, REMOVE, GETALL, NONE
+  ADD, REMOVE, GETALL, NONE, FIND
 }
 
 export function DeviceOfflineNotificationSubscriptionRepositorySpy(operation: RepoOperation, subscription: DeviceOfflineNotificationSubscription): Spy<DeviceOfflineNotificationSubscriptionRepository> {
@@ -370,7 +373,10 @@ export function DeviceOfflineNotificationSubscriptionRepositorySpy(operation: Re
           return succeed([subscription])
         },
         find: function (id: { email: Email; deviceId: DeviceId; }): Effect<DeviceOfflineNotificationSubscription, NotFoundError, never> {
-          throw new Error("Function not implemented.");
+          if (operation == RepoOperation.FIND) {
+            call++
+          }
+          return (subscription.deviceId == id.deviceId && subscription.email == id.email) ? succeed(subscription) : fail(NotFoundError())
         }
       }
     }

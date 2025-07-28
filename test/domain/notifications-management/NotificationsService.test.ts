@@ -48,6 +48,28 @@ test("A user can unsubscribe from a notifications service to stop listening for 
   expect(subscriptionRepositorySpy.call()).toBe(1)
 })
 
+test("A user can query if he's subscribed to a device for offline notifications", async () => {
+  const subscriptionRepositorySpy = DeviceOfflineNotificationSubscriptionRepositorySpy(RepoOperation.FIND, DeviceOfflineNotificationSubscription(token.userEmail, deviceId))
+  const notificationsService = NotificationsService(deviceStatusesServiceSpy.get(), devicesServiceSpy.get(), usersServiceSpy.get(), subscriptionRepositorySpy.get())
+
+  expect(await runPromise(notificationsService.isSubscribedForDeviceOfflineNotifications(token, deviceId))).toEqual(true)
+
+  expect(devicesServiceSpy.call()).toBe(1)
+  expect(usersServiceSpy.call()).toBe(2)
+  expect(subscriptionRepositorySpy.call()).toBe(1)
+})
+
+test("A user can query if he's subscribed to a device for offline notifications", async () => {
+  const subscriptionRepositorySpy = DeviceOfflineNotificationSubscriptionRepositorySpy(RepoOperation.FIND, DeviceOfflineNotificationSubscription(token.userEmail, DeviceId("OtherDeviceId")))
+  const notificationsService = NotificationsService(deviceStatusesServiceSpy.get(), devicesServiceSpy.get(), usersServiceSpy.get(), subscriptionRepositorySpy.get())
+
+  expect(await runPromise(notificationsService.isSubscribedForDeviceOfflineNotifications(token, deviceId))).toEqual(false)
+
+  expect(devicesServiceSpy.call()).toBe(1)
+  expect(usersServiceSpy.call()).toBe(2)
+  expect(subscriptionRepositorySpy.call()).toBe(1)
+})
+
 test("A user can send a notification if notification protocol has beed set", async () => {
   const notificationProtocolSpy = NotificationProtocolSpy()
   const notificationsService = NotificationsService(deviceStatusesServiceSpy.get(), devicesServiceSpy.get(), usersServiceSpy.get(), subscriptionRepositorySpy.get())
