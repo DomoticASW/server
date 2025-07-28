@@ -5,7 +5,7 @@ import { Token } from "./Token.js";
 import { Effect } from "effect/Effect";
 import { Effect as Eff } from "effect";
 import { RegistrationRequest } from "./RegistrationRequest.js";
-import { User, Nickname, Email, PasswordHash, Role } from "./User.js";
+import { User, Nickname, Email, PasswordHash, Role, ClearTextPassword } from "./User.js";
 import { UsersService } from "../../ports/users-management/UsersService.js";
 import { EmailAlreadyInUseError, UserNotFoundError, TokenError, InvalidTokenError, InvalidCredentialsError, InvalidTokenFormatError, UnauthorizedError, RegistrationRequestNotFoundError, } from "../../ports/users-management/Errors.js";
 import { RegistrationRequestRepository } from "../../ports/users-management/RegistrationRequestRepository.js";
@@ -31,13 +31,10 @@ export class UsersServiceImpl implements UsersService {
     publishRegistrationRequest(
         nickname: Nickname,
         email: Email,
-        password: PasswordHash,
+        password: ClearTextPassword,
     ): Effect<void, EmailAlreadyInUseError> {
         return pipe(
-            Eff.tryPromise({
-                try: () => bcrypt.hash(password, 10),
-                catch: (error) => new Error("Password hashing failed: " + error)
-            }),
+            Eff.tryPromise(() => bcrypt.hash(password, 10)),
             Eff.flatMap(hashedPassword => {
                 const hashedPass = PasswordHash(hashedPassword);
                 return pipe(
@@ -121,27 +118,46 @@ export class UsersServiceImpl implements UsersService {
     }
 
     updateUserData(
-        token: Token,
-        nickname?: Nickname,
-        password?: PasswordHash
-    ): Effect<void, UserNotFoundError | TokenError> {
-        return pipe(
-            this.verifyToken(token),
-            Eff.flatMap(() => this.userRepository.find(token.userEmail)),
-            Eff.flatMap((user) => {
-                const updatedUser = User(nickname ?? user.nickname, token.userEmail, password ?? user.passwordHash, user.role);
-                return this.userRepository.update(updatedUser)
-            }),
-            Eff.mapError(e => {
-                switch (e.__brand) {
-                    case "NotFoundError":
-                        return UserNotFoundError(e.cause)
-                    default:
-                        return e
+    token: Token,
+    nickname?: Nickname,
+    password?: ClearTextPassword
+): Effect<void, UserNotFoundError | TokenError> {
+    return pipe(
+        this.verifyToken(token),
+        Eff.flatMap(() => this.userRepository.find(token.userEmail)),
+        Eff.flatMap((user) => {
+            const hashPasswordIfProvided = password 
+                ? Eff.tryPromise(() => bcrypt.hash(password, 10))
+                    .pipe(Eff.map(hash => PasswordHash(hash)))
+                : Eff.succeed(user.passwordHash);
+            
+            return pipe(
+                hashPasswordIfProvided,
+                Eff.flatMap(passwordHash => {
+                    const updatedUser = User(
+                        nickname ?? user.nickname, 
+                        token.userEmail, 
+                        passwordHash, 
+                        user.role
+                    );
+                    return this.userRepository.update(updatedUser);
+                })
+            );
+        }),
+        Eff.mapError(e => {
+            if (e && typeof e === 'object' && '__brand' in e) {
+                const errorWithBrand = e as { __brand: string; cause?: string };
+                if (errorWithBrand.__brand === "NotFoundError") {
+                    return UserNotFoundError(errorWithBrand.cause || "User not found");
                 }
-            }),
-        )
-    }
+            }
+            if (e instanceof Error) {
+                return UserNotFoundError(e.message);
+            }
+            return UserNotFoundError("An unknown error occurred");
+        }),
+    )
+}
 
     getAllUsers(token: Token): Effect<Iterable<User>, InvalidTokenError> {
         return pipe(
@@ -168,7 +184,7 @@ export class UsersServiceImpl implements UsersService {
         );
     }
 
-    login(email: Email, password: PasswordHash): Effect<Token, InvalidCredentialsError> {
+    login(email: Email, password: ClearTextPassword): Effect<Token, InvalidCredentialsError> {
         return pipe(
             this.regReqRepository.find(email),
             Eff.match({
@@ -180,10 +196,7 @@ export class UsersServiceImpl implements UsersService {
                         this.userRepository.find(email),
                         Eff.flatMap(user => 
                             pipe(
-                                Eff.tryPromise({
-                                    try: () => bcrypt.compare(password, user.passwordHash),
-                                    catch: (error) => new Error(`Password comparison failed: ${error}`)
-                                }),
+                                Eff.tryPromise(() => bcrypt.compare(password, user.passwordHash)),
                                 Eff.flatMap(result => {
                                     if (!result) {
                                         return Eff.fail(InvalidCredentialsError("Invalid credentials"));

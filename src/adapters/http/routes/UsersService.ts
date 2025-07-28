@@ -3,7 +3,7 @@ import { Effect } from "effect";
 import { StatusCodes } from "http-status-codes";
 import { UsersService } from "../../../ports/users-management/UsersService.js";
 import { deserializeToken, BadRequest, handleCommonErrors, sendResponse, Response } from "./HttpUtils.js";
-import { Email, Nickname, PasswordHash } from "../../../domain/users-management/User.js";
+import { ClearTextPassword, Email, Nickname } from "../../../domain/users-management/User.js";
 
 export function registerUsersServiceRoutes(app: express.Application, service: UsersService) {
 
@@ -49,7 +49,7 @@ export function registerUsersServiceRoutes(app: express.Application, service: Us
             }),
             Effect.bind("nickname", ({ nicknameString }) => Effect.succeed(Nickname(nicknameString))),
             Effect.bind("email", ({ emailString }) => Effect.succeed(Email(emailString))),
-            Effect.bind("password", ({ passwordString }) => Effect.succeed(PasswordHash(passwordString))),
+            Effect.bind("password", ({ passwordString }) => Effect.succeed(ClearTextPassword(passwordString))),
             Effect.bind("_", ({ nickname, email, password }) => service.publishRegistrationRequest(nickname, email, password)),
             Effect.map(() => Response(StatusCodes.CREATED)),
             Effect.catch("__brand", {
@@ -130,7 +130,7 @@ export function registerUsersServiceRoutes(app: express.Application, service: Us
             Effect.bind("password", () => {
             if (req.body && "password" in req.body) {
                 const raw = req.body["password"];
-                if (typeof raw === "string") return Effect.succeed(PasswordHash(raw));
+                if (typeof raw === "string") return Effect.succeed(ClearTextPassword(raw));
                 return Effect.fail(BadRequest(`Expected password of type string but found ${typeof raw}`));
             }
             return Effect.succeed(undefined);
@@ -196,7 +196,7 @@ export function registerUsersServiceRoutes(app: express.Application, service: Us
                 if (typeof passwordVal == "string") { return Effect.succeed(passwordVal) }
                 else { return Effect.fail(BadRequest(`Expected ${key} of type string but found ${typeof passwordVal}`)) }
             }),
-            Effect.bind("token", ({ emailString, passwordString }) => service.login(Email(emailString), PasswordHash(passwordString))),
+            Effect.bind("token", ({ emailString, passwordString }) => service.login(Email(emailString), ClearTextPassword(passwordString))),
             Effect.map(({ token }) => Response(StatusCodes.OK, token)),
             Effect.catch("__brand", {
                 failure: "InvalidCredentialsError",
