@@ -17,27 +17,23 @@ export function EditList(id: ScriptId, users: Email[]): EditList {
 class EditListImpl implements EditList {
   readonly id: ScriptId;
 
-  private _users: Email[];
+  readonly users: Email[];
 
   constructor(id: ScriptId, users: Email[]) {
     this.id = id;
-    this._users = users;
-  }
-
-  get users(): Email[] {
-    return [...this._users];
+    this.users = users;
   }
 
   addUserToUsers(user: Email): void {
-    if (!this._users.includes(user)) {
-      this._users.push(user);
+    if (!this.users.includes(user)) {
+      this.users.push(user);
     }
   }
 
   removeUserToUsers(user: Email): void {
-    const index = this._users.indexOf(user);
+    const index = this.users.indexOf(user);
     if (index >= 0) {
-      this._users.splice(index, 1);
+      this.users.splice(index, 1);
     }
   }
 }
