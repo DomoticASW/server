@@ -435,8 +435,11 @@ export class PermissionsServiceImpl implements PermissionsService {
       Effect.flatMap(() => this.usersService.getUserDataUnsafe(email)),
       Effect.flatMap((user) => {
         if (user.role === Role.Admin) {
-          Effect.fail(PermissionError("An admin cannot be added to a blacklist"))
+          return Effect.fail(InvalidOperationError("An admin cannot be added to a blacklist"))
         }
+        return Effect.succeed(user)
+      }),
+      Effect.flatMap(() => {
         const list = TaskLists(taskId, [], []);
         return pipe(
           this.taskListsRepo.add(list),
@@ -459,7 +462,7 @@ export class PermissionsServiceImpl implements PermissionsService {
       Effect.catch("__brand", {
         failure: "NotFoundError",
         onFailure: () => Effect.fail(ScriptNotFoundError())
-      })
+      }),
     )
   }
   addToBlacklistUnsafe(token: Token, email: Email, taskId: TaskId): Effect.Effect<void, TokenError | UserNotFoundError | ScriptNotFoundError | InvalidOperationError> {

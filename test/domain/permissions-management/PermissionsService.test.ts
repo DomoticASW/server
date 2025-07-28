@@ -81,6 +81,8 @@ beforeEach(async () => {
         getUserDataUnsafe(email: Email) {
             if (email === Email("test@test.com")) {
                 return Effect.succeed(User(Nickname("Test"), Email("test@test.com"), PasswordHash("1234"), Role.Admin))
+            } else if (email === Email("user@user.com")) {
+                return Effect.succeed(User(Nickname("User"), Email("user@user.com"), PasswordHash("2345"), Role.User))
             } else {
                 return Effect.fail(UserNotFoundError())
             }
@@ -410,16 +412,16 @@ test("addToWhiteList, expect UserNotFoundError", async () => {
     ).rejects.toThrow("UserNotFoundError");
 })
 
-test("addToWhiteList, expect PermissionError", async () => {
+test("addToWhiteList, expect InvalidOperationError", async () => {
     expect(taskListsRepo.callsToUpdate).toBe(0)
     await pipe(
-        service.addToBlacklist(makeToken(), Email("test@test.com"), TaskId("1")),
+        service.addToBlacklist(makeToken(), Email("user@user.com"), TaskId("1")),
         Effect.runPromise
     )
     expect(taskListsRepo.callsToUpdate).toBe(1)
     await expect(
         Effect.runPromise(
-            service.addToWhitelist(makeToken(), Email("test@test.com"), TaskId("1")),
+            service.addToWhitelist(makeToken(), Email("user@user.com"), TaskId("1")),
         )
     ).rejects.toThrow("InvalidOperationError");
 })
@@ -483,7 +485,7 @@ test("removeToWhiteList, expect UserNotFoundError", async () => {
 test("addToBlackList", async () => {
     expect(taskListsRepo.callsToUpdate).toBe(0)
     await pipe(
-        service.addToBlacklist(makeToken(), Email("test@test.com"), TaskId("1")),
+        service.addToBlacklist(makeToken(), Email("user@user.com"), TaskId("1")),
         Effect.runPromise
     );
     expect(taskListsRepo.callsToUpdate).toBe(1)
@@ -492,7 +494,7 @@ test("addToBlackList", async () => {
 test("addToBlackList to a list that doesn't exist", async () => {
     expect(taskListsRepo.callsToUpdate).toBe(0)
     await pipe(
-        service.addToBlacklist(makeToken(), Email("test@test.com"), TaskId("200")),
+        service.addToBlacklist(makeToken(), Email("user@user.com"), TaskId("200")),
         Effect.runPromise
     );
     expect(taskListsRepo.callsToUpdate).toBe(1)
@@ -511,7 +513,7 @@ test("addToBlackList, expect UnauthorizedError", async () => {
     expect(taskListsRepo.callsToUpdate).toBe(0)
     await expect(
         Effect.runPromise(
-            service.addToBlacklist(makeTokenRole(), Email("test@test.com"), TaskId("1")),
+            service.addToBlacklist(makeTokenRole(), Email("user@user.com"), TaskId("1")),
         )
     ).rejects.toThrow("UnauthorizedError");
 })
@@ -519,10 +521,19 @@ test("addToBlackList, expect UnauthorizedError", async () => {
 test("addToBlackList, expect InvalidOperationError", async () => {
     expect(taskListsRepo.callsToUpdate).toBe(0)
     await pipe(
-        service.addToWhitelist(makeToken(), Email("test@test.com"), TaskId("1")),
+        service.addToWhitelist(makeToken(), Email("user@user.com"), TaskId("1")),
         Effect.runPromise
     )
     expect(taskListsRepo.callsToUpdate).toBe(1)
+    await expect(
+        Effect.runPromise(
+            service.addToBlacklist(makeToken(), Email("user@user.com"), TaskId("1")),
+        )
+    ).rejects.toThrow("InvalidOperationError");
+})
+
+test("addToBlackList, expect InvalidOperationError because user is an Admin", async () => {
+    expect(taskListsRepo.callsToUpdate).toBe(0)
     await expect(
         Effect.runPromise(
             service.addToBlacklist(makeToken(), Email("test@test.com"), TaskId("1")),
@@ -533,11 +544,11 @@ test("addToBlackList, expect InvalidOperationError", async () => {
 test("removeFromBlackList wiht an existing task", async () => {
     expect(taskListsRepo.callsToUpdate).toBe(0)
     await pipe(
-        service.addToBlacklist(makeToken(), Email("test@test.com"), TaskId("1")),
+        service.addToBlacklist(makeToken(), Email("user@user.com"), TaskId("1")),
         Effect.runPromise
     );
     await pipe(
-        service.removeFromBlacklist(makeToken(), Email("test@test.com"), TaskId("1")),
+        service.removeFromBlacklist(makeToken(), Email("user@user.com"), TaskId("1")),
         Effect.runPromise
     );
     expect(taskListsRepo.callsToUpdate).toBe(2)
@@ -546,12 +557,12 @@ test("removeFromBlackList wiht an existing task", async () => {
 test("removeFromBlackList, expect ScriptNotFoundError", async () => {
     expect(taskListsRepo.callsToUpdate).toBe(0)
     await pipe(
-        service.addToBlacklist(makeToken(), Email("test@test.com"), TaskId("1")),
+        service.addToBlacklist(makeToken(), Email("user@user.com"), TaskId("1")),
         Effect.runPromise
     );
     await expect(
         Effect.runPromise(
-            service.removeFromBlacklist(makeToken(), Email("test@test.com"), TaskId("200")),
+            service.removeFromBlacklist(makeToken(), Email("user@user.com"), TaskId("200")),
         )
     ).rejects.toThrow("ScriptNotFoundError");
 })
@@ -559,12 +570,12 @@ test("removeFromBlackList, expect ScriptNotFoundError", async () => {
 test("removeFromBlackList, expect UnauthorizedError", async () => {
     expect(taskListsRepo.callsToUpdate).toBe(0)
     await pipe(
-        service.addToBlacklist(makeToken(), Email("test@test.com"), TaskId("1")),
+        service.addToBlacklist(makeToken(), Email("user@user.com"), TaskId("1")),
         Effect.runPromise
     );
     await expect(
         Effect.runPromise(
-            service.removeFromBlacklist(makeTokenRole(), Email("test@test.com"), TaskId("1")),
+            service.removeFromBlacklist(makeTokenRole(), Email("user@user.com"), TaskId("1")),
         )
     ).rejects.toThrow("UnauthorizedError");
 })
@@ -572,7 +583,7 @@ test("removeFromBlackList, expect UnauthorizedError", async () => {
 test("removeFromBlackList, expect UserNotFoundError", async () => {
     expect(taskListsRepo.callsToUpdate).toBe(0)
     await pipe(
-        service.addToBlacklist(makeToken(), Email("test@test.com"), TaskId("1")),
+        service.addToBlacklist(makeToken(), Email("user@user.com"), TaskId("1")),
         Effect.runPromise
     );
     await expect(
