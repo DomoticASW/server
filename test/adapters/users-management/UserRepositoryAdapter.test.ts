@@ -3,6 +3,7 @@ import { Effect } from "effect"
 import { UserRepository } from "../../../src/ports/users-management/UserRepository.js"
 import { Email, Nickname, PasswordHash, Role, User } from "../../../src/domain/users-management/User.js"
 import { UserRepositoryAdapter } from "../../../src/adapters/users-management/UserRepositoryAdapter.js"
+import bcrypt from "bcrypt"
 
 const dbName: string = "UserRepositoryTests"
 let dbConnection: mongoose.Connection
@@ -12,7 +13,9 @@ let user: User
 beforeAll(async () => {
     dbConnection = await mongoose.createConnection(`mongodb://localhost:27018/${dbName}`).asPromise()
     repo = new UserRepositoryAdapter(dbConnection)
-    user = User(Nickname("Ciccio"), Email("ciao@gmail.com"), PasswordHash("passwordHash"), "Admin" as Role);
+    const password = "password";
+    const hashedPassword = await bcrypt.hash(password, 10);
+    user = User(Nickname("Ciccio"), Email("ciao@gmail.com"), PasswordHash(hashedPassword), "Admin" as Role);
 });
 
 beforeEach(async () => {
@@ -53,7 +56,9 @@ test("Try to find a User that doesn't exist", async () => {
 });
 
 test("Try to update a User", async () => {
-    const user2 = User(Nickname("Fra"), Email("ciao@gmail.com"), PasswordHash("password"), "User" as Role);
+    const password = "password1";
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const user2 = User(Nickname("Fra"), Email("ciao@gmail.com"), PasswordHash(hashedPassword), "User" as Role);
 
     await Effect.runPromise(repo.add(user));
     await Effect.runPromise(repo.update(user2));
@@ -63,8 +68,10 @@ test("Try to update a User", async () => {
 });
 
 test("Try to update a User that doesn't exist", async () => {
-    const user2 = User(Nickname("Fra"), Email(""), PasswordHash("password"), "User" as Role);
-    
+    const password = "password1";
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const user2 = User(Nickname("Fra"), Email(""), PasswordHash(hashedPassword), "User" as Role);
+
     await Effect.runPromise(repo.add(user));
     await expect(Effect.runPromise(repo.update(user2)))
         .rejects.toThrow("NotFoundError");

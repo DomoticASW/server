@@ -4,6 +4,7 @@ import { RegistrationRequest } from "../../../src/domain/users-management/Regist
 import { RegistrationRequestRepositoryAdapter } from "../../../src/adapters/users-management/RegistrationRequestRepositoryAdapter.js"
 import { Email, Nickname, PasswordHash } from "../../../src/domain/users-management/User.js"
 import { Effect } from "effect"
+import bcrypt from "bcrypt"
 
 const dbName: string = "RegistrationRequestRepositoryTests"
 let dbConnection: mongoose.Connection
@@ -11,9 +12,11 @@ let repo: RegistrationRequestRepository
 let registrationRequest: RegistrationRequest
 
 beforeAll(async () => {
+    const password = "password";
     dbConnection = await mongoose.createConnection(`mongodb://localhost:27018/${dbName}`).asPromise();
     repo = new RegistrationRequestRepositoryAdapter(dbConnection);
-    registrationRequest = RegistrationRequest(Nickname("Ciccio"), Email("ciao@gmail.com"), PasswordHash("passwordHash"));
+    const hashedPassword = await bcrypt.hash(password, 10);
+    registrationRequest = RegistrationRequest(Nickname("Ciccio"), Email("ciao@gmail.com"), PasswordHash(hashedPassword));
 });
 
 beforeEach(async () => {
@@ -54,7 +57,9 @@ test("Try to find a RegistrationRequest that doesn't exist", async () => {
 });
 
 test("Try to update a RegistrationRequest", async () => {
-    const RR = RegistrationRequest(Nickname("Fra"), Email("ciao@gmail.com"), PasswordHash("password"));
+    const password = "password1";
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const RR = RegistrationRequest(Nickname("Fra"), Email("ciao@gmail.com"), PasswordHash(hashedPassword));
 
     await Effect.runPromise(repo.add(registrationRequest));
     await Effect.runPromise(repo.update(RR));
@@ -64,7 +69,9 @@ test("Try to update a RegistrationRequest", async () => {
 })
 
 test("Try to update a RegistrationRequest that doesn't exist", async () => {
-    const RR = RegistrationRequest(Nickname("Fra"), Email(""), PasswordHash("password"));
+    const password = "password1";
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const RR = RegistrationRequest(Nickname("Fra"), Email(""), PasswordHash(hashedPassword));
 
     await Effect.runPromise(repo.add(registrationRequest));
     await expect(Effect.runPromise(repo.update(RR)))
