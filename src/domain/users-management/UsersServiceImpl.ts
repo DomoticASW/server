@@ -35,6 +35,7 @@ export class UsersServiceImpl implements UsersService {
     ): Effect<void, EmailAlreadyInUseError> {
         return pipe(
             Eff.tryPromise(() => bcrypt.hash(password, 10)),
+            Eff.orDie,
             Eff.flatMap(hashedPassword => {
                 const hashedPass = PasswordHash(hashedPassword);
                 return pipe(
@@ -127,8 +128,11 @@ export class UsersServiceImpl implements UsersService {
         Eff.flatMap(() => this.userRepository.find(token.userEmail)),
         Eff.flatMap((user) => {
             const hashPasswordIfProvided = password 
-                ? Eff.tryPromise(() => bcrypt.hash(password, 10))
-                    .pipe(Eff.map(hash => PasswordHash(hash)))
+                ? pipe(
+                    Eff.tryPromise(() => bcrypt.hash(password, 10)),
+                    Eff.orDie,
+                    Eff.map(hash => PasswordHash(hash))
+                )
                 : Eff.succeed(user.passwordHash);
             
             return pipe(
@@ -144,18 +148,10 @@ export class UsersServiceImpl implements UsersService {
                 })
             );
         }),
-        Eff.mapError(e => {
-            if (e && typeof e === 'object' && '__brand' in e) {
-                const errorWithBrand = e as { __brand: string; cause?: string };
-                if (errorWithBrand.__brand === "NotFoundError") {
-                    return UserNotFoundError(errorWithBrand.cause || "User not found");
-                }
-            }
-            if (e instanceof Error) {
-                return UserNotFoundError(e.message);
-            }
-            return UserNotFoundError("An unknown error occurred");
-        }),
+        Eff.catch("__brand", {
+            failure: "NotFoundError",
+            onFailure: () => Eff.fail(UserNotFoundError()),
+        })
     )
 }
 
@@ -197,6 +193,7 @@ export class UsersServiceImpl implements UsersService {
                         Eff.flatMap(user => 
                             pipe(
                                 Eff.tryPromise(() => bcrypt.compare(password, user.passwordHash)),
+                                Eff.orDie,
                                 Eff.flatMap(result => {
                                     if (!result) {
                                         return Eff.fail(InvalidCredentialsError("Invalid credentials"));
