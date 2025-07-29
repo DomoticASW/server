@@ -10,6 +10,39 @@ import { Email } from "../../../domain/users-management/User.js";
 
 export function registerPermissionsServiceRoutes(app: express.Express, service: PermissionsService, usersService: UsersService) {
 
+  // get one user device permission
+  app.get('/api/permissions/user-device/:id', async (req, res) => {
+    const key = "email"
+    const response =  await Effect.Do.pipe(
+      Effect.bind("token", () => deserializeToken(req, usersService)),
+       Effect.bind("email", () => {
+        if (req.body && key in req.body) { return Effect.succeed(req.body[key]) }
+        else { return Effect.fail(BadRequest(`Expected body format is: {${key}: ???}`)) }
+      }),
+      Effect.bind("userDevicePermission", ({ token, email }) => service.findUserDevicePermission(token, Email(email), DeviceId(req.params.id))),
+      Effect.map(({ userDevicePermission }) => Response(StatusCodes.OK, userDevicePermission)),
+      Effect.catch("__brand", {
+          failure: "UserDevicePermissionNotFoundError",
+          onFailure: (err) => Effect.succeed(Response(StatusCodes.NOT_FOUND, err))
+      }),
+      handleCommonErrors,
+      Effect.runPromise
+    )
+    sendResponse(res, response)
+  });
+
+  // get all user device permissions
+  app.get('/api/permissions/user-device', async (req, res) => {
+    const response =  await Effect.Do.pipe(
+      Effect.bind("token", () => deserializeToken(req, usersService)),
+      Effect.bind("userDevicePermissions", ({ token }) => service.getAllUserDevicePermissions(token)),
+      Effect.map(({ userDevicePermissions }) => Response(StatusCodes.OK, Array.from(userDevicePermissions))),
+      handleCommonErrors,
+      Effect.runPromise
+    )
+    sendResponse(res, response)
+  });
+  
   // add to user device permission
   app.post('/api/permissions/user-device/:id', async (req, res) => {
     const key = "email"
@@ -104,6 +137,34 @@ export function registerPermissionsServiceRoutes(app: express.Express, service: 
     sendResponse(res, response)
   });
 
+  // get one task lists
+  app.get('/api/permissions/tasklists/:id', async (req, res) => {
+    const response =  await Effect.Do.pipe(
+      Effect.bind("token", () => deserializeToken(req, usersService)),
+      Effect.bind("taskLists", ({ token }) => service.findTaskLists(token, TaskId(req.params.id))),
+      Effect.map(({ taskLists }) => Response(StatusCodes.OK, taskLists)),
+      Effect.catch("__brand", {
+          failure: "TaskListsNotFoundError",
+          onFailure: (err) => Effect.succeed(Response(StatusCodes.NOT_FOUND, err))
+      }),
+      handleCommonErrors,
+      Effect.runPromise
+    )
+    sendResponse(res, response)
+  });
+
+  // get all task lists
+  app.get('/api/permissions/tasklists', async (req, res) => {
+    const response =  await Effect.Do.pipe(
+      Effect.bind("token", () => deserializeToken(req, usersService)),
+      Effect.bind("taskLists", ({ token }) => service.getAllTaskLists(token)),
+      Effect.map(({ taskLists }) => Response(StatusCodes.OK, Array.from(taskLists))),
+      handleCommonErrors,
+      Effect.runPromise
+    )
+    sendResponse(res, response)
+  });
+
   // add to blacklist
   app.patch('/api/permissions/blacklist/:id', async (req, res) => {
     const key = "email"
@@ -156,6 +217,34 @@ export function registerPermissionsServiceRoutes(app: express.Express, service: 
         failure: "InvalidOperationError",
         onFailure: (err) => Effect.succeed(Response(StatusCodes.CONFLICT, err))
       }),
+      handleCommonErrors,
+      Effect.runPromise
+    )
+    sendResponse(res, response)
+  });
+
+// get one editlist
+  app.get('/api/permissions/editlist/:id', async (req, res) => {
+    const response =  await Effect.Do.pipe(
+      Effect.bind("token", () => deserializeToken(req, usersService)),
+      Effect.bind("editList", ({ token }) => service.findEditList(token, TaskId(req.params.id))),
+      Effect.map(({ editList }) => Response(StatusCodes.OK, editList)),
+      Effect.catch("__brand", {
+          failure: "EditListNotFoundError",
+          onFailure: (err) => Effect.succeed(Response(StatusCodes.NOT_FOUND, err))
+      }),
+      handleCommonErrors,
+      Effect.runPromise
+    )
+    sendResponse(res, response)
+  });
+
+  // get all editlists
+  app.get('/api/permissions/editlist', async (req, res) => {
+    const response =  await Effect.Do.pipe(
+      Effect.bind("token", () => deserializeToken(req, usersService)),
+      Effect.bind("editLists", ({ token }) => service.getAllEditLists(token)),
+      Effect.map(({ editLists }) => Response(StatusCodes.OK, Array.from(editLists))),
       handleCommonErrors,
       Effect.runPromise
     )
