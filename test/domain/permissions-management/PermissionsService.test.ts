@@ -65,9 +65,9 @@ beforeEach(async () => {
             return Effect.succeed(null)
         },
         getUserDataUnsafe(email: Email) {
+            const password = "password";
+            const hashedPassword = bcrypt.hashSync(password, 10);
             if (email === Email("test@test.com")) {
-                const password = "password";
-                const hashedPassword = bcrypt.hashSync(password, 10);
                 return Effect.succeed(User(Nickname("Test"), Email("test@test.com"), PasswordHash(hashedPassword), Role.Admin))
             } else if (email === Email("user@user.com")) {
                 return Effect.succeed(User(Nickname("User"), Email("user@user.com"), PasswordHash(hashedPassword), Role.User))
