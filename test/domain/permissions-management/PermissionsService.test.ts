@@ -16,6 +16,7 @@ import { UserNotFoundError } from "../../../src/ports/users-management/Errors.js
 import { DeviceActionInstruction } from "../../../src/domain/scripts-management/InstructionImpl.js"
 import { ScriptsService } from "../../../src/ports/scripts-management/ScriptsService.js"
 import { ScriptNotFoundError } from "../../../src/ports/scripts-management/Errors.js"
+import bcrypt from "bcrypt"
 
 
 let service: PermissionsService
@@ -64,10 +65,12 @@ beforeEach(async () => {
             return Effect.succeed(null)
         },
         getUserDataUnsafe(email: Email) {
+            const password = "password";
+            const hashedPassword = bcrypt.hashSync(password, 10);
             if (email === Email("test@test.com")) {
-                return Effect.succeed(User(Nickname("Test"), Email("test@test.com"), PasswordHash("1234"), Role.Admin))
+                return Effect.succeed(User(Nickname("Test"), Email("test@test.com"), PasswordHash(hashedPassword), Role.Admin))
             } else if (email === Email("user@user.com")) {
-                return Effect.succeed(User(Nickname("User"), Email("user@user.com"), PasswordHash("2345"), Role.User))
+                return Effect.succeed(User(Nickname("User"), Email("user@user.com"), PasswordHash(hashedPassword), Role.User))
             } else {
                 return Effect.fail(UserNotFoundError())
             }

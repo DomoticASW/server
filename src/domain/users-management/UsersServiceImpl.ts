@@ -1,10 +1,11 @@
+import bcrypt from "bcrypt";
 import { pipe } from "effect";
 import jwt from 'jsonwebtoken';
 import { Token } from "./Token.js";
 import { Effect } from "effect/Effect";
 import { Effect as Eff } from "effect";
 import { RegistrationRequest } from "./RegistrationRequest.js";
-import { User, Nickname, Email, PasswordHash, Role } from "./User.js";
+import { User, Nickname, Email, PasswordHash, Role, ClearTextPassword } from "./User.js";
 import { UsersService } from "../../ports/users-management/UsersService.js";
 import { EmailAlreadyInUseError, UserNotFoundError, TokenError, InvalidTokenError, InvalidCredentialsError, InvalidTokenFormatError, UnauthorizedError, RegistrationRequestNotFoundError, } from "../../ports/users-management/Errors.js";
 import { RegistrationRequestRepository } from "../../ports/users-management/RegistrationRequestRepository.js";
@@ -30,20 +31,23 @@ export class UsersServiceImpl implements UsersService {
     publishRegistrationRequest(
         nickname: Nickname,
         email: Email,
-        password: PasswordHash,
+        password: ClearTextPassword,
     ): Effect<void, EmailAlreadyInUseError> {
-        return Eff.Do.pipe(
-            Eff.bind("users", () => this.userRepository.getAll()),
-            Eff.bind("_", ({ users }) =>
-                Eff.if(Array.from(users).length == 0, {
-                    onTrue: () => this.userRepository.add(User(nickname, email, password, Role.Admin)),
-                    onFalse: () => this.regReqRepository.add(RegistrationRequest(nickname, email, password))
-                })),
-            Eff.mapError(e => {
-                switch (e.__brand) {
-                    case "DuplicateIdError": return EmailAlreadyInUseError()
-                }
-            })
+        return pipe(
+            Eff.tryPromise(() => bcrypt.hash(password, 10)),
+            Eff.orDie,
+            Eff.flatMap(hashedPassword => {
+                const hashedPass = PasswordHash(hashedPassword);
+                return pipe(
+                    this.userRepository.getAll(),
+                    Eff.flatMap(users => 
+                        Array.from(users).length === 0
+                            ? this.userRepository.add(User(nickname, email, hashedPass, Role.Admin))
+                            : this.regReqRepository.add(RegistrationRequest(nickname, email, hashedPass))
+                    )
+                );
+            }),
+            Eff.mapError(() => EmailAlreadyInUseError())
         )
     }
 
@@ -115,27 +119,41 @@ export class UsersServiceImpl implements UsersService {
     }
 
     updateUserData(
-        token: Token,
-        nickname?: Nickname,
-        password?: PasswordHash
-    ): Effect<void, UserNotFoundError | TokenError> {
-        return pipe(
-            this.verifyToken(token),
-            Eff.flatMap(() => this.userRepository.find(token.userEmail)),
-            Eff.flatMap((user) => {
-                const updatedUser = User(nickname ?? user.nickname, token.userEmail, password ?? user.passwordHash, user.role);
-                return this.userRepository.update(updatedUser)
-            }),
-            Eff.mapError(e => {
-                switch (e.__brand) {
-                    case "NotFoundError":
-                        return UserNotFoundError(e.cause)
-                    default:
-                        return e
-                }
-            }),
-        )
-    }
+    token: Token,
+    nickname?: Nickname,
+    password?: ClearTextPassword
+): Effect<void, UserNotFoundError | TokenError> {
+    return pipe(
+        this.verifyToken(token),
+        Eff.flatMap(() => this.userRepository.find(token.userEmail)),
+        Eff.flatMap((user) => {
+            const hashPasswordIfProvided = password 
+                ? pipe(
+                    Eff.tryPromise(() => bcrypt.hash(password, 10)),
+                    Eff.orDie,
+                    Eff.map(hash => PasswordHash(hash))
+                )
+                : Eff.succeed(user.passwordHash);
+            
+            return pipe(
+                hashPasswordIfProvided,
+                Eff.flatMap(passwordHash => {
+                    const updatedUser = User(
+                        nickname ?? user.nickname, 
+                        token.userEmail, 
+                        passwordHash, 
+                        user.role
+                    );
+                    return this.userRepository.update(updatedUser);
+                })
+            );
+        }),
+        Eff.catch("__brand", {
+            failure: "NotFoundError",
+            onFailure: () => Eff.fail(UserNotFoundError()),
+        })
+    )
+}
 
     getAllUsers(token: Token): Effect<Iterable<User>, InvalidTokenError> {
         return pipe(
@@ -162,17 +180,34 @@ export class UsersServiceImpl implements UsersService {
         );
     }
 
-    login(email: Email, password: PasswordHash): Effect<Token, InvalidCredentialsError> {
+    login(email: Email, password: ClearTextPassword): Effect<Token, InvalidCredentialsError> {
         return pipe(
-            this.userRepository.find(email),
-            Eff.flatMap(user => {
-                if (user.passwordHash !== password) {
-                    return Eff.fail(InvalidCredentialsError())
+            this.regReqRepository.find(email),
+            Eff.match({
+                onSuccess: () => {
+                    return Eff.fail(InvalidCredentialsError("You have to wait for admin approval"));
+                },
+                onFailure: () => {
+                    return pipe(
+                        this.userRepository.find(email),
+                        Eff.flatMap(user => 
+                            pipe(
+                                Eff.tryPromise(() => bcrypt.compare(password, user.passwordHash)),
+                                Eff.orDie,
+                                Eff.flatMap(result => {
+                                    if (!result) {
+                                        return Eff.fail(InvalidCredentialsError("Invalid credentials"));
+                                    }
+                                    const source = jwt.sign({ userEmail: user.email, role: user.role }, this.secret, { expiresIn: '1h' });
+                                    return Eff.succeed(Token(user.email, user.role, source));
+                                })
+                            )
+                        ),
+                        Eff.mapError(() => InvalidCredentialsError("Invalid credentials"))
+                    );
                 }
-                const source = jwt.sign({ userEmail: user.email, role: user.role }, this.secret, { expiresIn: '1h' });
-                return Eff.succeed(Token(user.email, user.role, source));
             }),
-            Eff.mapError(() => InvalidCredentialsError())
+            Eff.flatten
         );
     }
 
