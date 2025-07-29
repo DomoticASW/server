@@ -18,6 +18,11 @@ export interface NotificationsService extends DeviceStatusChangesSubscriber {
         deviceId: DeviceId
     ): Effect<void, DeviceNotFoundError | UserNotFoundError | InvalidTokenError>
 
+    isSubscribedForDeviceOfflineNotifications(
+        token: Token,
+        deviceId: DeviceId
+    ): Effect<boolean, DeviceNotFoundError | UserNotFoundError | InvalidTokenError>
+
     sendNotification(
         email: Email,
         message: string
