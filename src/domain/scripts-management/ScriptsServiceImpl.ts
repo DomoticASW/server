@@ -41,7 +41,10 @@ export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscribe
   findTask(token: Token, taskId: TaskId): Effect<Task, InvalidTokenError | ScriptNotFoundError> {
     return pipe(
       this.findScript(token, taskId),
-      flatMap(script => succeed(script as Task)),
+      flatMap(script => if_(script instanceof TaskImpl, {
+        onTrue: () => succeed(script as Task),
+        onFalse: () => fail(ScriptNotFoundError("It was found an automation but not a task with this id: " + taskId))
+      }))
     )
   }
 
@@ -124,7 +127,10 @@ export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscribe
   findAutomation(token: Token, automationId: AutomationId): Effect<Automation, InvalidTokenError | ScriptNotFoundError> {
     return pipe(
       this.findScript(token, automationId),
-      flatMap(script => succeed(script as Automation))
+      flatMap(script => if_(script instanceof AutomationImpl, {
+        onTrue: () => succeed(script as Automation),
+        onFalse: () => fail(ScriptNotFoundError("It was found a task but not an automation with this id: " + automationId))
+      }))
     )
   }
   findAutomationUnsafe(automationId: AutomationId): Effect<Automation, ScriptNotFoundError> {
