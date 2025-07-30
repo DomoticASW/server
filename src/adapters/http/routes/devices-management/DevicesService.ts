@@ -164,7 +164,7 @@ export function registerDevicesServiceRoutes(app: express.Express, service: Devi
             Effect.bind("token", () => deserializeToken(req, usersService)),
             Effect.bind("input", () => {
                 if (req.body && key in req.body) { return Effect.succeed(req.body[key]) }
-                else { return Effect.fail(BadRequest(`Expected body format is: {${key}: ???}`)) }
+                else { return Effect.succeed(undefined) }
             }),
             Effect.bind("_", ({ token, input }) => actionsService.executeAction(token, DeviceId(req.params.id), DeviceActionId(req.params.actionId), input)),
             Effect.map(() => Response(StatusCodes.OK)),
