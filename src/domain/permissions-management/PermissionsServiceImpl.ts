@@ -54,6 +54,22 @@ export class PermissionsServiceImpl implements PermissionsService {
     );
   }
 
+  findAllUserDevicePermissionsOfAnUser(token: Token, email: Email): Effect.Effect<Iterable<UserDevicePermission>, TokenError> {
+    return pipe(
+      this.getAllUserDevicePermissions(token),
+      Effect.flatMap((userDevicePermissions) => {
+        const userDevicePermissionList = []
+        for (const userDevicePermission of userDevicePermissions) {
+          if(userDevicePermission.email == email) {
+            userDevicePermissionList.push(userDevicePermission)
+          }
+        }
+        console.log(userDevicePermissionList)
+        return Effect.succeed(userDevicePermissionList);
+      })
+    );
+  }
+
   getAllUserDevicePermissions(token: Token): Effect.Effect<Iterable<UserDevicePermission>, TokenError> {
   return pipe(
     Effect.if(token.role == Role.Admin, {

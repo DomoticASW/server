@@ -1,4 +1,4 @@
-import { Effect, pipe } from "effect"
+import { Effect, Iterable, pipe } from "effect"
 import { InMemoryRepositoryMock } from "../../InMemoryRepositoryMock.js"
 import { Email, Nickname, PasswordHash, Role, User } from "../../../src/domain/users-management/User.js"
 import { Token } from "../../../src/domain/users-management/Token.js"
@@ -55,6 +55,8 @@ beforeEach(async () => {
         find(token: Token, id: DeviceId) {
             if (id == DeviceId("1"))
                 return Effect.succeed(Device(DeviceId("1"), "Lamp", DeviceAddress("localhost", 8080), DeviceStatus.Online, [], [], []))
+            if (id == DeviceId("5000"))
+                return Effect.succeed(Device(DeviceId("5000"), "Lamp", DeviceAddress("localhost", 8080), DeviceStatus.Online, [], [], []))
             else
                 return Effect.fail(DeviceNotFoundError())
         },
@@ -142,6 +144,34 @@ test("remove existing userDevicePermission ", async () => {
         service.removeUserDevicePermission(makeToken(Role.Admin), Email("test@test.com"), DeviceId("1")),
         Effect.runPromise
     );
+})
+
+test("findAllUserDevicePermissionsOfAnUser ", async () => {
+    await pipe(
+        service.addUserDevicePermission(makeToken(Role.Admin), Email("user@user.com"), DeviceId("1")),
+        Effect.runPromise
+    );
+    await pipe(
+        service.addUserDevicePermission(makeToken(Role.Admin), Email("user@user.com"), DeviceId("5000")),
+        Effect.runPromise
+    )
+    const list = await pipe(
+        service.findAllUserDevicePermissionsOfAnUser(makeToken(Role.Admin), Email("user@user.com")),
+        Effect.runPromise
+    )
+    expect(list).toHaveLength(2)
+})
+
+test("findAllUserDevicePermissionsOfAnUser, expect UnauthorizedError ", async () => {
+    await pipe(
+        service.addUserDevicePermission(makeToken(Role.Admin), Email("user@user.com"), DeviceId("1")),
+        Effect.runPromise
+    );
+    await expect(
+        Effect.runPromise(
+            service.findAllUserDevicePermissionsOfAnUser(makeToken(Role.User), Email("user@user.com")),
+        )
+    ).rejects.toThrow("UnauthorizedError");
 })
 
 test("canExecuteAction on an existing device and user has permissions ", async () => {
