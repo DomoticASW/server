@@ -1,4 +1,5 @@
 import express from "express";
+import { Server as SocketIOServer } from "socket.io"
 import { DevicesService } from "../../../../ports/devices-management/DevicesService.js";
 import { UsersService } from "../../../../ports/users-management/UsersService.js";
 import { Effect } from "effect";
@@ -7,8 +8,9 @@ import { deserializeToken, BadRequest, handleCommonErrors, sendResponse, Respons
 import { DeviceActionsService } from "../../../../ports/devices-management/DeviceActionsService.js";
 import { DeviceDTO, isDeviceAddress, isUpdateDevicePropertiesBody } from "./DTOs.js";
 import { DeviceId, DevicePropertyId, DeviceActionId } from "../../../../domain/devices-management/Device.js";
+import { startSocketIOPropertyUpdatesSubscriber } from "../../../devices-management/SocketIOPropertyUpdatesSubscriberAdapter.js";
 
-export function registerDevicesServiceRoutes(app: express.Express, service: DevicesService, actionsService: DeviceActionsService, usersService: UsersService) {
+export function registerDevicesServiceRoutes(app: express.Express, server: SocketIOServer, service: DevicesService, actionsService: DeviceActionsService, usersService: UsersService) {
 
     // create
     app.post('/api/devices', async (req, res) => {
@@ -200,4 +202,6 @@ export function registerDevicesServiceRoutes(app: express.Express, service: Devi
         )
         sendResponse(res, response)
     })
+
+    startSocketIOPropertyUpdatesSubscriber(server.of("/api/devices/property-updates"), service)
 }
