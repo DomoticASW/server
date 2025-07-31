@@ -29,6 +29,10 @@ export function registerDevicesServiceRoutes(app: express.Express, service: Devi
                 failure: "DeviceUnreachableError",
                 onFailure: (err) => Effect.succeed(Response(StatusCodes.NOT_FOUND, err))
             }),
+            Effect.catch("__brand", {
+                failure: "CommunicationError",
+                onFailure: (err) => Effect.succeed(Response(StatusCodes.INTERNAL_SERVER_ERROR, err))
+            }),
             handleCommonErrors,
             Effect.runPromise
         )
