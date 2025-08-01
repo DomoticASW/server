@@ -87,10 +87,16 @@ abstract class ScriptBuilderImpl<S = Task | Automation> implements ScriptBuilder
   }
 
   addWait(ref: NodeRef, seconds: number): ScriptBuilder<S> {
+    if (seconds < 0) {
+      this.errors.push(InvalidScriptError("The wait instruction needs positive numbers"))
+    }
     return this.createCopy(ref, WaitInstruction(seconds))
   }
 
   addSendNotification(ref: NodeRef, email: Email, message: string): ScriptBuilder<S> {
+    if (email.length === 0) {
+      this.errors.push(InvalidScriptError("The email to which send the notification cannot be empty"))
+    }
     return this.createCopy(ref, SendNotificationInstruction(email, message))
   }
 
@@ -99,10 +105,16 @@ abstract class ScriptBuilderImpl<S = Task | Automation> implements ScriptBuilder
   }
 
   addStartTask(ref: NodeRef, taskId: TaskId): ScriptBuilder<S> {
+    if (taskId.length === 0) {
+      this.errors.push(InvalidScriptError("The start task instruction needs the name of a task"))
+    }
     return this.createCopy(ref, StartTaskInstruction(taskId))
   }
 
   private addConstantInstructionToBuilder(ref: NodeRef, instruction: ConstantInstruction<unknown>): [ScriptBuilder<S>, ConstantRef] {
+    if (instruction.name.length === 0) {
+      this.errors.push(InvalidScriptError("Constants cannot have empty name"))
+    } 
     const constantRef = ConstantRef(instruction, ref)
     return [
       this.createCopy(ref, instruction),
