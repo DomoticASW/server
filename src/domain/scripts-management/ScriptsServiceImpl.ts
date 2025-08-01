@@ -178,6 +178,19 @@ export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscribe
             failure: "EditListNotFoundError",
             onFailure: () => succeed(undefined)
           }),
+          catch_("__brand", {
+            failure: "UserNotFoundError",
+            onFailure: () => {
+              return pipe(
+                this.scriptRepository.remove(automation.id),
+                flatMap(() => fail(InvalidTokenError("This token references a deleted user")))
+              )
+            }
+          }),
+          catch_("__brand", {
+            failure: "NotFoundError",
+            onFailure: () => succeed(undefined)
+          }),
           flatMap(() => succeed(automation.id))
         )
       ),
@@ -196,7 +209,6 @@ export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscribe
             case "DuplicateIdError":
             case "UniquenessConstraintViolatedError":
               return AutomationNameAlreadyInUseError(err.cause)
-            case "UserNotFoundError": return InvalidTokenError("This token references a deleted user")
           }
         }
         return err
