@@ -158,6 +158,9 @@ abstract class ScriptBuilderImpl<S = Task | Automation> implements ScriptBuilder
 
 class TaskBuilderImpl extends ScriptBuilderImpl<Task> {
   build(): Effect<Task, InvalidScriptError> {
+    if (this.name.length === 0) {
+      this.errors.push(InvalidScriptError("The name of the task cannot be empty"))
+    }
     return this.buildWithId(TaskId(uuid.v4()))
   }
 
@@ -196,6 +199,9 @@ class AutomationBuilderImpl extends ScriptBuilderImpl<Automation> {
   }
 
   build(): Effect<Automation, InvalidScriptError> {
+    if (this.name.length === 0) {
+      this.errors.push(InvalidScriptError("The name of the automation cannot be empty"))
+    }
     return this.buildWithId(AutomationId(uuid.v4()))
   }
 
