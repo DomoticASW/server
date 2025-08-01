@@ -182,34 +182,39 @@ export class UsersServiceImpl implements UsersService {
 
     login(email: Email, password: ClearTextPassword): Effect<Token, InvalidCredentialsError> {
         return pipe(
-            this.regReqRepository.find(email),
+            this.userRepository.find(email),
             Eff.match({
-                onSuccess: () => {
-                    return Eff.fail(InvalidCredentialsError("You have to wait for admin approval"));
+                onSuccess: (user) => {
+                    return pipe(
+                        Eff.tryPromise(() => bcrypt.compare(password, user.passwordHash)),
+                        Eff.orDie,
+                        Eff.flatMap(result => {
+                            if (!result) {
+                                return Eff.fail(InvalidCredentialsError("Invalid credentials"));
+                            }
+                            const source = jwt.sign({ userEmail: user.email, role: user.role }, this.secret, { expiresIn: '1h' });
+                            return Eff.succeed(Token(user.email, user.role, source));
+                        })
+                    );
                 },
                 onFailure: () => {
                     return pipe(
-                        this.userRepository.find(email),
-                        Eff.flatMap(user => 
-                            pipe(
-                                Eff.tryPromise(() => bcrypt.compare(password, user.passwordHash)),
-                                Eff.orDie,
-                                Eff.flatMap(result => {
-                                    if (!result) {
-                                        return Eff.fail(InvalidCredentialsError("Invalid credentials"));
-                                    }
-                                    const source = jwt.sign({ userEmail: user.email, role: user.role }, this.secret, { expiresIn: '1h' });
-                                    return Eff.succeed(Token(user.email, user.role, source));
-                                })
-                            )
-                        ),
-                        Eff.mapError(() => InvalidCredentialsError("Invalid credentials"))
+                        this.regReqRepository.find(email),
+                        Eff.match({
+                            onSuccess: () => {
+                                return Eff.fail(InvalidCredentialsError("You have to wait for admin approval"));
+                            },
+                            onFailure: () => {
+                                return Eff.fail(InvalidCredentialsError("Invalid credentials"));
+                            }
+                        }),
+                        Eff.flatten
                     );
                 }
             }),
             Eff.flatten
         );
-    }
+    }   
 
     verifyToken(token: Token): Effect<void, InvalidTokenError> {
         return pipe(
