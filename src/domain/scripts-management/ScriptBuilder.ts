@@ -1,6 +1,6 @@
 import { Effect, succeed, fail } from "effect/Effect";
 import { DeviceActionId, DeviceId, DevicePropertyId } from "../devices-management/Device.js";
-import { Condition, ConditionOperator, ConstantInstruction, Instruction } from "./Instruction.js";
+import { Condition, ConditionOperator, ConstantInstruction, Instruction, isStartTaskInstruction } from "./Instruction.js";
 import { ConstantRef, ElseNodeRef, NodeRef, RootNodeRef, ThenNodeRef } from "./Refs.js";
 import { Automation, AutomationId, ScriptId, Task, TaskId } from "./Script.js";
 import { Email } from "../users-management/User.js";
@@ -163,6 +163,14 @@ class TaskBuilderImpl extends ScriptBuilderImpl<Task> {
 
   buildWithId(id: TaskId): Effect<Task, InvalidScriptError> {
     const instructions: Array<Instruction> = this.buildInstructions();
+
+    instructions
+    .filter(instruction => isStartTaskInstruction(instruction))
+    .forEach(startTaskInstruction => {
+      if (startTaskInstruction.taskId === id) {
+        this.errors.push(InvalidScriptError("Cannot refer to the same task from a start task instruction"))
+      }
+    })
 
     return this.errors.length == 0
       ? succeed(Task(id, this.name, instructions))
