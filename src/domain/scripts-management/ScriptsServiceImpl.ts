@@ -1,4 +1,4 @@
-import { Effect, flatMap, catch as catch_, succeed, fail, mapError, map, forkDaemon, runFork, forEach, sleep, andThen, runPromise, sync, tap, if as if_ } from "effect/Effect";
+import { Effect, flatMap, catch as catch_, succeed, fail, mapError, map, forkDaemon, runFork, forEach, sleep, andThen, runPromise, sync, tap, if as if_, Do, bind } from "effect/Effect";
 import { PermissionError } from "../../ports/permissions-management/Errors.js";
 import { ScriptNotFoundError, TaskNameAlreadyInUseError, AutomationNameAlreadyInUseError, InvalidScriptError, ScriptError } from "../../ports/scripts-management/Errors.js";
 import { ScriptsService } from "../../ports/scripts-management/ScriptsService.js";
@@ -12,7 +12,7 @@ import { NotificationsService } from "../../ports/notifications-management/Notif
 import { PermissionsService } from "../../ports/permissions-management/PermissionsService.js";
 import { UsersService } from "../../ports/users-management/UsersService.js";
 import { Fiber, pipe } from "effect";
-import { NotFoundError, UniquenessConstraintViolatedError } from "../../ports/Repository.js";
+import { DuplicateIdError, NotFoundError, UniquenessConstraintViolatedError } from "../../ports/Repository.js";
 import { DeviceEventsService, DeviceEventsSubscriber } from "../../ports/devices-management/DeviceEventsService.js";
 import { DeviceId, DeviceEvent } from "../devices-management/Device.js";
 import { DeviceEventTrigger, DeviceEventTriggerImpl, PeriodTrigger, PeriodTriggerImpl } from "./Trigger.js";
@@ -162,9 +162,18 @@ export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscribe
     )
   }
 
-  createAutomation(token: Token, automation: AutomationBuilder, id: AutomationId | undefined = undefined): Effect<AutomationId, InvalidTokenError | AutomationNameAlreadyInUseError | InvalidScriptError | PermissionError> {
+  private removeOrRecreateAutomation(oldAutomation: Automation | undefined, automation: Automation): Effect<void, NotFoundError | DuplicateIdError | UniquenessConstraintViolatedError> {
+    if (oldAutomation === undefined)
+      // If creating, remove the automation 
+      return this.scriptRepository.remove(automation.id)
+    else
+      // If editing, recreate the old automation
+      return this.scriptRepository.add(oldAutomation)
+  }
+
+  createAutomation(token: Token, automation: AutomationBuilder, oldAutomation: Automation | undefined = undefined): Effect<AutomationId, InvalidTokenError | AutomationNameAlreadyInUseError | InvalidScriptError | PermissionError> {
     return pipe(
-      this.createScript(token, automation, id),
+      this.createScript(token, automation, oldAutomation?.id),
       flatMap((automation) => this.checkAutomationActionsPermissions(token, automation as Automation)),
       flatMap(automation =>
         pipe(
@@ -182,7 +191,7 @@ export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscribe
             failure: "UserNotFoundError",
             onFailure: () => {
               return pipe(
-                this.scriptRepository.remove(automation.id),
+                this.removeOrRecreateAutomation(oldAutomation, automation),
                 flatMap(() => fail(InvalidTokenError("This token references a deleted user")))
               )
             }
@@ -289,11 +298,25 @@ export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscribe
   }
 
   editAutomation(token: Token, automationId: AutomationId, automation: AutomationBuilder): Effect<void, InvalidTokenError | PermissionError | ScriptNotFoundError | AutomationNameAlreadyInUseError | InvalidScriptError> {
-    return pipe(
-      this.createScript(token, automation, automationId),
-      flatMap(script => this.checkAutomationActionsPermissions(token, (script as Automation))),
-      flatMap(() => this.removeAutomation(token, automationId)),
-      flatMap(() => this.createAutomation(token, automation, automationId))
+    return Do.pipe(
+      bind("old", () => this.findAutomationUnsafe(automationId)),
+      bind("_", () => this.removeAutomation(token, automationId)),
+      bind("id", ({ old }) => this.createAutomation(token, automation, old)),
+      bind("automation", ({ id }) => this.findAutomationUnsafe(id)),
+      bind("__", ({ automation }) => pipe(
+        this.checkAutomationActionsPermissions(token, automation),
+        catch_("__brand", {
+          failure: "PermissionError",
+          onFailure: err => pipe(
+            this.scriptRepository.remove(automation.id),
+            flatMap(() => fail(err))
+          )
+        }),
+        catch_("__brand", {
+          failure: "NotFoundError",
+          onFailure: () => succeed(undefined)
+        })
+      )),
     )
   }
 
