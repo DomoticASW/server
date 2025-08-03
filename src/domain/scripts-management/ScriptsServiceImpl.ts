@@ -174,6 +174,14 @@ export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscribe
   createAutomation(token: Token, automation: AutomationBuilder, oldAutomation: Automation | undefined = undefined): Effect<AutomationId, InvalidTokenError | AutomationNameAlreadyInUseError | InvalidScriptError | PermissionError> {
     return pipe(
       this.createScript(token, automation, oldAutomation?.id),
+      catch_("__brand", {
+        // If there is an old automation (edit mode), and the script is not valid, recreate the old one
+        failure: "InvalidScriptError",
+        onFailure: err => pipe(
+          oldAutomation ? this.scriptRepository.add(oldAutomation) : succeed(undefined),
+          flatMap(() => fail(err))
+        )
+      }),
       flatMap((automation) => this.checkAutomationActionsPermissions(token, automation as Automation)),
       flatMap(automation =>
         pipe(

@@ -6,7 +6,7 @@ import { Automation, AutomationId, ScriptId, Task, TaskId } from "./Script.js";
 import { Email } from "../users-management/User.js";
 import { Type } from "../../ports/devices-management/Types.js";
 import { InvalidScriptError } from "../../ports/scripts-management/Errors.js";
-import { DeviceEventTrigger, PeriodTrigger, Trigger } from "./Trigger.js";
+import { DeviceEventTrigger, PeriodTrigger, PeriodTriggerImpl, Trigger } from "./Trigger.js";
 import * as uuid from "uuid";
 import { CreateConstantInstruction, CreateDevicePropertyConstantInstruction, DeviceActionInstruction, IfElseInstruction, IfInstruction, SendNotificationInstruction, StartTaskInstruction, WaitInstruction } from "./InstructionImpl.js";
 import { isBooleanEOperator, isColorEOperator, isNumberEOperator, isNumberGEOperator, isNumberGOperator, isNumberLEOperator, isNumberLOperator, isStringEOperator } from "./Operators.js";
@@ -193,9 +193,6 @@ abstract class ScriptBuilderImpl<S = Task | Automation> implements ScriptBuilder
 
 class TaskBuilderImpl extends ScriptBuilderImpl<Task> {
   build(): Effect<Task, InvalidScriptError> {
-    if (this.name.length === 0) {
-      this.errors.push(InvalidScriptError("The name of the task cannot be empty"))
-    }
     return this.buildWithId(TaskId(uuid.v4()))
   }
 
@@ -217,6 +214,10 @@ class TaskBuilderImpl extends ScriptBuilderImpl<Task> {
     const instructions: Array<Instruction> = this.buildInstructions();
 
     this.checkStartTaskRecursion(instructions, id)
+
+    if (this.name.length === 0) {
+      this.errors.push(InvalidScriptError("The name of the task cannot be empty"))
+    }
 
     return this.errors.length == 0
       ? succeed(Task(id, this.name, instructions))
@@ -242,14 +243,19 @@ class AutomationBuilderImpl extends ScriptBuilderImpl<Automation> {
   }
 
   build(): Effect<Automation, InvalidScriptError> {
-    if (this.name.length === 0) {
-      this.errors.push(InvalidScriptError("The name of the automation cannot be empty"))
-    }
     return this.buildWithId(AutomationId(uuid.v4()))
   }
 
   buildWithId(id: AutomationId): Effect<Automation, InvalidScriptError> {
     const instructions: Array<Instruction> = this.buildInstructions();
+
+    if (this.name.length === 0) {
+      this.errors.push(InvalidScriptError("The name of the automation cannot be empty"))
+    }
+
+    if (this.trigger instanceof PeriodTriggerImpl && this.trigger.periodSeconds <= 0) {
+      this.errors.push(InvalidScriptError("The period trigger must have at least 1 second of period"))
+    }
 
     return this.errors.length == 0 ? succeed(Automation(id, this.name, this.trigger, instructions)) : fail(InvalidScriptError(this.errors.reduce((err1, err2) => InvalidScriptError(err1.cause + ", " + err2.cause)).cause))
   }
