@@ -1,6 +1,6 @@
 import { Effect, succeed, fail } from "effect/Effect";
 import { DeviceActionId, DeviceId, DevicePropertyId } from "../devices-management/Device.js";
-import { Condition, ConditionOperator, ConstantInstruction, Instruction, isStartTaskInstruction } from "./Instruction.js";
+import { Condition, ConditionOperator, ConstantInstruction, Instruction, isIfElseInstruction, isIfInstruction, isStartTaskInstruction } from "./Instruction.js";
 import { ConstantRef, ElseNodeRef, NodeRef, RootNodeRef, ThenNodeRef } from "./Refs.js";
 import { Automation, AutomationId, ScriptId, Task, TaskId } from "./Script.js";
 import { Email } from "../users-management/User.js";
@@ -9,6 +9,7 @@ import { InvalidScriptError } from "../../ports/scripts-management/Errors.js";
 import { DeviceEventTrigger, PeriodTrigger, Trigger } from "./Trigger.js";
 import * as uuid from "uuid";
 import { CreateConstantInstruction, CreateDevicePropertyConstantInstruction, DeviceActionInstruction, IfElseInstruction, IfInstruction, SendNotificationInstruction, StartTaskInstruction, WaitInstruction } from "./InstructionImpl.js";
+import { isBooleanEOperator, isColorEOperator, isNumberEOperator, isNumberGEOperator, isNumberGOperator, isNumberLEOperator, isNumberLOperator, isStringEOperator } from "./Operators.js";
 
 export interface ScriptBuilder<S = Task | Automation> {
   addIf<T>(ref: NodeRef, left: ConstantRef, right: ConstantRef, operator: ConditionOperator<T>, negate: boolean): [ScriptBuilder<S>, NodeRef];
@@ -32,13 +33,13 @@ abstract class ScriptBuilderImpl<S = Task | Automation> implements ScriptBuilder
     protected name: string,
     protected nodeRefs: Array<[NodeRef, Instruction]>,
     protected errors: Array<InvalidScriptError>
-  ) {}
+  ) { }
 
   private createCopy(ref: NodeRef, instruction: Instruction): ScriptBuilderImpl<S> {
     const newBuilder = this.copy(this.nodeRefs, this.errors)
 
     newBuilder.nodeRefs.push([ref, instruction])
-  
+
     return newBuilder
   }
 
@@ -72,18 +73,52 @@ abstract class ScriptBuilderImpl<S = Task | Automation> implements ScriptBuilder
     return newBuilder;
   }
 
+  private checkTypingOfCondition<T>(condition: Condition<T>) {
+    if (condition.leftConstant.type !== condition.rightConstant.type) {
+      this.errors.push(InvalidScriptError("The type of the two constants in the if must be the same"))
+    }
+
+    if (condition.leftConstant.type === Type.VoidType || condition.rightConstant.type === Type.VoidType) {
+      this.errors.push(InvalidScriptError("Constants cannot be of void type"))
+    }
+
+    if (isStringEOperator(condition.operator) && condition.leftConstant.type !== Type.StringType) {
+      this.errors.push(InvalidScriptError("The string equal operator must be used with strings"))
+    } else {
+      if (isColorEOperator(condition.operator) && condition.leftConstant.type !== Type.ColorType) {
+        this.errors.push(InvalidScriptError("The color equal operator must be used with colors"))
+      } else {
+        if (isBooleanEOperator(condition.operator) && condition.leftConstant.type !== Type.BooleanType) {
+          this.errors.push(InvalidScriptError("The boolean equal operator must be used with booleans"))
+        } else {
+          if (condition.leftConstant.type !== Type.DoubleType && condition.leftConstant.type !== Type.IntType) {
+            const operator = isNumberEOperator(condition.operator) ? "equal" : isNumberGEOperator(condition.operator) ? "greater equal" : isNumberGOperator(condition.operator) ? "greater" : isNumberLEOperator(condition.operator) ? "less equal" : isNumberLOperator(condition.operator) ? "less" : undefined
+            if (operator) {
+              this.errors.push(InvalidScriptError("The number " + operator + " operator must be used with numbers"))
+            }
+          }
+        }
+      }
+    }
+
+  }
+
   addIf<T>(ref: NodeRef, left: ConstantRef, right: ConstantRef, operator: ConditionOperator<T>, negate: boolean): [ScriptBuilder<S>, NodeRef] {
-    const instruction = IfInstruction([], Condition(left.constantInstruction, right.constantInstruction, operator, negate));
+    const condition = Condition(left.constantInstruction, right.constantInstruction, operator, negate)
+    this.checkTypingOfCondition(condition)
+    const instruction = IfInstruction([], condition);
     const thenNodeRef = ThenNodeRef(instruction, ref);
-    return [ this.createIfOnBuilder(ref, left, right, instruction), thenNodeRef ];
+    return [this.createIfOnBuilder(ref, left, right, instruction), thenNodeRef];
   }
 
   addIfElse<T>(ref: NodeRef, left: ConstantRef, right: ConstantRef, operator: ConditionOperator<T>, negate: boolean): [ScriptBuilder<S>, NodeRef, NodeRef] {
-    const instruction = IfElseInstruction([], [], Condition(left.constantInstruction, right.constantInstruction, operator, negate))
+    const condition = Condition(left.constantInstruction, right.constantInstruction, operator, negate)
+    this.checkTypingOfCondition(condition)
+    const instruction = IfElseInstruction([], [], condition)
     const thenNodeRef = ThenNodeRef(instruction, ref)
     const elseNodeRef = ElseNodeRef(instruction, ref)
 
-    return [ this.createIfOnBuilder(ref, left, right, instruction), thenNodeRef, elseNodeRef ]
+    return [this.createIfOnBuilder(ref, left, right, instruction), thenNodeRef, elseNodeRef]
   }
 
   addWait(ref: NodeRef, seconds: number): ScriptBuilder<S> {
@@ -114,7 +149,7 @@ abstract class ScriptBuilderImpl<S = Task | Automation> implements ScriptBuilder
   private addConstantInstructionToBuilder(ref: NodeRef, instruction: ConstantInstruction<unknown>): [ScriptBuilder<S>, ConstantRef] {
     if (instruction.name.length === 0) {
       this.errors.push(InvalidScriptError("Constants cannot have empty name"))
-    } 
+    }
     const constantRef = ConstantRef(instruction, ref)
     return [
       this.createCopy(ref, instruction),
@@ -164,16 +199,24 @@ class TaskBuilderImpl extends ScriptBuilderImpl<Task> {
     return this.buildWithId(TaskId(uuid.v4()))
   }
 
-  buildWithId(id: TaskId): Effect<Task, InvalidScriptError> {
-    const instructions: Array<Instruction> = this.buildInstructions();
-
-    instructions
-    .filter(instruction => isStartTaskInstruction(instruction))
-    .forEach(startTaskInstruction => {
-      if (startTaskInstruction.taskId === id) {
+  private checkStartTaskRecursion(instructions: Instruction[], taskId: TaskId) {
+    instructions.forEach(instruction => {
+      if (isIfInstruction(instruction)) {
+        this.checkStartTaskRecursion(instruction.then, taskId)
+      }
+      if (isIfElseInstruction(instruction)) {
+        this.checkStartTaskRecursion(instruction.else, taskId)
+      }
+      if (isStartTaskInstruction(instruction) && instruction.taskId === taskId) {
         this.errors.push(InvalidScriptError("Cannot refer to the same task from a start task instruction"))
       }
     })
+  }
+
+  buildWithId(id: TaskId): Effect<Task, InvalidScriptError> {
+    const instructions: Array<Instruction> = this.buildInstructions();
+
+    this.checkStartTaskRecursion(instructions, id)
 
     return this.errors.length == 0
       ? succeed(Task(id, this.name, instructions))
@@ -224,9 +267,9 @@ export function TaskBuilder(name: string): [TaskBuilder, NodeRef] {
 }
 
 export function AutomationBuilderWithPeriodtrigger(name: string, start: Date, periodSeconds: number): [AutomationBuilder, NodeRef] {
-  return [ new AutomationBuilderImpl(name, PeriodTrigger(start, periodSeconds), [], []), RootNodeRef() ]
+  return [new AutomationBuilderImpl(name, PeriodTrigger(start, periodSeconds), [], []), RootNodeRef()]
 }
 
 export function AutomationBuilderWithDeviceEventTrigger(name: string, deviceId: DeviceId, eventName: string): [AutomationBuilder, NodeRef] {
-  return [ new AutomationBuilderImpl(name, DeviceEventTrigger(deviceId, eventName), [], []), RootNodeRef() ]
+  return [new AutomationBuilderImpl(name, DeviceEventTrigger(deviceId, eventName), [], []), RootNodeRef()]
 }
