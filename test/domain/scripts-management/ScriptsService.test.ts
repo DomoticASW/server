@@ -367,7 +367,7 @@ test("An automation can be edited", async () => {
 
   expect(notificationsServiceSpy.call()).toBe(2)
   expect(notificationsServiceSpy.getMessages()).toStrictEqual(["message", "newMessage"])
-  expect(permissionsServiceSpy.call()).toBe(3)
+  expect(permissionsServiceSpy.call()).toBe(2)
 })
 
 test("Cannot edit an automation if the token is invalid", async () => {

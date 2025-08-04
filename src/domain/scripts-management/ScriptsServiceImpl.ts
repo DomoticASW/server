@@ -34,8 +34,7 @@ export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscribe
   ) {
     deviceEventsService.subscribeForDeviceEvents(this)
     runPromise(this.scriptRepository.getAll())
-      .then(scripts => this.startAutomationsHandler(Array.from(scripts).filter(e => e instanceof AutomationImpl)))
-
+      .then(scripts => this.startAutomationsHandler(Array.from(scripts).filter(e => e instanceof AutomationImpl).filter(e => e.enabled)))
   }
 
   findTask(token: Token, taskId: TaskId): Effect<Task, InvalidTokenError | ScriptNotFoundError> {
@@ -106,13 +105,11 @@ export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscribe
 
   editTask(token: Token, taskId: TaskId, task: TaskBuilder): Effect<void, InvalidTokenError | PermissionError | ScriptNotFoundError | TaskNameAlreadyInUseError | InvalidScriptError> {
     return pipe(
-      this.editScript(token, taskId, task),
+      this.editScript(token, taskId, task, false),
       mapError(err => {
-        if ("__brand" in err) {
-          switch (err.__brand) {
-            case "UniquenessConstraintViolatedError":
-              return TaskNameAlreadyInUseError(err.cause)
-          }
+        switch (err.__brand) {
+          case "UniquenessConstraintViolatedError":
+            return TaskNameAlreadyInUseError(err.cause)
         }
         return err
       })
@@ -123,7 +120,15 @@ export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscribe
     return pipe(
       this.permissionsService.canExecuteTask(token, taskId),
       flatMap(() => this.findTask(token, taskId)),
-      flatMap(task => forkDaemon(task.execute(this.notificationsService, this, this.permissionsService, this.devicesService, this.deviceActionsService, token)))
+      flatMap(task => forkDaemon(
+        pipe(
+          task.execute(this.notificationsService, this, this.permissionsService, this.devicesService, this.deviceActionsService, token),
+          catch_("__brand", {
+            failure: "ScriptError",
+            onFailure: () => succeed(undefined) // Here could be managed the errors sent from a script, maybe to send a notification to an admin
+          })
+        )
+      ))
     )
   }
 
@@ -270,13 +275,19 @@ export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscribe
   }
 
   private startAutomation(automation: Automation) {
-    return automation.execute(this.notificationsService, this, this.permissionsService, this.devicesService, this.deviceActionsService)
+    return pipe(
+      automation.execute(this.notificationsService, this, this.permissionsService, this.devicesService, this.deviceActionsService),
+      catch_("__brand", {
+        failure: "ScriptError",
+        onFailure: () => succeed(undefined) // Here could be managed the errors sent from an automation, maybe to send a notification to an admin
+      }),
+    )
   }
 
   editAutomation(token: Token, automationId: AutomationId, automation: AutomationBuilder): Effect<void, InvalidTokenError | PermissionError | ScriptNotFoundError | AutomationNameAlreadyInUseError | InvalidScriptError> {
     return Do.pipe(
       bind("oldAutomation", () => this.findAutomation(token, automationId)),
-      bind("_", () => this.editScript(token, automationId, automation)),
+      bind("_", () => this.editScript(token, automationId, automation, true)),
       bind("__", () => if_(this.automationsFiberMap.get(automationId) != undefined, {
         onTrue: () => pipe(
           Fiber.interrupt(this.automationsFiberMap.get(automationId)!),
@@ -286,11 +297,9 @@ export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscribe
       })),
       bind("___", ({ oldAutomation }) => this.setAutomationState(token, automationId, oldAutomation.enabled)),
       mapError(err => {
-        if ("__brand" in err) {
-          switch (err.__brand) {
-            case "UniquenessConstraintViolatedError":
-              return AutomationNameAlreadyInUseError(err.cause)
-          }
+        switch (err.__brand) {
+          case "UniquenessConstraintViolatedError":
+            return AutomationNameAlreadyInUseError(err.cause)
         }
         return err
       })
@@ -363,17 +372,17 @@ export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscribe
     )
   }
 
-  private editScript(token: Token, scriptId: ScriptId, scriptBuilder: ScriptBuilder): Effect<void, InvalidTokenError | PermissionError | ScriptNotFoundError | UniquenessConstraintViolatedError | InvalidScriptError> {
-    return pipe(
-      this.permissionsService.canEdit(token, scriptId),
-      flatMap(() => scriptBuilder.buildWithId(scriptId)),
-      flatMap(script => this.scriptRepository.update(script)),
+  private editScript(token: Token, scriptId: ScriptId, scriptBuilder: ScriptBuilder, isAutomation: boolean): Effect<Script<ScriptId>, InvalidTokenError | PermissionError | ScriptNotFoundError | UniquenessConstraintViolatedError | InvalidScriptError> {
+    return Do.pipe(
+      bind("_", () => this.permissionsService.canEdit(token, scriptId)),
+      bind("script", () => scriptBuilder.buildWithId(scriptId)),
+      bind("__", ({ script }) => isAutomation ? this.checkAutomationActionsPermissions(token, script as Automation) : succeed(undefined)),
+      bind("___", ({ script }) => this.scriptRepository.update(script)),
+      map(({ script }) => script),
       mapError(err => {
-        if ("__brand" in err) {
-          switch (err.__brand) {
-            case "NotFoundError":
-              return ScriptNotFoundError(err.cause)
-          }
+        switch (err.__brand) {
+          case "NotFoundError":
+            return ScriptNotFoundError(err.cause)
         }
         return err
       })
