@@ -163,12 +163,11 @@ export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscribe
   }
 
   private removeOrRecreateAutomation(oldAutomation: Automation | undefined, automation: Automation): Effect<void, NotFoundError | DuplicateIdError | UniquenessConstraintViolatedError> {
-    if (oldAutomation === undefined)
-      // If creating, remove the automation 
-      return this.scriptRepository.remove(automation.id)
-    else
-      // If editing, recreate the old automation
-      return this.scriptRepository.add(oldAutomation)
+    // Remove the new automation and then, if editing, recreate the old one
+    return pipe(
+      this.scriptRepository.remove(automation.id),
+      flatMap(() => oldAutomation ? this.scriptRepository.add(oldAutomation) : succeed(undefined))
+    )
   }
 
   createAutomation(token: Token, automation: AutomationBuilder, oldAutomation: Automation | undefined = undefined): Effect<AutomationId, InvalidTokenError | AutomationNameAlreadyInUseError | InvalidScriptError | PermissionError> {
