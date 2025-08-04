@@ -274,16 +274,17 @@ export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscribe
   }
 
   editAutomation(token: Token, automationId: AutomationId, automation: AutomationBuilder): Effect<void, InvalidTokenError | PermissionError | ScriptNotFoundError | AutomationNameAlreadyInUseError | InvalidScriptError> {
-    return pipe(
-      this.editScript(token, automationId, automation),
-      flatMap(() => if_(this.automationsFiberMap.get(automationId) != undefined, {
+    return Do.pipe(
+      bind("oldAutomation", () => this.findAutomation(token, automationId)),
+      bind("_", () => this.editScript(token, automationId, automation)),
+      bind("__", () => if_(this.automationsFiberMap.get(automationId) != undefined, {
         onTrue: () => pipe(
           Fiber.interrupt(this.automationsFiberMap.get(automationId)!),
           tap(() => this.automationsFiberMap.delete(automationId))
         ),
         onFalse: () => succeed(null)
       })),
-      flatMap(() => this.setAutomationState(token, automationId, true)),
+      bind("___", ({ oldAutomation }) => this.setAutomationState(token, automationId, oldAutomation.enabled)),
       mapError(err => {
         if ("__brand" in err) {
           switch (err.__brand) {
