@@ -1,4 +1,4 @@
-import { Effect, flatMap, catch as catch_, succeed, fail, mapError, map, forkDaemon, runFork, forEach, sleep, andThen, runPromise, sync, tap, if as if_, Do, bind, catchAll } from "effect/Effect";
+import { Effect, flatMap, catch as catch_, succeed, fail, mapError, map, forkDaemon, runFork, forEach, sleep, andThen, runPromise, sync, tap, if as if_, Do, bind } from "effect/Effect";
 import { PermissionError } from "../../ports/permissions-management/Errors.js";
 import { ScriptNotFoundError, TaskNameAlreadyInUseError, AutomationNameAlreadyInUseError, InvalidScriptError, ScriptError } from "../../ports/scripts-management/Errors.js";
 import { ScriptsService } from "../../ports/scripts-management/ScriptsService.js";
@@ -12,7 +12,7 @@ import { NotificationsService } from "../../ports/notifications-management/Notif
 import { PermissionsService } from "../../ports/permissions-management/PermissionsService.js";
 import { UsersService } from "../../ports/users-management/UsersService.js";
 import { Fiber, pipe } from "effect";
-import { DuplicateIdError, NotFoundError, UniquenessConstraintViolatedError } from "../../ports/Repository.js";
+import { NotFoundError, UniquenessConstraintViolatedError } from "../../ports/Repository.js";
 import { DeviceEventsService, DeviceEventsSubscriber } from "../../ports/devices-management/DeviceEventsService.js";
 import { DeviceId, DeviceEvent } from "../devices-management/Device.js";
 import { DeviceEventTrigger, DeviceEventTriggerImpl, PeriodTrigger, PeriodTriggerImpl } from "./Trigger.js";
@@ -66,44 +66,38 @@ export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscribe
   }
 
   createTask(token: Token, task: TaskBuilder): Effect<TaskId, InvalidTokenError | TaskNameAlreadyInUseError | InvalidScriptError> {
-    return pipe(
-      this.createScript(token, task),
-      flatMap(script =>
-        pipe(
-          this.scriptRepository.add(script),
-          flatMap(() => this.permissionsService.addToEditlistUnsafe(token.userEmail, script.id)),
-          catch_("__brand", {
-            failure: "ScriptNotFoundError",
-            onFailure: () => succeed(undefined)
-          }),
-          catch_("__brand", {
-            failure: "EditListNotFoundError",
-            onFailure: () => succeed(undefined)
-          }),
-          catch_("__brand", {
-            failure: "UserNotFoundError",
-            onFailure: () => {
-              return pipe(
-                this.scriptRepository.remove(script.id),
-                flatMap(() => fail(InvalidTokenError("This token references a deleted user")))
-              )
-            }
-          }),
-          catch_("__brand", {
-            failure: "NotFoundError",
-            onFailure: () => succeed(undefined)
-          }),
-          flatMap(() => succeed(script.id))
-        )
-      ),
-      map(id => id as TaskId),
-      mapError(err => {
-        if ("__brand" in err) {
-          switch (err.__brand) {
-            case "DuplicateIdError":
-            case "UniquenessConstraintViolatedError":
-              return TaskNameAlreadyInUseError(err.cause)
+    return Do.pipe(
+      bind("script", () => this.createScript(token, task)),
+      bind("task", ({ script }) => succeed(script as Task)),
+      bind("__", ({ task }) => this.scriptRepository.add(task)),
+      bind("___", ({ task }) => pipe(
+        this.permissionsService.addToEditlistUnsafe(token.userEmail, task.id),
+        catch_("__brand", {
+          failure: "ScriptNotFoundError",
+          onFailure: () => this.scriptRepository.remove(task.id)
+        }),
+        catch_("__brand", {
+          failure: "EditListNotFoundError",
+          onFailure: () => this.scriptRepository.remove(task.id)
+        }),
+        catch_("__brand", {
+          failure: "UserNotFoundError",
+          onFailure: () => {
+            return pipe(
+              this.scriptRepository.remove(task.id),
+              flatMap(() => fail(InvalidTokenError("This token references a deleted user")))
+            )
           }
+        }),
+      )),
+      map(({ task }) => task.id),
+      mapError(err => {
+        switch (err.__brand) {
+          case "DuplicateIdError":
+          case "UniquenessConstraintViolatedError":
+            return TaskNameAlreadyInUseError(err.cause)
+          case "NotFoundError":
+            return InvalidTokenError(err.cause)
         }
         return err
       })
@@ -161,89 +155,61 @@ export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscribe
       flatMap(scripts => succeed(Array.from(scripts).filter(e => e instanceof AutomationImpl)))
     )
   }
-
-  private removeOrRecreateAutomation(oldAutomation: Automation | undefined, automation: Automation): Effect<void, NotFoundError | DuplicateIdError | UniquenessConstraintViolatedError> {
-    // Remove the new automation and then, if editing, recreate the old one
-    return pipe(
-      this.scriptRepository.remove(automation.id),
-      flatMap(() => oldAutomation ? this.scriptRepository.add(oldAutomation) : succeed(undefined))
-    )
-  }
-
-  createAutomation(token: Token, automation: AutomationBuilder, oldAutomation: Automation | undefined = undefined): Effect<AutomationId, InvalidTokenError | AutomationNameAlreadyInUseError | InvalidScriptError | PermissionError> {
-    return pipe(
-      this.createScript(token, automation, oldAutomation?.id),
-      catch_("__brand", {
-        // If there is an old automation (edit mode), and the script is not valid, recreate the old one
-        failure: "InvalidScriptError",
-        onFailure: err => pipe(
-          oldAutomation ? this.scriptRepository.add(oldAutomation) : succeed(undefined),
-          flatMap(() => fail(err))
-        )
-      }),
-      flatMap((automation) => this.checkAutomationActionsPermissions(token, automation as Automation)),
-      flatMap(automation =>
-        pipe(
-          this.scriptRepository.add(automation),
-          flatMap(() => this.permissionsService.addToEditlistUnsafe(token.userEmail, automation.id)),
-          catch_("__brand", {
-            failure: "ScriptNotFoundError",
-            onFailure: () => succeed(undefined)
-          }),
-          catch_("__brand", {
-            failure: "EditListNotFoundError",
-            onFailure: () => succeed(undefined)
-          }),
-          catch_("__brand", {
-            failure: "UserNotFoundError",
-            onFailure: () => {
-              return pipe(
-                this.removeOrRecreateAutomation(oldAutomation, automation),
-                flatMap(() => fail(InvalidTokenError("This token references a deleted user"))),
-                catchAll(err => {
-                  if (err.__brand !== "InvalidTokenError") {
-                    return fail(InvalidTokenError("This token references a deleted user"))
-                  } else {
-                    return fail(err)
-                  }
-                })
-              )
-            }
-          }),
-          flatMap(() => succeed(automation.id))
-        )
-      ),
-      map(id => id as AutomationId),
-      flatMap(id => pipe(
-        this.setAutomationState(token, id, true),
-        map(() => id),
+  createAutomation(token: Token, automation: AutomationBuilder): Effect<AutomationId, InvalidTokenError | AutomationNameAlreadyInUseError | InvalidScriptError | PermissionError> {
+    return Do.pipe(
+      bind("script", () => this.createScript(token, automation)),
+      bind("automation", ({ script }) => succeed(script as Automation)),
+      bind("_", ({ automation }) => this.checkAutomationActionsPermissions(token, automation)),
+      bind("__", ({ automation }) => this.scriptRepository.add(automation)),
+      bind("___", ({ automation }) => pipe(
+        this.permissionsService.addToEditlistUnsafe(token.userEmail, automation.id),
         catch_("__brand", {
           failure: "ScriptNotFoundError",
-          onFailure: () => succeed(id)
-        })
-      )),
-      mapError(err => {
-        if ("__brand" in err) {
-          switch (err.__brand) {
-            case "DuplicateIdError":
-            case "UniquenessConstraintViolatedError":
-              return AutomationNameAlreadyInUseError(err.cause)
+          onFailure: () => this.scriptRepository.remove(automation.id)
+        }),
+        catch_("__brand", {
+          failure: "EditListNotFoundError",
+          onFailure: () => this.scriptRepository.remove(automation.id)
+        }),
+        catch_("__brand", {
+          failure: "UserNotFoundError",
+          onFailure: () => {
+            return pipe(
+              this.scriptRepository.remove(automation.id),
+              flatMap(() => fail(InvalidTokenError("This token references a deleted user")))
+            )
           }
+        }),
+      )),
+      bind("____", ({ automation }) => pipe(
+        this.setAutomationState(token, automation.id, true),
+        catch_("__brand", {
+          failure: "ScriptNotFoundError",
+          onFailure: () => succeed(undefined)
+        }),
+      )),
+      map(({ automation }) => automation.id),
+      mapError(err => {
+        switch (err.__brand) {
+          case "DuplicateIdError":
+          case "UniquenessConstraintViolatedError":
+            return AutomationNameAlreadyInUseError(err.cause)
+          case "NotFoundError":
+            return InvalidTokenError(err.cause)
         }
         return err
       })
     )
   }
 
-  checkAutomationActionsPermissions(token: Token, automation: Automation): Effect<Automation, PermissionError | InvalidTokenError> {
+  checkAutomationActionsPermissions(token: Token, automation: Automation): Effect<void, PermissionError | InvalidTokenError> {
     return pipe(
       forEach(automation.instructions, (instruction) => {
         if (isDeviceActionInstruction(instruction)) {
           return this.permissionsService.canExecuteActionOnDevice(token, instruction.deviceId)
         }
         return succeed(null)
-      }),
-      map(() => automation)
+      })
     )
   }
 
@@ -308,10 +274,25 @@ export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscribe
   }
 
   editAutomation(token: Token, automationId: AutomationId, automation: AutomationBuilder): Effect<void, InvalidTokenError | PermissionError | ScriptNotFoundError | AutomationNameAlreadyInUseError | InvalidScriptError> {
-    return Do.pipe(
-      bind("old", () => this.findAutomationUnsafe(automationId)),
-      bind("_", () => this.removeAutomation(token, automationId)),
-      bind("id", ({ old }) => this.createAutomation(token, automation, old))
+    return pipe(
+      this.editScript(token, automationId, automation),
+      flatMap(() => if_(this.automationsFiberMap.get(automationId) != undefined, {
+        onTrue: () => pipe(
+          Fiber.interrupt(this.automationsFiberMap.get(automationId)!),
+          tap(() => this.automationsFiberMap.delete(automationId))
+        ),
+        onFalse: () => succeed(null)
+      })),
+      flatMap(() => this.setAutomationState(token, automationId, true)),
+      mapError(err => {
+        if ("__brand" in err) {
+          switch (err.__brand) {
+            case "UniquenessConstraintViolatedError":
+              return AutomationNameAlreadyInUseError(err.cause)
+          }
+        }
+        return err
+      })
     )
   }
 
@@ -363,13 +344,10 @@ export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscribe
     )
   }
 
-  private createScript(token: Token, scriptBuilder: ScriptBuilder<Script<ScriptId>>, id: ScriptId | undefined = undefined): Effect<Script<ScriptId>, InvalidTokenError | InvalidScriptError> {
+  private createScript(token: Token, scriptBuilder: ScriptBuilder<Script<ScriptId>>): Effect<Script<ScriptId>, InvalidTokenError | InvalidScriptError> {
     return pipe(
       this.usersService.verifyToken(token),
-      flatMap(() => if_(id != undefined, {
-        onTrue: () => scriptBuilder.buildWithId(id!),
-        onFalse: () => scriptBuilder.build()
-      }))
+      flatMap(() => scriptBuilder.build())
     )
   }
 
