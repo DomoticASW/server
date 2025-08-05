@@ -37,6 +37,10 @@ export function registerPermissionsServiceRoutes(app: express.Express, service: 
       Effect.bind("token", () => deserializeToken(req, usersService)),
       Effect.bind("userDevicePermissions", ({ token }) => service.findAllUserDevicePermissionsOfAnUser(token, Email(req.params.id))),
       Effect.map(({ userDevicePermissions }) => Response(StatusCodes.OK, Array.from(userDevicePermissions))),
+      Effect.catch("__brand", {
+        failure: "UserNotFoundError",
+        onFailure: (err) => Effect.succeed(Response(StatusCodes.NOT_FOUND, err))
+      }),
       handleCommonErrors,
       Effect.runPromise
     )

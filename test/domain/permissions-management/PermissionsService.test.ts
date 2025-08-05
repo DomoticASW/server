@@ -1,4 +1,4 @@
-import { Effect, Iterable, pipe } from "effect"
+import { Effect, pipe } from "effect"
 import { InMemoryRepositoryMock } from "../../InMemoryRepositoryMock.js"
 import { Email, Nickname, PasswordHash, Role, User } from "../../../src/domain/users-management/User.js"
 import { Token } from "../../../src/domain/users-management/Token.js"
@@ -172,6 +172,14 @@ test("findAllUserDevicePermissionsOfAnUser, expect UnauthorizedError ", async ()
             service.findAllUserDevicePermissionsOfAnUser(makeToken(Role.User), Email("user@user.com")),
         )
     ).rejects.toThrow("UnauthorizedError");
+})
+
+test("findAllUserDevicePermissionsOfAnUser, expect UserNotFoundError ", async () => {
+    await expect(
+        Effect.runPromise(
+            service.findAllUserDevicePermissionsOfAnUser(makeToken(Role.User), Email("unkown@user.com")),
+        )
+    ).rejects.toThrow("UserNotFoundError");
 })
 
 test("canExecuteAction on an existing device and user has permissions ", async () => {
