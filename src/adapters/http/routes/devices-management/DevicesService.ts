@@ -1,4 +1,5 @@
 import express from "express";
+import { Server as SocketIOServer } from "socket.io"
 import { DevicesService } from "../../../../ports/devices-management/DevicesService.js";
 import { UsersService } from "../../../../ports/users-management/UsersService.js";
 import { Effect } from "effect";
@@ -7,8 +8,9 @@ import { deserializeToken, BadRequest, handleCommonErrors, sendResponse, Respons
 import { DeviceActionsService } from "../../../../ports/devices-management/DeviceActionsService.js";
 import { DeviceDTO, isDeviceAddress, isUpdateDevicePropertiesBody } from "./DTOs.js";
 import { DeviceId, DevicePropertyId, DeviceActionId } from "../../../../domain/devices-management/Device.js";
+import { startSocketIOPropertyUpdatesSubscriber } from "../../../devices-management/SocketIOPropertyUpdatesSubscriberAdapter.js";
 
-export function registerDevicesServiceRoutes(app: express.Express, service: DevicesService, actionsService: DeviceActionsService, usersService: UsersService) {
+export function registerDevicesServiceRoutes(app: express.Express, server: SocketIOServer, service: DevicesService, actionsService: DeviceActionsService, usersService: UsersService) {
 
     // create
     app.post('/api/devices', async (req, res) => {
@@ -164,7 +166,7 @@ export function registerDevicesServiceRoutes(app: express.Express, service: Devi
             Effect.bind("token", () => deserializeToken(req, usersService)),
             Effect.bind("input", () => {
                 if (req.body && key in req.body) { return Effect.succeed(req.body[key]) }
-                else { return Effect.fail(BadRequest(`Expected body format is: {${key}: ???}`)) }
+                else { return Effect.succeed(undefined) }
             }),
             Effect.bind("_", ({ token, input }) => actionsService.executeAction(token, DeviceId(req.params.id), DeviceActionId(req.params.actionId), input)),
             Effect.map(() => Response(StatusCodes.OK)),
@@ -200,4 +202,6 @@ export function registerDevicesServiceRoutes(app: express.Express, service: Devi
         )
         sendResponse(res, response)
     })
+
+    startSocketIOPropertyUpdatesSubscriber(server.of("/api/devices/property-updates"), service)
 }

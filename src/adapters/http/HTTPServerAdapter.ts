@@ -1,4 +1,6 @@
 import express, { NextFunction, Request, Response } from 'express';
+import http from "http";
+import { Server as SocketIOServer } from 'socket.io';
 import { registerDeviceGroupsServiceRoutes } from './routes/devices-management/DeviceGroupsService.js';
 import { DeviceGroupsService } from '../../ports/devices-management/DeviceGroupsService.js';
 import { UsersService } from '../../ports/users-management/UsersService.js';
@@ -7,7 +9,6 @@ import { registerDevicesServiceRoutes } from './routes/devices-management/Device
 import { DevicesService } from '../../ports/devices-management/DevicesService.js';
 import { DeviceEventsService } from '../../ports/devices-management/DeviceEventsService.js';
 import { registerDeviceEventsServiceRoutes } from './routes/devices-management/DeviceEventsService.js';
-import { createServer, Server } from 'node:http';
 import { NotificationsService } from '../../ports/notifications-management/NotificationsService.js';
 import { registerScriptsServiceRoutes } from './routes/ScriptsService.js';
 import { ScriptsService } from '../../ports/scripts-management/ScriptsService.js';
@@ -39,7 +40,8 @@ export class HTTPServerAdapter {
         { logRequestBodies = false, logRequestUrls = false }: Options = {}
     ) {
         const app = express();
-        const server = createServer(app)
+        const server = http.createServer(app)
+        const socketIOServer = new SocketIOServer(server)
 
         app.use(bodyParser.json())
         app.use(express.static('client/dist'))
@@ -49,12 +51,12 @@ export class HTTPServerAdapter {
             if (logRequestUrls || logRequestBodies) { console.log() }
             next()
         })
-        registerDevicesServiceRoutes(app, devicesService, deviceActionsService, usersService)
+        registerDevicesServiceRoutes(app, socketIOServer, devicesService, deviceActionsService, usersService)
         registerDeviceGroupsServiceRoutes(app, deviceGroupsService, devicesService, usersService)
         registerDeviceEventsServiceRoutes(app, deviceEventsService)
         registerScriptsServiceRoutes(app, scriptsService, usersService)
         registerNotificationsServiceRoutes(app, notificationsService, usersService)
-        registerNotificationsServiceProtocol(server, notificationsService)
+        registerNotificationsServiceProtocol(socketIOServer, notificationsService)
         registerPermissionsServiceRoutes(app, permissionsService, usersService)
         registerUsersServiceRoutes(app, usersService);
 
@@ -64,6 +66,6 @@ export class HTTPServerAdapter {
     }
 }
 
-export function registerNotificationsServiceProtocol(server: Server, notificationsService: NotificationsService) {
+export function registerNotificationsServiceProtocol(server: SocketIOServer, notificationsService: NotificationsService) {
     notificationsService.setupNotificationProtocol(new NotificationProtocolSocketIOAdapter(server))
 }

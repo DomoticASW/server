@@ -6,7 +6,7 @@ import { ExecutionEnvironment, Instruction } from "../../src/domain/scripts-mana
 import { TaskId, AutomationId, Automation, ScriptId, Task } from "../../src/domain/scripts-management/Script.js";
 import { AutomationBuilder, TaskBuilder } from "../../src/domain/scripts-management/ScriptBuilder.js";
 import { Token } from "../../src/domain/users-management/Token.js";
-import { Email, Nickname, PasswordHash, Role, User } from "../../src/domain/users-management/User.js";
+import { Email, Nickname, Role, User } from "../../src/domain/users-management/User.js";
 import { DevicesService, DevicePropertyUpdatesSubscriber } from "../../src/ports/devices-management/DevicesService.js";
 import { DeviceStatusesService, DeviceStatusChangesSubscriber } from "../../src/ports/devices-management/DeviceStatusesService.js";
 import { DeviceNotFoundError, InvalidInputError, DeviceActionError, DeviceUnreachableError, DeviceActionNotFound, DevicePropertyNotFound, DeviceAlreadyRegisteredError, NotDeviceEventError } from "../../src/ports/devices-management/Errors.js";

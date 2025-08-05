@@ -3,7 +3,7 @@ import { Effect } from "effect";
 import { StatusCodes } from "http-status-codes";
 import { UsersService } from "../../../ports/users-management/UsersService.js";
 import { deserializeToken, BadRequest, handleCommonErrors, sendResponse, Response } from "./HttpUtils.js";
-import { Email, Nickname, PasswordHash } from "../../../domain/users-management/User.js";
+import { ClearTextPassword, Email, Nickname } from "../../../domain/users-management/User.js";
 
 export function registerUsersServiceRoutes(app: express.Application, service: UsersService) {
 
@@ -49,7 +49,7 @@ export function registerUsersServiceRoutes(app: express.Application, service: Us
             }),
             Effect.bind("nickname", ({ nicknameString }) => Effect.succeed(Nickname(nicknameString))),
             Effect.bind("email", ({ emailString }) => Effect.succeed(Email(emailString))),
-            Effect.bind("password", ({ passwordString }) => Effect.succeed(PasswordHash(passwordString))),
+            Effect.bind("password", ({ passwordString }) => Effect.succeed(ClearTextPassword(passwordString))),
             Effect.bind("_", ({ nickname, email, password }) => service.publishRegistrationRequest(nickname, email, password)),
             Effect.map(() => Response(StatusCodes.CREATED)),
             Effect.catch("__brand", {
@@ -118,24 +118,23 @@ export function registerUsersServiceRoutes(app: express.Application, service: Us
     app.patch('/api/users', async (req, res) => {
         const response = await Effect.Do.pipe(
             Effect.bind("token", () => deserializeToken(req, service)),
-            Effect.bind("nicknameVal", () => {
-                if (req.body && "nickname" in req.body) { return Effect.succeed(req.body["nickname"]) }
-                else { return Effect.fail(BadRequest(`Expected body format is: {nickname: ???}`)) }
+            Effect.bind("nickname", () => {
+            if (req.body && "nickname" in req.body) {
+                const raw = req.body["nickname"];
+                if (typeof raw === "string") return Effect.succeed(Nickname(raw));
+                return Effect.fail(BadRequest(`Expected nickname of type string but found ${typeof raw}`));
+            }
+            return Effect.succeed(undefined);
             }),
-            Effect.bind("nicknameString", ({ nicknameVal }) => {
-                if (typeof nicknameVal == "string") { return Effect.succeed(nicknameVal) }
-                else { return Effect.fail(BadRequest(`Expected nickname of type string but found ${typeof nicknameVal}`)) }
+
+            Effect.bind("password", () => {
+            if (req.body && "password" in req.body) {
+                const raw = req.body["password"];
+                if (typeof raw === "string") return Effect.succeed(ClearTextPassword(raw));
+                return Effect.fail(BadRequest(`Expected password of type string but found ${typeof raw}`));
+            }
+            return Effect.succeed(undefined);
             }),
-            Effect.bind("passwordVal", () => {
-                if (req.body && "password" in req.body) { return Effect.succeed(req.body["password"]) }
-                else { return Effect.fail(BadRequest(`Expected body format is: {password: ???}`)) }
-            }),
-            Effect.bind("passwordString", ({ passwordVal }) => {
-                if (typeof passwordVal == "string") { return Effect.succeed(passwordVal) }
-                else { return Effect.fail(BadRequest(`Expected password of type string but found ${typeof passwordVal}`)) }
-            }),
-            Effect.bind("nickname", ({ nicknameString }) => Effect.succeed(Nickname(nicknameString))),
-            Effect.bind("password", ({ passwordString }) => Effect.succeed(PasswordHash(passwordString))),
             Effect.bind("_", ({ token, nickname, password }) => service.updateUserData(token, nickname, password)),
             Effect.map(() => Response(StatusCodes.OK)),
             Effect.catch("__brand", {
@@ -197,7 +196,7 @@ export function registerUsersServiceRoutes(app: express.Application, service: Us
                 if (typeof passwordVal == "string") { return Effect.succeed(passwordVal) }
                 else { return Effect.fail(BadRequest(`Expected ${key} of type string but found ${typeof passwordVal}`)) }
             }),
-            Effect.bind("token", ({ emailString, passwordString }) => service.login(Email(emailString), PasswordHash(passwordString))),
+            Effect.bind("token", ({ emailString, passwordString }) => service.login(Email(emailString), ClearTextPassword(passwordString))),
             Effect.map(({ token }) => Response(StatusCodes.OK, token)),
             Effect.catch("__brand", {
                 failure: "InvalidCredentialsError",

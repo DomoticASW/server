@@ -1,13 +1,12 @@
-import { Server } from 'node:http';
-import { Server as IO, Socket } from 'socket.io';
+import { Server as SocketIOServer, Socket } from 'socket.io';
 import { NotificationProtocol } from '../../ports/notifications-management/NotificationProtocol.js';
 import { Email } from '../../domain/users-management/User.js';
 
 export class NotificationProtocolSocketIOAdapter implements NotificationProtocol {
-  private io: IO
+  private io: SocketIOServer
 
-  constructor(server: Server,) {
-    this.io = new IO(server)
+  constructor(server: SocketIOServer) {
+    this.io = server
     this.setupSocketHandling()
   }
 
