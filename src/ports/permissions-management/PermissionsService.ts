@@ -15,6 +15,7 @@ import { TaskLists } from "../../domain/permissions-management/TaskLists.js";
 export interface PermissionsService {
   registerScriptService(scriptService: ScriptsService): void;
   findUserDevicePermission(token: Token, email: Email, deviceId: DeviceId): Effect<UserDevicePermission, TokenError | UserDevicePermissionNotFoundError>;
+  findAllUserDevicePermissionsOfAnUser(token: Token, email: Email): Effect<Iterable<UserDevicePermission>, UserNotFoundError | TokenError>;
   getAllUserDevicePermissions(token: Token): Effect<Iterable<UserDevicePermission>, TokenError>;
   addUserDevicePermission(token: Token, email: Email, devideId: DeviceId): Effect<void, UserNotFoundError | DeviceNotFoundError | TokenError>;
   removeUserDevicePermission(token: Token, email: Email, deviceId: DeviceId): Effect<void, UserNotFoundError | DeviceNotFoundError | TokenError>;

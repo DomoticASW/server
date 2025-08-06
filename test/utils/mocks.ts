@@ -161,6 +161,9 @@ export function PermissionsServiceSpy(userToken: Token = TokenMock("email"), tes
         findUserDevicePermission: function (token: Token, email: Email, deviceId: DeviceId): Effect<UserDevicePermission, TokenError | UserDevicePermissionNotFoundError> {
           throw new Error("Function not implemented.");
         },
+        findAllUserDevicePermissionsOfAnUser: function (token: Token): Effect<Iterable<UserDevicePermission>, TokenError> {
+          throw new Error("Function not implemented.");
+        },
         getAllUserDevicePermissions: function (token: Token): Effect<Iterable<UserDevicePermission>, TokenError> {
           throw new Error("Function not implemented.");
         },

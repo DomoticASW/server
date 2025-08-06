@@ -32,6 +32,22 @@ export function registerPermissionsServiceRoutes(app: express.Express, service: 
   });
 
   // get all user device permissions
+  app.get('/api/permissions/user-device-all/:id', async (req, res) => {
+    const response =  await Effect.Do.pipe(
+      Effect.bind("token", () => deserializeToken(req, usersService)),
+      Effect.bind("userDevicePermissions", ({ token }) => service.findAllUserDevicePermissionsOfAnUser(token, Email(req.params.id))),
+      Effect.map(({ userDevicePermissions }) => Response(StatusCodes.OK, Array.from(userDevicePermissions))),
+      Effect.catch("__brand", {
+        failure: "UserNotFoundError",
+        onFailure: (err) => Effect.succeed(Response(StatusCodes.NOT_FOUND, err))
+      }),
+      handleCommonErrors,
+      Effect.runPromise
+    )
+    sendResponse(res, response)
+  });
+
+  // get all user device permissions
   app.get('/api/permissions/user-device', async (req, res) => {
     const response =  await Effect.Do.pipe(
       Effect.bind("token", () => deserializeToken(req, usersService)),
