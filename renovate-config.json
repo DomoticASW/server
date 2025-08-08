@@ -5,7 +5,7 @@
     "repositories": [
         "DomoticASW/server"
     ],
-    "branchPrefix": "fix/",
+    "branchPrefix": "renovate/",
     "gitAuthor": "Renovate Bot <bot@renovateapp.com>",
     "onboarding": false,
     "platform": "github"
