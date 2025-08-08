@@ -1,4 +1,4 @@
-import { Effect, succeed, fail, tryPromise, flatMap, timeout, bind, catchIf, Do, all, if as if_ } from "effect/Effect";
+import { Effect, succeed, fail, tryPromise, flatMap, timeout, bind, catchIf, Do, all, if as if_, map } from "effect/Effect";
 import { DeviceCommunicationProtocol } from "../../ports/devices-management/DeviceCommunicationProtocol.js";
 import { CommunicationError, DeviceUnreachableError, DeviceActionError } from "../../ports/devices-management/Errors.js";
 import { Device, DeviceAction, DeviceActionId, DeviceAddress, DeviceEvent, DeviceId, DeviceProperty, DevicePropertyId, DeviceStatus } from "../../domain/devices-management/Device.js";
@@ -6,6 +6,7 @@ import { pipe } from "effect";
 import { millis } from "effect/Duration";
 import { TimeoutException } from "effect/Cause";
 import { DoubleRange, Enum, IntRange, NoneBoolean, NoneColor, NoneDouble, NoneInt, NoneString, NoneVoid, TypeConstraints } from "../../domain/devices-management/Types.js";
+
 
 export class DeviceCommunicationProtocolHttpAdapter implements DeviceCommunicationProtocol {
 
@@ -26,12 +27,9 @@ export class DeviceCommunicationProtocolHttpAdapter implements DeviceCommunicati
       flatMap(({ response }) =>
         if_(response.ok, {
           onTrue: () => succeed(DeviceStatus.Online),
-          onFalse: () => Do.pipe(
-            bind("body", () => tryPromise({
-              try: () => response.json(),
-              catch: (e) => CommunicationError((e as Error).message)
-            })),
-            flatMap(({ body }) => fail(CommunicationError("While checking if device is online it responded but with an error\n" + body)))
+          onFalse: () => pipe(
+            decodeDeviceError(response),
+            flatMap((error) => fail(CommunicationError(`While checking if device is online it responded but with an error:\n${error?.cause ?? response.statusText}`)))
           )
         })
       ),
@@ -55,12 +53,9 @@ export class DeviceCommunicationProtocolHttpAdapter implements DeviceCommunicati
       bind("_", ({ response }) =>
         if_(response.ok, {
           onTrue: () => succeed(null),
-          onFalse: () => Do.pipe(
-            bind("body", () => tryPromise({
-              try: () => response.json(),
-              catch: (e) => CommunicationError((e as Error).message)
-            })),
-            flatMap(({ body }) => fail(DeviceActionError(body)))
+          onFalse: () => pipe(
+            decodeDeviceError(response),
+            flatMap((error) => fail(DeviceActionError(error?.cause)))
           )
         })
       )
@@ -157,11 +152,16 @@ export class DeviceCommunicationProtocolHttpAdapter implements DeviceCommunicati
       })),
       timeout(millis(this.timeoutToReachDeviceMs)),
       catchIf(e => e instanceof TimeoutException, () => fail(DeviceUnreachableError())),
-      bind("body", ({ response }) => tryPromise({
-        try: () => response.json(),
-        catch: (e) => CommunicationError((e as Error).message)
+      bind("body", ({ response }) => if_(response.ok, {
+        onTrue: () => tryPromise({
+          try: () => response.json(),
+          catch: (e) => CommunicationError((e as Error).message)
+        }),
+        onFalse: () => pipe(
+          decodeDeviceError(response),
+          flatMap((error) => fail(CommunicationError(`Something went wrong while trying to register the device:\n${error?.cause ?? response.statusText}`)))
+        )
       })),
-      bind("_", ({ response, body }) => response.ok ? succeed(null) : fail(CommunicationError(body))),
       bind("d", ({ body }) => isDeviceRegistration(body) ? succeed(body) : fail(CommunicationError("Received device description format was wrong"))),
       flatMap(({ d }) => {
         const actions = d.actions.map(a => DeviceAction(DeviceActionId(a.id), a.name, decodeTypeConstraint(a.inputTypeConstraints), a.description))
@@ -246,6 +246,11 @@ function isNoneTypeConstraint(o: unknown): o is NoneRegistration {
     "type" in o && typeof o.type == "string" && ["String", "Int", "Double", "Boolean", "Color", "Void"].indexOf(o.type) != -1
 }
 
+function isDeviceError(o: unknown): o is DeviceError {
+  return o != undefined && typeof o == "object" &&
+    "cause" in o && typeof o.cause === "string"
+}
+
 function reduceOrDefault<T>(array: Array<T>, reducer: (a: T, b: T) => T, def: T) {
   return array.length == 0 ? def : array.reduce(reducer)
 }
@@ -268,6 +273,25 @@ function decodeTypeConstraint(tc: TypeConstraintsRegistration): TypeConstraints<
     }
   }
   throw new Error("A new type of type constraint was added and the decode function was not updated")
+}
+
+function decodeDeviceError(res: Response): Effect<DeviceError | undefined, CommunicationError> {
+  return Do.pipe(
+    bind("body", () => tryPromise({
+      try: () => res.json(),
+      catch: (e) => CommunicationError((e as Error).message)
+    })),
+    bind("error", ({ body }) => {
+      if (body == null) {
+        return succeed(undefined)
+      } else if (isDeviceError(body)) {
+        return succeed(body)
+      } else {
+        return fail(CommunicationError(`The device responded with an error but it was malformed:\n${body}`))
+      }
+    }),
+    map(({ error }) => error)
+  )
 }
 
 
@@ -315,4 +339,8 @@ interface DeviceActionRegistration {
   name: string
   description: string | undefined
   inputTypeConstraints: TypeConstraintsRegistration
+}
+
+interface DeviceError {
+  cause: string
 }

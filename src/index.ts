@@ -14,7 +14,6 @@ import { NotificationsService } from "./domain/notifications-management/Notifica
 import { ScriptsServiceImpl } from "./domain/scripts-management/ScriptsServiceImpl.js";
 import { ScriptRepositoryMongoAdapter } from "./adapters/scripts-management/ScriptRepositoryMongoAdapter.js";
 import { DeviceCommunicationProtocol } from "./ports/devices-management/DeviceCommunicationProtocol.js";
-import { DeviceFactoryImpl } from "./domain/devices-management/DeviceFactoryImpl.js";
 import { DeviceCommunicationProtocolHttpAdapter } from "./adapters/devices-management/DeviceCommunicationProtocolHttpAdapter.js";
 import { DeviceStatusesServiceImpl } from "./domain/devices-management/DeviceStatusesServiceImpl.js";
 import { DeviceDiscovererUDPAdapter } from "./adapters/devices-management/DeviceDiscovererUDPAdapter.js";
@@ -48,10 +47,9 @@ const usersService: UsersService = new UsersServiceImpl(userRepository, registra
 
 const deviceCommunicationProtocol: DeviceCommunicationProtocol = new DeviceCommunicationProtocolHttpAdapter(serverPort)
 
-const deviceFactory = new DeviceFactoryImpl(deviceCommunicationProtocol)
 const deviceRepository = new DeviceRepositoryMongoAdapter(mongoDBConnection)
 const deviceDiscoverer = new DeviceDiscovererUDPAdapter(parsePortEnvVar("DISCOVERY_PORT", 30000), 5, { logAnnounces: parseBooleanEnvVar("LOG_ANNOUNCES") })
-const devicesService = new DevicesServiceImpl(deviceRepository, deviceFactory, usersService, deviceDiscoverer)
+const devicesService = new DevicesServiceImpl(deviceRepository, deviceCommunicationProtocol, usersService, deviceDiscoverer)
 
 const userDevicePermissionRepo = new UserDevicePermissionRepositoryMongoAdapter(mongoDBConnection)
 const taskListsRepo = new TaskListsRepositoryMongoAdapter(mongoDBConnection)
