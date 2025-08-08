@@ -1,6 +1,6 @@
 import { Effect, succeed, fail } from "effect/Effect";
 import { DeviceActionId, DeviceId, DevicePropertyId } from "../devices-management/Device.js";
-import { Condition, ConditionOperator, ConstantInstruction, Instruction, isIfElseInstruction, isIfInstruction, isStartTaskInstruction } from "./Instruction.js";
+import { Condition, ConditionOperator, ConstantInstruction, Instruction } from "./Instruction.js";
 import { ConstantRef, ElseNodeRef, NodeRef, RootNodeRef, ThenNodeRef } from "./Refs.js";
 import { Automation, AutomationId, ScriptId, Task, TaskId } from "./Script.js";
 import { Email } from "../users-management/User.js";
@@ -196,24 +196,8 @@ class TaskBuilderImpl extends ScriptBuilderImpl<Task> {
     return this.buildWithId(TaskId(uuid.v4()))
   }
 
-  private checkStartTaskRecursion(instructions: Instruction[], taskId: TaskId) {
-    instructions.forEach(instruction => {
-      if (isIfInstruction(instruction)) {
-        this.checkStartTaskRecursion(instruction.then, taskId)
-      }
-      if (isIfElseInstruction(instruction)) {
-        this.checkStartTaskRecursion(instruction.else, taskId)
-      }
-      if (isStartTaskInstruction(instruction) && instruction.taskId === taskId) {
-        this.errors.push(InvalidScriptError("Cannot refer to the same task from a start task instruction"))
-      }
-    })
-  }
-
   buildWithId(id: TaskId): Effect<Task, InvalidScriptError> {
     const instructions: Array<Instruction> = this.buildInstructions();
-
-    this.checkStartTaskRecursion(instructions, id)
 
     if (this.name.length === 0) {
       this.errors.push(InvalidScriptError("The name of the task cannot be empty"))
