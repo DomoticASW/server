@@ -12,7 +12,7 @@ export function registerUsersServiceRoutes(app: express.Application, service: Us
         const response = await Effect.Do.pipe(
             Effect.bind("token", () => deserializeToken(req, service)),
             Effect.bind("requests", ({ token }) => service.getAllRegistrationRequests(token)),
-            Effect.map(({ requests }) => Response(StatusCodes.OK, Array.from(requests))),
+            Effect.map(({ requests }) => Response(StatusCodes.OK, Array.from(requests).map(({ passwordHash, ...rest }) => rest))),
             handleCommonErrors,
             Effect.runPromise
         )
