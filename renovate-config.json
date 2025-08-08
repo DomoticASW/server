@@ -5,5 +5,6 @@
     "branchPrefix": "fix/",
     "gitAuthor": "Renovate Bot <bot@renovateapp.com>",
     "onboarding": false,
-    "platform": "github"
+    "platform": "github",
+    "autodiscover": true
 }
