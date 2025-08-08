@@ -2,9 +2,11 @@
     "baseBranchPatterns": [
         "main"
     ],
+    "repositories": [
+        "DomoticASW/server"
+    ],
     "branchPrefix": "fix/",
     "gitAuthor": "Renovate Bot <bot@renovateapp.com>",
     "onboarding": false,
-    "platform": "github",
-    "autodiscover": true
+    "platform": "github"
 }
