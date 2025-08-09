@@ -15,3 +15,6 @@ jobs:
         with:
           configurationFile: renovate-config.json
           token: ${{ secrets.RENOVATE_TOKEN }}
+        env:
+          RENOVATE_DRY_RUN: full
+          LOG_LEVEL: debug
