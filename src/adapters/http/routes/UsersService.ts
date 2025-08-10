@@ -167,13 +167,13 @@ export function registerUsersServiceRoutes(app: express.Application, service: Us
             Effect.bind("token", () => deserializeToken(req, service)),
             Effect.bind("user", ({ token }) => service.getUserData(token)),
             Effect.map(({ user }) => {
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
-            const { passwordHash, ...rest } = user;
-            return Response(StatusCodes.OK, rest);
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                const { passwordHash, ...rest } = user;
+                return Response(StatusCodes.OK, rest);
             }),
             Effect.catch("__brand", {
-            failure: "UserNotFoundError",
-            onFailure: (err) => Effect.succeed(Response(StatusCodes.NOT_FOUND, err))
+                failure: "UserNotFoundError",
+                onFailure: (err) => Effect.succeed(Response(StatusCodes.NOT_FOUND, err))
             }),
             handleCommonErrors,
             Effect.runPromise
