@@ -153,7 +153,8 @@ export function registerUsersServiceRoutes(app: express.Application, service: Us
         const response = await Effect.Do.pipe(
             Effect.bind("token", () => deserializeToken(req, service)),
             Effect.bind("users", ({ token }) => service.getAllUsers(token)),
-            Effect.map(({ users }) => Response(StatusCodes.OK, Array.from(users))),
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            Effect.map(({ users }) => Response(StatusCodes.OK, Array.from(users).map(({ passwordHash, ...rest }) => rest))),
             handleCommonErrors,
             Effect.runPromise
         )
@@ -165,12 +166,15 @@ export function registerUsersServiceRoutes(app: express.Application, service: Us
         const response = await Effect.Do.pipe(
             Effect.bind("token", () => deserializeToken(req, service)),
             Effect.bind("user", ({ token }) => service.getUserData(token)),
-            Effect.map(({ user }) => Response(StatusCodes.OK, user)),
-            Effect.catch("__brand", {
-                failure: "UserNotFoundError",
-                onFailure: (err) => Effect.succeed(Response(StatusCodes.NOT_FOUND, err))
+            Effect.map(({ user }) => {
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            const { passwordHash, ...rest } = user;
+            return Response(StatusCodes.OK, rest);
             }),
-
+            Effect.catch("__brand", {
+            failure: "UserNotFoundError",
+            onFailure: (err) => Effect.succeed(Response(StatusCodes.NOT_FOUND, err))
+            }),
             handleCommonErrors,
             Effect.runPromise
         )
