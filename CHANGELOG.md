@@ -1,3 +1,28 @@
+## [1.0.1](https://github.com/DomoticASW/server/compare/1.0.0...1.0.1) (2025-08-14)
+
+### Dependency updates
+
+* **deps:** update dependency globals to v15.15.0 ([#93](https://github.com/DomoticASW/server/issues/93)) ([624a5ee](https://github.com/DomoticASW/server/commit/624a5ee2683c67755c0b242e62540fa499a0d2a1))
+* **deps:** update dependency ts-jest to v29.4.1 ([#94](https://github.com/DomoticASW/server/issues/94)) ([b3574c9](https://github.com/DomoticASW/server/commit/b3574c9b2b8c7b922e3b00ad0a5b9013fc520798))
+* **deps:** update dependency typescript to v5.9.2 ([#99](https://github.com/DomoticASW/server/issues/99)) ([4ab764f](https://github.com/DomoticASW/server/commit/4ab764f7816b13968063b7e83557623205998188))
+* **deps:** update dependency typescript-eslint to v8.39.1 ([#96](https://github.com/DomoticASW/server/issues/96)) ([f3ca94f](https://github.com/DomoticASW/server/commit/f3ca94f685d7e0d087b7aade369358d7e8788069))
+* **deps:** update eslint monorepo to v9.33.0 ([#97](https://github.com/DomoticASW/server/issues/97)) ([a667e2f](https://github.com/DomoticASW/server/commit/a667e2f15c0573aa9b7b1d8a18bc552ea873de31))
+
+### Bug Fixes
+
+* **deps:** update commitlint monorepo to v19.8.1 ([#98](https://github.com/DomoticASW/server/issues/98)) ([9b82a24](https://github.com/DomoticASW/server/commit/9b82a24db77c090bfec9749d51d1602ff15146f9))
+
+### Build and continuous integration
+
+* **deps:** add renovate.json ([8939d49](https://github.com/DomoticASW/server/commit/8939d4937c6844d9e229e0afe144887bc107fcde))
+* **renovate:** automerge for non major updates ([18a1d36](https://github.com/DomoticASW/server/commit/18a1d36d6eb0bfe7ac7c7aa26968735bc31e6747))
+* setup renovate [skip ci] ([7a4954a](https://github.com/DomoticASW/server/commit/7a4954a839c091d4db1cc26ae3d1c185ec8b61d4))
+
+### General maintenance
+
+* prepare for renovate Github App [skip ci] ([fa17dc8](https://github.com/DomoticASW/server/commit/fa17dc83824b2d2b79a0622506eb9f0d03eea4ec))
+* remove old renovate gh-action and config ([e86fdb8](https://github.com/DomoticASW/server/commit/e86fdb862f35e4d87be8b1bbd0768e0a362ab33b))
+
 ## [1.0.0](https://github.com/DomoticASW/server/compare/0.3.0...1.0.0) (2025-07-15)
 
 ### ⚠ BREAKING CHANGES
