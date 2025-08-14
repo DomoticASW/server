@@ -1,3 +1,9 @@
+## [1.0.2](https://github.com/DomoticASW/server/compare/1.0.1...1.0.2) (2025-08-14)
+
+### Bug Fixes
+
+* **deps:** update dependency mongoose to v8.17.1 ([#100](https://github.com/DomoticASW/server/issues/100)) ([71fd23a](https://github.com/DomoticASW/server/commit/71fd23aeda149ba4148c0df31be7bc782bd92bba))
+
 ## [1.0.1](https://github.com/DomoticASW/server/compare/1.0.0...1.0.1) (2025-08-14)
 
 ### Dependency updates
