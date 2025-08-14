@@ -65,7 +65,6 @@ export class PermissionsServiceImpl implements PermissionsService {
             userDevicePermissionList.push(userDevicePermission)
           }
         }
-        console.log(userDevicePermissionList)
         return Effect.succeed(userDevicePermissionList);
       })
     );

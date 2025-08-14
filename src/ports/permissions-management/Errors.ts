@@ -19,9 +19,9 @@ export function EditListNotFoundError(cause?: string): EditListNotFoundError {
 }
 
 export function UserDevicePermissionNotFoundError(cause?: string): UserDevicePermissionNotFoundError {
-  return { message: "User device permission not found", cause: cause, __brand: "UserDevicePermissionNotFoundError" }
+  return { message: "This user-device permission rule was not found", cause: cause, __brand: "UserDevicePermissionNotFoundError" }
 }
 
 export function TaskListsNotFoundError(cause?: string): TaskListsNotFoundError {
-  return { message: "Task lists not found", cause: cause, __brand: "TaskListsNotFoundError" }
+  return { message: "Task lists (editlist, whitelist and blacklist) was not found", cause: cause, __brand: "TaskListsNotFoundError" }
 }

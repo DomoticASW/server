@@ -190,7 +190,7 @@ export class UsersServiceImpl implements UsersService {
                         Eff.orDie,
                         Eff.flatMap(result => {
                             if (!result) {
-                                return Eff.fail(InvalidCredentialsError("Invalid credentials"));
+                                return Eff.fail(InvalidCredentialsError());
                             }
                             const source = jwt.sign({ userEmail: user.email, role: user.role }, this.secret, { expiresIn: '1h' });
                             return Eff.succeed(Token(user.email, user.role, source));
@@ -205,7 +205,7 @@ export class UsersServiceImpl implements UsersService {
                                 return Eff.fail(InvalidCredentialsError("You have to wait for admin approval"));
                             },
                             onFailure: () => {
-                                return Eff.fail(InvalidCredentialsError("Invalid credentials"));
+                                return Eff.fail(InvalidCredentialsError());
                             }
                         }),
                         Eff.flatten
