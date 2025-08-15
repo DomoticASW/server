@@ -1,3 +1,13 @@
+## [1.0.3](https://github.com/DomoticASW/server/compare/1.0.2...1.0.3) (2025-08-15)
+
+### Bug Fixes
+
+* **deps:** update dependency effect to v3.17.7 ([#104](https://github.com/DomoticASW/server/issues/104)) ([6a59243](https://github.com/DomoticASW/server/commit/6a592430d305af0d50202b69375d2cd088557a82))
+
+### Build and continuous integration
+
+* **renovate:** more specific automerge settings ([f9d244b](https://github.com/DomoticASW/server/commit/f9d244b236ad464fc7a994cab9d988ef2237e9bd))
+
 ## [1.0.2](https://github.com/DomoticASW/server/compare/1.0.1...1.0.2) (2025-08-14)
 
 ### Bug Fixes
