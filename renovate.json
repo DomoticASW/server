@@ -9,8 +9,11 @@
         "minor",
         "patch",
         "pin",
-        "digest"
+        "pinDigest",
+        "digest",
+        "lockFileMaintenance"
       ],
+      "matchCurrentVersion": "!/^0/",
       "automerge": true
     }
   ]
