@@ -1,3 +1,9 @@
+## [1.0.4](https://github.com/DomoticASW/server/compare/1.0.3...1.0.4) (2025-08-15)
+
+### Bug Fixes
+
+* **deps:** update dependency dotenv to v16.6.1 ([#105](https://github.com/DomoticASW/server/issues/105)) ([849bbf3](https://github.com/DomoticASW/server/commit/849bbf3198e4efd2087b0a8d7ac8882607045daf))
+
 ## [1.0.3](https://github.com/DomoticASW/server/compare/1.0.2...1.0.3) (2025-08-15)
 
 ### Bug Fixes
