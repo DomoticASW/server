@@ -1,3 +1,16 @@
+## [1.0.5](https://github.com/DomoticASW/server/compare/1.0.4...1.0.5) (2025-08-16)
+
+### Dependency updates
+
+* **deps:** update dependency @types/express to v4.17.23 ([#106](https://github.com/DomoticASW/server/issues/106)) ([e31aaaf](https://github.com/DomoticASW/server/commit/e31aaaf4ec6bd50becc59e0169715c23162af36a))
+* **deps:** update dependency @types/jsonwebtoken to v9.0.10 ([#110](https://github.com/DomoticASW/server/issues/110)) ([ca64c47](https://github.com/DomoticASW/server/commit/ca64c47c9ad5b094ce4b7d46400679eb0c592126))
+* **deps:** update dependency nodemon to v3.1.10 ([#107](https://github.com/DomoticASW/server/issues/107)) ([746a218](https://github.com/DomoticASW/server/commit/746a2184ee7f11d84f34739058fadb2fc4f78188))
+* **deps:** update dependency semantic-release-preconfigured-conventional-commits to v1.1.140 ([#108](https://github.com/DomoticASW/server/issues/108)) ([8740307](https://github.com/DomoticASW/server/commit/8740307b8a037536112ea627cb41ad5f4fdf451c))
+
+### Bug Fixes
+
+* **deps:** update dependency @types/mongoose to v5.11.97 ([#109](https://github.com/DomoticASW/server/issues/109)) ([3f43f74](https://github.com/DomoticASW/server/commit/3f43f74c9e57990a2d502bc4fa28ce31afc700c1))
+
 ## [1.0.4](https://github.com/DomoticASW/server/compare/1.0.3...1.0.4) (2025-08-15)
 
 ### Bug Fixes
