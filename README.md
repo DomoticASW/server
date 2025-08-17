@@ -1,5 +1,11 @@
 # DomoticASW server
 
+## Setup
+
+```sh
+./setup.sh
+```
+
 ## Configuration
 
 The following environment variables can be used to configure the server (the ones that are mandatory in a production environment are marked with a \*):
