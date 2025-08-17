@@ -18,9 +18,7 @@ The following environment variables can be used to configure the server (the one
 
 1. Compiles the code
 1. Runs [`build-client`](#build-client)
-1. Starts a production docker compose environment (just MongoDB and a named volume for it)
 1. It runs the server
-1. Stops the docker compose environment (keeping the named volume for data persistency)
 
 ### `start`
 

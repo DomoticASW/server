@@ -1,9 +1,0 @@
-name: server-production
-
-services:
-  mongo:
-    volumes:
-      - mongo-data:/data/db
-
-volumes:
-  mongo-data:
