@@ -1,14 +1,22 @@
 # DomoticASW server
 
+## Setup
+
+```sh
+./setup.sh
+```
+
 ## Configuration
 
 The following environment variables can be used to configure the server (the ones that are mandatory in a production environment are marked with a \*):
 
-| Variable       | Default | Explanation                                | Format               |
-| -------------- | ------- | ------------------------------------------ | -------------------- |
-| SERVER_PORT    | 3000    | The port to which bind the web server      | Any valid port       |
-| DISCOVERY_PORT | 30000   | The port to listen to for device announces | Any valid port       |
-| \*JWT_SECRET   | secret  | The secret used to sign JWTs               | Any non empty string |
+| Variable       | Default   | Explanation                                | Format                |
+| -------------- | --------- | ------------------------------------------ | --------------------- |
+| SERVER_PORT    | 3000      | The port to which bind the web server      | Any valid port        |
+| DISCOVERY_PORT | 30000     | The port to listen to for device announces | Any valid port        |
+| MONGO_HOST     | localhost | The host on which to find mongodb          | Any valid host string |
+| MONGO_PORT     | 27017     | The port on which to find mongodb          | Any valid port        |
+| \*JWT_SECRET   | secret    | The secret used to sign JWTs               | Any non empty string  |
 
 ## Npm scripts reference
 
@@ -16,9 +24,7 @@ The following environment variables can be used to configure the server (the one
 
 1. Compiles the code
 1. Runs [`build-client`](#build-client)
-1. Starts a production docker compose environment (just MongoDB and a named volume for it)
 1. It runs the server
-1. Stops the docker compose environment (keeping the named volume for data persistency)
 
 ### `start`
 
