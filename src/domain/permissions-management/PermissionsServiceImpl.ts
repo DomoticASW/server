@@ -64,8 +64,7 @@ export class PermissionsServiceImpl implements PermissionsService {
           if(userDevicePermission.email == email) {
             userDevicePermissionList.push(userDevicePermission)
           }
-        }
-        console.log(userDevicePermissionList)
+        } 
         return Effect.succeed(userDevicePermissionList);
       })
     );

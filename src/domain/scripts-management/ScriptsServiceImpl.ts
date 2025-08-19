@@ -21,7 +21,8 @@ import { DeviceActionsService } from "../../ports/devices-management/DeviceActio
 import { isDeviceActionInstruction } from "./Instruction.js";
 
 export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscriber {
-  private automationsFiberMap: Map<AutomationId, Fiber.RuntimeFiber<undefined, ScriptError | NotFoundError>> = new Map()
+  private automationsFiberMap: Map<AutomationId, (Fiber.RuntimeFiber<undefined, ScriptError | NotFoundError>)> = new Map()
+  private startedAutomations: Map<AutomationId, boolean> = new Map()
 
   constructor(
     private scriptRepository: ScriptRepository,
@@ -251,13 +252,16 @@ export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscribe
     if (automation.trigger instanceof PeriodTriggerImpl) {
       const periodTrigger = automation.trigger as PeriodTrigger
 
-      runFork(pipe(
-        this.waitToStart(periodTrigger),
-        flatMap(() => forkDaemon(this.periodLoop(automation, periodTrigger))),
-        tap(fiber =>
-          sync(() => this.automationsFiberMap.set(automation.id, fiber))
-        )
-      ))
+      if (!this.startedAutomations.get(automation.id)) {
+        runFork(pipe(
+          succeed(this.startedAutomations.set(automation.id, true)),
+          map(() => this.waitToStart(periodTrigger)),
+          flatMap(() => forkDaemon(this.periodLoop(automation, periodTrigger))),
+          tap(fiber =>
+            sync(() => this.automationsFiberMap.set(automation.id, fiber))
+          )
+        ))
+      }
     }
   }
 
@@ -291,7 +295,8 @@ export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscribe
       bind("__", () => if_(this.automationsFiberMap.get(automationId) != undefined, {
         onTrue: () => pipe(
           Fiber.interrupt(this.automationsFiberMap.get(automationId)!),
-          tap(() => this.automationsFiberMap.delete(automationId))
+          map(() => this.automationsFiberMap.delete(automationId)),
+          map(() => this.startedAutomations.set(automationId, false)),
         ),
         onFalse: () => succeed(null)
       })),
@@ -310,17 +315,21 @@ export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscribe
     return pipe(
       this.findAutomation(token, automationId),
       flatMap(automation => pipe(
-        sync(() => automation.enabled = enable),
-        flatMap(() => if_(enable, {
-          onTrue: () => succeed(this.startAutomationHandler(automation)),
+        if_(enable, {
+          onTrue: () => pipe(
+            succeed(this.startAutomationHandler(automation)),
+            map(() => automation.enabled = enable)
+          ),
           onFalse: () =>
-            if_(this.automationsFiberMap.get(automationId) != undefined, {
+            if_(this.automationsFiberMap.get(automationId) !== undefined, {
               onTrue: () => pipe(
-                Fiber.interrupt(this.automationsFiberMap.get(automationId)!)
+                Fiber.interrupt(this.automationsFiberMap.get(automationId)!),
+                map(() => this.startedAutomations.set(automationId, false)),
+                map(() => automation.enabled = enable),
               ),
               onFalse: () => succeed(null)
             }),
-        })),
+        }),
         flatMap(() => this.scriptRepository.update(automation))
       )),
       catch_("__brand", {
@@ -339,7 +348,8 @@ export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscribe
       if_(this.automationsFiberMap.get(automationId) != undefined, {
         onTrue: () => pipe(
           Fiber.interrupt(this.automationsFiberMap.get(automationId)!),
-          tap(() => this.automationsFiberMap.delete(automationId))
+          map(() => this.automationsFiberMap.delete(automationId)),
+          map(() => this.startedAutomations.set(automationId, false)),
         ),
         onFalse: () => succeed(null)
       }),
