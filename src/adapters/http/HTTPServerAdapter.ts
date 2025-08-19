@@ -4,7 +4,6 @@ import { Server as SocketIOServer } from 'socket.io';
 import { registerDeviceGroupsServiceRoutes } from './routes/devices-management/DeviceGroupsService.js';
 import { DeviceGroupsService } from '../../ports/devices-management/DeviceGroupsService.js';
 import { UsersService } from '../../ports/users-management/UsersService.js';
-import bodyParser from 'body-parser';
 import { registerDevicesServiceRoutes } from './routes/devices-management/DevicesService.js';
 import { DevicesService } from '../../ports/devices-management/DevicesService.js';
 import { DeviceEventsService } from '../../ports/devices-management/DeviceEventsService.js';
@@ -18,10 +17,17 @@ import { DeviceActionsService } from '../../ports/devices-management/DeviceActio
 import { registerPermissionsServiceRoutes } from './routes/PermissionsService.js';
 import { PermissionsService } from '../../ports/permissions-management/PermissionsService.js';
 import { registerUsersServiceRoutes } from './routes/UsersService.js';
+import { Brand } from '../../utils/Brand.js';
+import { Error } from '../../ports/Error.js';
 
 interface Options {
     logRequestUrls?: boolean
     logRequestBodies?: boolean
+}
+
+type BadRequestError = Brand<Error, "BadRequestError">
+export function BadRequestError(message?: string, cause?: string): BadRequestError {
+    return { message: message ?? "The request was malformed", cause: cause, __brand: "BadRequestError" }
 }
 
 export class HTTPServerAdapter {
@@ -43,7 +49,12 @@ export class HTTPServerAdapter {
         const server = http.createServer(app)
         const socketIOServer = new SocketIOServer(server)
 
-        app.use(bodyParser.json())
+        app.use((req, res, next) => {
+            express.json()(req, res, err => {
+                if (err) { return res.status(400).send(BadRequestError("The received body was not valid JSON", err.message)) }
+                else { next(); }
+            });
+        });
         app.use(express.static('client/dist'))
         app.use((req: Request, _res: Response, next: NextFunction) => {
             if (logRequestUrls) { console.log(`${req.method} ${req.url}`) }

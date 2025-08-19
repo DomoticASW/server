@@ -8,9 +8,8 @@
     "access": "public"
   },
   "scripts": {
-    "prestart-prod": "tsc && npm run build-client && docker compose -f docker-compose.yaml -f docker-compose.production.yaml up -d --wait",
-    "start-prod": "node . || exit 0",
-    "poststart-prod": "docker compose -f docker-compose.yaml -f docker-compose.production.yaml down",
+    "prestart-prod": "tsc && npm run build-client",
+    "start-prod": "node .",
     "prestart": "tsc && npm run build-client && docker compose -f docker-compose.yaml -f docker-compose.development.yaml up -d --wait",
     "start": "cross-env DEV=true nodemon || exit 0",
     "poststart": "docker compose -f docker-compose.yaml -f docker-compose.development.yaml stop",
@@ -46,10 +45,8 @@
   "dependencies": {
     "@commitlint/cli": "^19.7.1",
     "@commitlint/config-conventional": "^19.7.1",
-    "@types/mongoose": "^5.11.96",
     "@types/uuid": "^10.0.0",
     "bcrypt": "^6.0.0",
-    "body-parser": "^2.2.0",
     "dotenv": "^16.4.7",
     "effect": "^3.14.1",
     "express": "^4.17.21",
