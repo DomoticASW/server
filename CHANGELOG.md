@@ -1,3 +1,18 @@
+## [1.0.6](https://github.com/DomoticASW/server/compare/1.0.5...1.0.6) (2025-08-19)
+
+### Dependency updates
+
+* **deps:** update dependency typescript-eslint to v8.40.0 ([#115](https://github.com/DomoticASW/server/issues/115)) ([180ee83](https://github.com/DomoticASW/server/commit/180ee83be423f5a1b52273808a5b64ffc81910f3))
+
+### Bug Fixes
+
+* **deps:** update dependency mongoose to v8.17.2 ([#116](https://github.com/DomoticASW/server/issues/116)) ([ac55f92](https://github.com/DomoticASW/server/commit/ac55f92c720f6ccd1b50db204c0f13c103e3b26b))
+
+### Build and continuous integration
+
+* add Dockerfile and automatic image publishing ([6c88974](https://github.com/DomoticASW/server/commit/6c88974cf6613f673a9c19175bd751c745f79d66))
+* **docker img:** run setup to init client submodule ([120e0bb](https://github.com/DomoticASW/server/commit/120e0bbf7ab7601f867c5d31c88fad731a122b9a))
+
 ## [1.0.5](https://github.com/DomoticASW/server/compare/1.0.4...1.0.5) (2025-08-16)
 
 ### Dependency updates
