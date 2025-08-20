@@ -1,3 +1,16 @@
+## [1.0.9](https://github.com/DomoticASW/server/compare/1.0.8...1.0.9) (2025-08-20)
+
+### Dependency updates
+
+* **deps:** update actions/checkout action to v5 ([91f6e7c](https://github.com/DomoticASW/server/commit/91f6e7cbed660323b745eb0701d7928a014f8850))
+* **deps:** update dependency cross-env to v10 ([5cf36c1](https://github.com/DomoticASW/server/commit/5cf36c1066fbbc47c50d2cd85450cb326fbfe51a))
+* **deps:** update dependency globals to v16 ([6c357b8](https://github.com/DomoticASW/server/commit/6c357b80ae255fc4258a913af1d902f98db19a36))
+* **deps:** update jest monorepo to v30 ([c5a0842](https://github.com/DomoticASW/server/commit/c5a0842a17ab7ce40cf2d09532c9e43735677b01))
+
+### Bug Fixes
+
+* **deps:** update dependency express to v5 ([f9a1a4f](https://github.com/DomoticASW/server/commit/f9a1a4f30a92ccc34299706037a1e37ed5ee44db))
+
 ## [1.0.8](https://github.com/DomoticASW/server/compare/1.0.7...1.0.8) (2025-08-20)
 
 ### Bug Fixes
