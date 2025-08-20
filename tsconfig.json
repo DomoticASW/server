@@ -8,12 +8,13 @@
             "es2023",
             "dom"
         ],
-        "module": "node16",
-        "target": "es2022",
+        "module": "es2022",
+        "target": "esnext",
+        "isolatedModules": true,
         "strict": true,
         "esModuleInterop": true,
         "skipLibCheck": true,
-        "moduleResolution": "node16",
+        "moduleResolution": "bundler",
         "outDir": "dist"
     },
     "include": [
