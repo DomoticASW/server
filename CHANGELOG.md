@@ -1,3 +1,16 @@
+## [1.0.8](https://github.com/DomoticASW/server/compare/1.0.7...1.0.8) (2025-08-20)
+
+### Bug Fixes
+
+* fix jest warning ([87d9d14](https://github.com/DomoticASW/server/commit/87d9d14fe33d89c9dc6ce1ed809e8923900dd41a))
+
+### General maintenance
+
+* remove dotenv dep as it was unused ([c820692](https://github.com/DomoticASW/server/commit/c820692f96bbfa5a4967ec1fbef192137630a28c))
+* remove unused dependency ts-node ([475bd5e](https://github.com/DomoticASW/server/commit/475bd5e70a664c31579f5388b00204f8ef5c82bc))
+* remove unused deps ([a22b70a](https://github.com/DomoticASW/server/commit/a22b70a56577b5b234d00d73ffbbc734ea381518))
+* using commitlint through npm ([8def427](https://github.com/DomoticASW/server/commit/8def4279125ae792a75be63a21672606c9cdff3c))
+
 ## [1.0.7](https://github.com/DomoticASW/server/compare/1.0.6...1.0.7) (2025-08-20)
 
 ### Bug Fixes
