@@ -36,7 +36,7 @@
     "@types/jsonwebtoken": "^9.0.9",
     "cross-env": "^7.0.3",
     "eslint": "^9.19.0",
-    "globals": "^15.14.0",
+    "globals": "^16.0.0",
     "jest": "^30.0.0",
     "nodemon": "^3.1.9",
     "semantic-release-preconfigured-conventional-commits": "^1.1.122",
