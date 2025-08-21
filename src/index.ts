@@ -14,7 +14,6 @@ import { NotificationsService } from "./domain/notifications-management/Notifica
 import { ScriptsServiceImpl } from "./domain/scripts-management/ScriptsServiceImpl.js";
 import { ScriptRepositoryMongoAdapter } from "./adapters/scripts-management/ScriptRepositoryMongoAdapter.js";
 import { DeviceCommunicationProtocol } from "./ports/devices-management/DeviceCommunicationProtocol.js";
-import { DeviceFactoryImpl } from "./domain/devices-management/DeviceFactoryImpl.js";
 import { DeviceCommunicationProtocolHttpAdapter } from "./adapters/devices-management/DeviceCommunicationProtocolHttpAdapter.js";
 import { DeviceStatusesServiceImpl } from "./domain/devices-management/DeviceStatusesServiceImpl.js";
 import { DeviceDiscovererUDPAdapter } from "./adapters/devices-management/DeviceDiscovererUDPAdapter.js";
@@ -29,8 +28,12 @@ import { EditListRepositoryMongoAdapter } from "./adapters/permissions-managemen
 
 const isDev = parseBooleanEnvVar("DEV") ?? false
 
-const mongoDBConnection = mongoose.createConnection("mongodb://localhost:27017/DomoticASW")
-const serverPort = parsePortEnvVar("SERVER_PORT", 3000)
+const mongoHost = parseEnvVar("MONGO_HOST", "localhost")
+const mongoPort = parsePortEnvVar("MONGO_PORT", 27017)
+console.log("Connecting to MongoDB...")
+const mongoDBConnection = await mongoose.createConnection(`mongodb://${mongoHost}:${mongoPort}/DomoticASW`).asPromise()
+console.log("Connected to MongoDB!")
+
 const userRepository = new UserRepositoryAdapter(mongoDBConnection)
 const registrationRequestRepository = new RegistrationRequestRepositoryAdapter(mongoDBConnection)
 let jwtSecret = parseEnvVar("JWT_SECRET")
@@ -46,12 +49,12 @@ if (!jwtSecret || jwtSecret.trim() == "") {
 }
 const usersService: UsersService = new UsersServiceImpl(userRepository, registrationRequestRepository, jwtSecret)
 
+const serverPort = parsePortEnvVar("SERVER_PORT", 3000)
 const deviceCommunicationProtocol: DeviceCommunicationProtocol = new DeviceCommunicationProtocolHttpAdapter(serverPort)
 
-const deviceFactory = new DeviceFactoryImpl(deviceCommunicationProtocol)
 const deviceRepository = new DeviceRepositoryMongoAdapter(mongoDBConnection)
 const deviceDiscoverer = new DeviceDiscovererUDPAdapter(parsePortEnvVar("DISCOVERY_PORT", 30000), 5, { logAnnounces: parseBooleanEnvVar("LOG_ANNOUNCES") })
-const devicesService = new DevicesServiceImpl(deviceRepository, deviceFactory, usersService, deviceDiscoverer)
+const devicesService = new DevicesServiceImpl(deviceRepository, deviceCommunicationProtocol, usersService, deviceDiscoverer)
 
 const userDevicePermissionRepo = new UserDevicePermissionRepositoryMongoAdapter(mongoDBConnection)
 const taskListsRepo = new TaskListsRepositoryMongoAdapter(mongoDBConnection)
@@ -80,8 +83,18 @@ const logRequestBodies = parseBooleanEnvVar("LOG_REQ_BODIES") ?? false
 // Http server is started as a side effect
 new HTTPServerAdapter("localhost", serverPort, deviceGroupsService, devicesService, deviceActionsService, deviceEventsService, usersService, notificationsService, scriptsService, permissionsService, { logRequestUrls, logRequestBodies })
 
-function parseEnvVar(varName: string): string | undefined {
-    return process.env[varName]
+function parseEnvVar(varName: string, defaultValue?: string): string | undefined {
+    const value = process.env[varName]
+    if (value) {
+        return value
+    } else {
+        if (defaultValue) {
+            console.log(`${varName} environment variable was not set, using default: ${defaultValue}`)
+            return defaultValue
+        } else {
+            return undefined
+        }
+    }
 }
 function parseBooleanEnvVar(varName: string): boolean | undefined {
     const str = process.env[varName]?.toLocaleLowerCase()

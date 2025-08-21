@@ -8,9 +8,8 @@
     "access": "public"
   },
   "scripts": {
-    "prestart-prod": "tsc && npm run build-client && docker compose -f docker-compose.yaml -f docker-compose.production.yaml up -d --wait",
-    "start-prod": "node . || exit 0",
-    "poststart-prod": "docker compose -f docker-compose.yaml -f docker-compose.production.yaml down",
+    "prestart-prod": "tsc && npm run build-client",
+    "start-prod": "node .",
     "prestart": "tsc && npm run build-client && docker compose -f docker-compose.yaml -f docker-compose.development.yaml up -d --wait",
     "start": "cross-env DEV=true nodemon || exit 0",
     "poststart": "docker compose -f docker-compose.yaml -f docker-compose.development.yaml stop",
@@ -31,6 +30,7 @@
     "@commitlint/cli": "^19.8.1",
     "@commitlint/config-conventional": "^19.8.1",
     "@eslint/js": "^9.19.0",
+    "@types/bcrypt": "^6.0.0",
     "@types/express": "^5.0.0",
     "@types/jest": "^30.0.0",
     "@types/jsonwebtoken": "^9.0.9",
@@ -45,7 +45,7 @@
     "typescript-eslint": "^8.23.0"
   },
   "dependencies": {
-    "body-parser": "^2.2.0",
+    "bcrypt": "^6.0.0",
     "effect": "^3.14.1",
     "express": "^5.0.0",
     "http-status-codes": "^2.3.0",

@@ -2,10 +2,11 @@ import { Effect, pipe } from "effect"
 import { UsersServiceImpl } from "../../../src/domain/users-management/UsersServiceImpl.js";
 import { UserRepositoryAdapter } from "../../../src/adapters/users-management/UserRepositoryAdapter.js";
 import { RegistrationRequestRepositoryAdapter } from "../../../src/adapters/users-management/RegistrationRequestRepositoryAdapter.js"
-import { Nickname, Email, PasswordHash, Role, User } from "../../../src/domain/users-management/User.js";
+import { Nickname, Email, PasswordHash, Role, User, ClearTextPassword } from "../../../src/domain/users-management/User.js";
 import { Token } from "../../../src/domain/users-management/Token.js";
 import mongoose from "mongoose";
 import jwt from "jsonwebtoken";
+import bcrypt from "bcrypt";
 
 const dbName: string = "usersServiceTests"
 let dbConnection: mongoose.Connection;
@@ -29,7 +30,10 @@ beforeEach(async () => {
 describe("UsersServiceImpl", () => {
     const testEmail = Email("test@example.com");
     const testNickname = Nickname("TestUser");
-    const testPassword = PasswordHash("hashedPassword");
+    const password = "password";
+    const clearTestPassword = ClearTextPassword(password);
+    const hashedPassword =  bcrypt.hashSync(password, 10);
+    const hashedTestPassword = PasswordHash(hashedPassword);
     const adminToken = Token(testEmail, Role.Admin, jwt.sign({ userEmail: testEmail, role: Role.Admin }, secret, { expiresIn: '1h' }));
     const userToken = Token(testEmail, Role.User, jwt.sign({ userEmail: testEmail, role: Role.User }, secret, { expiresIn: '1h' }));
 
@@ -39,7 +43,7 @@ describe("UsersServiceImpl", () => {
     });
 
     test("publishRegistrationRequest - should directly create a new admin user if it's the first request ever", async () => {
-        await Effect.runPromise(usersService.publishRegistrationRequest(testNickname, testEmail, testPassword));
+        await Effect.runPromise(usersService.publishRegistrationRequest(testNickname, testEmail, clearTestPassword));
 
         const regReqs = await Effect.runPromise(regReqRepo.getAll());
         expect(regReqs).toHaveLength(0);
@@ -55,9 +59,9 @@ describe("UsersServiceImpl", () => {
 
     test("publishRegistrationRequest - should add new registration request", async () => {
         // This is just to create an admin and should not be considered when reasoning about the test
-        await Effect.runPromise(usersService.publishRegistrationRequest(Nickname("Admin"), Email("admin@email.com"), testPassword));
+        await Effect.runPromise(usersService.publishRegistrationRequest(Nickname("Admin"), Email("admin@email.com"), clearTestPassword));
 
-        await Effect.runPromise(usersService.publishRegistrationRequest(testNickname, testEmail, testPassword));
+        await Effect.runPromise(usersService.publishRegistrationRequest(testNickname, testEmail, clearTestPassword));
         
         const regReqs = await Effect.runPromise(regReqRepo.getAll());
         expect(regReqs).toHaveLength(1);
@@ -66,26 +70,26 @@ describe("UsersServiceImpl", () => {
 
     test("getAllRegistrationRequests - should return all registration requests", async () => {
         // This is just to create an admin and should not be considered when reasoning about the test
-        await Effect.runPromise(usersService.publishRegistrationRequest(Nickname("Admin"), Email("admin@email.com"), testPassword));
+        await Effect.runPromise(usersService.publishRegistrationRequest(Nickname("Admin"), Email("admin@email.com"), clearTestPassword));
 
-        await Effect.runPromise(usersService.publishRegistrationRequest(testNickname, testEmail, testPassword));
+        await Effect.runPromise(usersService.publishRegistrationRequest(testNickname, testEmail, clearTestPassword));
 
         const requests = await Effect.runPromise(usersService.getAllRegistrationRequests(adminToken));
         const request = Array.from(requests)[0]
         expect(requests).toHaveLength(1);
         expect(request.nickname).toEqual(testNickname);
         expect(request.email).toEqual(testEmail);
-        expect(request.passwordHash).toEqual(testPassword);
+        expect(bcrypt.compare(clearTestPassword, request.passwordHash)).resolves.toBe(true);
     });
 
     test("publishRegistrationRequest - should fail if email already in use", async () => {
         // This is just to create an admin and should not be considered when reasoning about the test
-        await Effect.runPromise(usersService.publishRegistrationRequest(Nickname("Admin"), Email("admin@email.com"), testPassword));
+        await Effect.runPromise(usersService.publishRegistrationRequest(Nickname("Admin"), Email("admin@email.com"), clearTestPassword));
 
-        await Effect.runPromise(usersService.publishRegistrationRequest(testNickname, testEmail, testPassword));
+        await Effect.runPromise(usersService.publishRegistrationRequest(testNickname, testEmail, clearTestPassword));
         
         await pipe(
-            usersService.publishRegistrationRequest(testNickname, testEmail, testPassword),
+            usersService.publishRegistrationRequest(testNickname, testEmail, clearTestPassword),
             Effect.match({
                 onSuccess() { throw new Error("This operation should have failed") },
                 onFailure(error) { expect(error.__brand).toBe("EmailAlreadyInUseError") }
@@ -96,9 +100,9 @@ describe("UsersServiceImpl", () => {
 
     test("approveRegistrationRequest - should create user from registration request and remove the request", async () => {
         // This is just to create an admin and should not be considered when reasoning about the test
-        await Effect.runPromise(usersService.publishRegistrationRequest(Nickname("Admin"), Email("admin@email.com"), testPassword));
+        await Effect.runPromise(usersService.publishRegistrationRequest(Nickname("Admin"), Email("admin@email.com"), clearTestPassword));
 
-        await Effect.runPromise(usersService.publishRegistrationRequest(testNickname, testEmail, testPassword));
+        await Effect.runPromise(usersService.publishRegistrationRequest(testNickname, testEmail, clearTestPassword));
         await Effect.runPromise(usersService.approveRegistrationRequest(adminToken, testEmail));
         
         const users = await Effect.runPromise(usersRepo.getAll());
@@ -116,9 +120,9 @@ describe("UsersServiceImpl", () => {
 
     test("approveRegistrationRequest - should fail if user does not exist", async () => {
         // This is just to create an admin and should not be considered when reasoning about the test
-        await Effect.runPromise(usersService.publishRegistrationRequest(Nickname("Admin"), Email("admin@email.com"), testPassword));
+        await Effect.runPromise(usersService.publishRegistrationRequest(Nickname("Admin"), Email("admin@email.com"), clearTestPassword));
 
-        await Effect.runPromise(usersService.publishRegistrationRequest(testNickname, testEmail, testPassword));
+        await Effect.runPromise(usersService.publishRegistrationRequest(testNickname, testEmail, clearTestPassword));
         await Effect.runPromise(usersService.rejectRegistrationRequest(adminToken, testEmail));
         
         await expect(
@@ -128,11 +132,11 @@ describe("UsersServiceImpl", () => {
 
     test("approveRegistrationRequest - should fail if the email is already used by a user", async () => {
         // This is just to create an admin and should not be considered when reasoning about the test
-        await Effect.runPromise(usersService.publishRegistrationRequest(Nickname("Admin"), Email("admin@email.com"), testPassword));
+        await Effect.runPromise(usersService.publishRegistrationRequest(Nickname("Admin"), Email("admin@email.com"), clearTestPassword));
 
-        await Effect.runPromise(usersService.publishRegistrationRequest(testNickname, testEmail, testPassword));
+        await Effect.runPromise(usersService.publishRegistrationRequest(testNickname, testEmail, clearTestPassword));
         await Effect.runPromise(usersService.approveRegistrationRequest(adminToken, testEmail));
-        await Effect.runPromise(usersService.publishRegistrationRequest(testNickname, testEmail, testPassword));
+        await Effect.runPromise(usersService.publishRegistrationRequest(testNickname, testEmail, clearTestPassword));
         
         await expect(
             Effect.runPromise(usersService.approveRegistrationRequest(adminToken, testEmail))
@@ -141,9 +145,9 @@ describe("UsersServiceImpl", () => {
 
     test("rejectRegistrationRequest - should remove registration request", async () => {
         // This is just to create an admin and should not be considered when reasoning about the test
-        await Effect.runPromise(usersService.publishRegistrationRequest(Nickname("Admin"), Email("admin@email.com"), testPassword));
+        await Effect.runPromise(usersService.publishRegistrationRequest(Nickname("Admin"), Email("admin@email.com"), clearTestPassword));
 
-        await Effect.runPromise(usersService.publishRegistrationRequest(testNickname, testEmail, testPassword));
+        await Effect.runPromise(usersService.publishRegistrationRequest(testNickname, testEmail, clearTestPassword));
         await Effect.runPromise(usersService.rejectRegistrationRequest(adminToken, testEmail));
         
         const regReqs = await Effect.runPromise(regReqRepo.getAll());
@@ -152,9 +156,9 @@ describe("UsersServiceImpl", () => {
 
     test("rejectRegistrationRequest - should fail if request does not exist", async () => {
         // This is just to create an admin and should not be considered when reasoning about the test
-        await Effect.runPromise(usersService.publishRegistrationRequest(Nickname("Admin"), Email("admin@email.com"), testPassword));
+        await Effect.runPromise(usersService.publishRegistrationRequest(Nickname("Admin"), Email("admin@email.com"), clearTestPassword));
 
-        await Effect.runPromise(usersService.publishRegistrationRequest(testNickname, testEmail, testPassword));
+        await Effect.runPromise(usersService.publishRegistrationRequest(testNickname, testEmail, clearTestPassword));
         
         await expect(
             Effect.runPromise(usersService.rejectRegistrationRequest(adminToken, Email("")))
@@ -163,9 +167,9 @@ describe("UsersServiceImpl", () => {
 
     test("rejectRegistrationRequest - should fail for non-admin token", async () => {
         // This is just to create an admin and should not be considered when reasoning about the test
-        await Effect.runPromise(usersService.publishRegistrationRequest(Nickname("Admin"), Email("admin@email.com"), testPassword));
+        await Effect.runPromise(usersService.publishRegistrationRequest(Nickname("Admin"), Email("admin@email.com"), clearTestPassword));
 
-        await Effect.runPromise(usersService.publishRegistrationRequest(testNickname, testEmail, testPassword));
+        await Effect.runPromise(usersService.publishRegistrationRequest(testNickname, testEmail, clearTestPassword));
         
         await expect(
             Effect.runPromise(usersService.rejectRegistrationRequest(userToken, testEmail))
@@ -174,7 +178,7 @@ describe("UsersServiceImpl", () => {
 
     test("removeUser - should remove existing user", async () => {
         const email = Email("testEmail@example.com");
-        await Effect.runPromise(usersRepo.add(User(testNickname, email, testPassword, Role.User)));
+        await Effect.runPromise(usersRepo.add(User(testNickname, email, hashedTestPassword, Role.User)));
         await Effect.runPromise(usersService.removeUser(adminToken, email));
         
         const users = await Effect.runPromise(usersRepo.getAll());
@@ -182,14 +186,14 @@ describe("UsersServiceImpl", () => {
     });
 
     test("removeUser - should fail if admin tries to remove himself", async () => {
-        await Effect.runPromise(usersRepo.add(User(testNickname, testEmail, testPassword, Role.Admin)));
+        await Effect.runPromise(usersRepo.add(User(testNickname, testEmail, hashedTestPassword, Role.Admin)));
         await expect(
             Effect.runPromise(usersService.removeUser(adminToken, testEmail))
         ).rejects.toThrow("UnauthorizedError");
     });
 
     test("removeUser - should fail if user does not exist", async () => {
-        await Effect.runPromise(usersRepo.add(User(testNickname, testEmail, testPassword, Role.User)));
+        await Effect.runPromise(usersRepo.add(User(testNickname, testEmail, hashedTestPassword, Role.User)));
         
         await expect(
             Effect.runPromise(usersService.removeUser(adminToken, Email("")))
@@ -198,10 +202,10 @@ describe("UsersServiceImpl", () => {
 
     test("updateUserData - should update user information", async () => {
         const newNickname = Nickname("NewNickname");
-        await Effect.runPromise(usersRepo.add(User(testNickname, testEmail, testPassword, Role.User)));
+        await Effect.runPromise(usersRepo.add(User(testNickname, testEmail, hashedTestPassword, Role.User)));
         
         await Effect.runPromise(
-            usersService.updateUserData(adminToken, newNickname, testPassword)
+            usersService.updateUserData(adminToken, newNickname, clearTestPassword)
         );
         
         const updatedUser = await Effect.runPromise(usersRepo.find(testEmail));
@@ -209,46 +213,46 @@ describe("UsersServiceImpl", () => {
     });
 
     test("updateUserData - should fail if user does not exist", async () => {
-        await Effect.runPromise(usersRepo.add(User(testNickname, Email("prova@mail.com"), testPassword, Role.User)));
+        await Effect.runPromise(usersRepo.add(User(testNickname, Email("prova@mail.com"), hashedTestPassword, Role.User)));
         
         await expect(
-            Effect.runPromise(usersService.updateUserData(userToken, Nickname("NewNickname"), PasswordHash("newPassword")))
+            Effect.runPromise(usersService.updateUserData(userToken, Nickname("NewNickname"), ClearTextPassword("newPassword")))
         ).rejects.toThrow("UserNotFoundError");
     });
 
     test("getAllUsers - should return all users", async () => {
-        await Effect.runPromise(usersRepo.add(User(testNickname, testEmail, testPassword, Role.User)));
+        await Effect.runPromise(usersRepo.add(User(testNickname, testEmail, hashedTestPassword, Role.User)));
         
         const users = await Effect.runPromise(usersService.getAllUsers(adminToken));
         expect(Array.from(users)).toHaveLength(1);
     });
 
     test("getUserData - should return user data", async () => {
-        await Effect.runPromise(usersRepo.add(User(testNickname, testEmail, testPassword, Role.User)));
+        await Effect.runPromise(usersRepo.add(User(testNickname, testEmail, hashedTestPassword, Role.User)));
         
         const user = await Effect.runPromise(usersService.getUserData(adminToken));
         expect(user.email).toEqual(testEmail);
     });
 
     test("getUserDataUnsafe - should return user data without verifying token", async () => {
-        await Effect.runPromise(usersRepo.add(User(testNickname, testEmail, testPassword, Role.User)));
+        await Effect.runPromise(usersRepo.add(User(testNickname, testEmail, hashedTestPassword, Role.User)));
 
         const user = await Effect.runPromise(usersService.getUserDataUnsafe(testEmail));
         expect(user.email).toEqual(testEmail);
     });
 
     test("login - should return token for valid credentials", async () => {
-        await Effect.runPromise(usersRepo.add(User(testNickname, testEmail, testPassword, Role.User)));
-        
-        const token = await Effect.runPromise(usersService.login(testEmail, testPassword));
+        await Effect.runPromise(usersService.publishRegistrationRequest(Nickname("Admin"), Email("admin@email.com"), clearTestPassword));
+
+        const token = await Effect.runPromise(usersService.login(Email("admin@email.com"), clearTestPassword));
         expect(token).toBeDefined();
     });
 
     test("login - should fail for invalid credentials", async () => {
-        await Effect.runPromise(usersRepo.add(User(testNickname, testEmail, testPassword, Role.User)));
+        await Effect.runPromise(usersRepo.add(User(testNickname, testEmail, hashedTestPassword, Role.User)));
         
         await expect(
-            Effect.runPromise(usersService.login(testEmail, PasswordHash("wrongPassword")))
+            Effect.runPromise(usersService.login(testEmail, ClearTextPassword("wrongPassword")))
         ).rejects.toThrow("InvalidCredentialsError");
     });
 

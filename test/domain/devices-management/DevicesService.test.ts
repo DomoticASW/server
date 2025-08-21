@@ -5,7 +5,7 @@ import { Email, Role } from "../../../src/domain/users-management/User.js"
 import { DevicePropertyUpdatesSubscriber, DevicesService } from "../../../src/ports/devices-management/DevicesService.js"
 import { InMemoryRepositoryMock } from "../../InMemoryRepositoryMock.js"
 import { DevicesServiceImpl } from "../../../src/domain/devices-management/DevicesServiceImpl.js"
-import { DeviceFactory } from "../../../src/ports/devices-management/DeviceFactory.js"
+import { DeviceCommunicationProtocol } from "../../../src/ports/devices-management/DeviceCommunicationProtocol.js"
 import { DeviceUnreachableError } from "../../../src/ports/devices-management/Errors.js"
 import { DeviceRepository } from "../../../src/ports/devices-management/DeviceRepository.js"
 import { NoneInt } from "../../../src/domain/devices-management/Types.js"
@@ -14,7 +14,7 @@ import { UsersService } from "../../../src/ports/users-management/UsersService.j
 import { DeviceDiscoverer } from "../../../src/ports/devices-management/DeviceDiscoverer.js"
 
 let service: DevicesService
-let deviceFactory: DeviceFactory
+let deviceCommunicationProtocol: DeviceCommunicationProtocol
 let deviceDiscoverer: DeviceDiscoverer & { callsToDiscoveredDevices: number }
 let repo: DeviceRepository
 const alwaysValidTokenUsersService = {
@@ -33,14 +33,14 @@ function makeToken(role: Role = Role.Admin): Token {
 
 beforeEach(() => {
     repo = new InMemoryRepositoryMock((d) => d.id, (id) => id)
-    deviceFactory = {
-        create(deviceAddress: DeviceAddress): Effect.Effect<Device, DeviceUnreachableError> {
+    deviceCommunicationProtocol = {
+        register(deviceAddress: DeviceAddress): Effect.Effect<Device, DeviceUnreachableError> {
             const properties = [DeviceProperty(DevicePropertyId("prop"), "prop", 0, NoneInt()), DeviceProperty(DevicePropertyId("prop2"), "prop2", 10, NoneInt())]
             const actions: DeviceAction<unknown>[] = []
             const events: DeviceEvent[] = []
             return Effect.succeed(Device(DeviceId(deviceAddress.toString()), "device", deviceAddress, DeviceStatus.Online, properties, actions, events))
         }
-    }
+    } as DeviceCommunicationProtocol
     deviceDiscoverer = {
         discoveredDevices() {
             this.callsToDiscoveredDevices += 1
@@ -48,7 +48,7 @@ beforeEach(() => {
         },
         callsToDiscoveredDevices: 0
     }
-    service = new DevicesServiceImpl(repo, deviceFactory, alwaysValidTokenUsersService, deviceDiscoverer)
+    service = new DevicesServiceImpl(repo, deviceCommunicationProtocol, alwaysValidTokenUsersService, deviceDiscoverer)
 })
 
 test("has 0 devices initially", () => {
@@ -78,7 +78,7 @@ test("adding a device persists it to the repository", () => {
     expect(devices).toHaveLength(1)
 })
 
-test("uses DeviceFactory to construct devices", () => {
+test("uses DeviceCommunicationProtocol to construct devices", () => {
     const deviceUrl = DeviceAddress("localhost", 8080)
     const device = pipe(
         Effect.gen(function* () {
@@ -87,7 +87,7 @@ test("uses DeviceFactory to construct devices", () => {
         }),
         Effect.runSync
     )
-    const expected = Effect.runSync(deviceFactory.create(deviceUrl))
+    const expected = Effect.runSync(deviceCommunicationProtocol.register(deviceUrl))
     expect(device).toEqual(expected)
 })
 
@@ -437,7 +437,7 @@ describe("all methods requiring a token fail if the token is invalid", () => {
                 return Effect.fail({ __brand: "InvalidTokenError", message: "" })
             }
         } as unknown as UsersService
-        service = new DevicesServiceImpl(repo, deviceFactory, alwaysInvalidTokenUsersService, deviceDiscoverer)
+        service = new DevicesServiceImpl(repo, deviceCommunicationProtocol, alwaysInvalidTokenUsersService, deviceDiscoverer)
     })
 
     allMethods.forEach(m => {

@@ -1,11 +1,11 @@
 import { Effect, pipe } from "effect";
 import { DevicePropertyUpdatesSubscriber, DevicesService } from "../../ports/devices-management/DevicesService.js";
-import { DeviceUnreachableError, DeviceNotFoundError, DevicePropertyNotFound, DeviceAlreadyRegisteredError } from "../../ports/devices-management/Errors.js";
+import { DeviceUnreachableError, DeviceNotFoundError, DevicePropertyNotFound, DeviceAlreadyRegisteredError, CommunicationError } from "../../ports/devices-management/Errors.js";
 import { TokenError, InvalidTokenError, UnauthorizedError } from "../../ports/users-management/Errors.js";
 import { DeviceId, Device, DevicePropertyId, DeviceAddress, DeviceStatus } from "./Device.js";
 import { Token } from "../users-management/Token.js";
 import { Role } from "../users-management/User.js";
-import { DeviceFactory } from "../../ports/devices-management/DeviceFactory.js";
+import { DeviceCommunicationProtocol } from "../../ports/devices-management/DeviceCommunicationProtocol.js";
 import { DeviceRepository } from "../../ports/devices-management/DeviceRepository.js";
 import { UsersService } from "../../ports/users-management/UsersService.js";
 import { DeviceDiscoverer } from "../../ports/devices-management/DeviceDiscoverer.js";
@@ -15,19 +15,19 @@ export class DevicesServiceImpl implements DevicesService {
     private propertyUpdatesSubscribers: DevicePropertyUpdatesSubscriber[] = [];
     constructor(
         private repo: DeviceRepository,
-        private deviceFactory: DeviceFactory,
+        private deviceCommunication: DeviceCommunicationProtocol,
         private usersService: UsersService,
         private deviceDiscoverer: DeviceDiscoverer) {
     }
 
-    add(token: Token, deviceAddress: DeviceAddress): Effect.Effect<DeviceId, DeviceAlreadyRegisteredError | DeviceUnreachableError | TokenError> {
+    add(token: Token, deviceAddress: DeviceAddress): Effect.Effect<DeviceId, DeviceAlreadyRegisteredError | DeviceUnreachableError | CommunicationError | TokenError> {
         return Effect.Do.pipe(
             Effect.bind("_", () =>
                 Effect.if(token.role == Role.Admin, {
                     onTrue: () => this.usersService.verifyToken(token),
                     onFalse: () => Effect.fail(UnauthorizedError())
                 })),
-            Effect.bind("device", () => this.deviceFactory.create(deviceAddress)),
+            Effect.bind("device", () => this.deviceCommunication.register(deviceAddress)),
             Effect.bind("__", ({ device }) => this.repo.add(device)),
             Effect.map(({ device }) => device.id),
             Effect.mapError((e) => {

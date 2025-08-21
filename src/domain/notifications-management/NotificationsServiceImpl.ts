@@ -54,6 +54,20 @@ class NotificationsServiceImpl implements NotificationsService {
     return this.subscriptionsRepository.remove(DeviceOfflineNotificationSubscription(email, deviceId));
   }
 
+  isSubscribedForDeviceOfflineNotifications(token: Token, deviceId: DeviceId): Effect<boolean, DeviceNotFoundError | UserNotFoundError | InvalidTokenError> {
+    return pipe(
+      this.usersService.verifyToken(token),
+      flatMap(() => this.devicesService.findUnsafe(deviceId)),
+      flatMap(() => this.usersService.getUserDataUnsafe(token.userEmail)),
+      flatMap(() => this.subscriptionsRepository.find({ email: token.userEmail, deviceId: deviceId })),
+      map(() => true),
+      catch_("__brand", {
+        failure: "NotFoundError",
+        onFailure: () => succeed(false)
+      })
+    )
+  }
+
   sendNotification(email: Email, message: string): Effect<void, UserNotFoundError> {
     return pipe(
       this.usersService.getUserDataUnsafe(email),
