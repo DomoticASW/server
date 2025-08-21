@@ -254,8 +254,8 @@ export class ScriptRepositoryMongoAdapter extends BaseRepositoryMongoAdapter<Scr
                     const i = instruction.instruction as unknown as IfInstructionSchema
                     // Fiding the constant instructions
                     // These are safely unwrapped, the constants must be present as the script compiled when it was created
-                    const [leftConstantInstructionSchema, leftConstantInstructionSchemaType] = this.findConstantInstructionSchemaByName(superInstructions, i.condition.leftConstantName)!
-                    const [rightConstantInstructionSchema, rightConstantInstructionSchemaType] = this.findConstantInstructionSchemaByName(superInstructions, i.condition.rightConstantName)!
+                    const [leftConstantInstructionSchema, leftConstantInstructionSchemaType] = this.findConstantInstructionSchemaByName(superInstructions.concat(instructions), i.condition.leftConstantName)!
+                    const [rightConstantInstructionSchema, rightConstantInstructionSchemaType] = this.findConstantInstructionSchemaByName(superInstructions.concat(instructions), i.condition.rightConstantName)!
                     // Deserializing constant instructions
                     const leftConstantInstruction = this.deserializeConstantInstruction(leftConstantInstructionSchema, leftConstantInstructionSchemaType)
                     const rightConstantInstruction = this.deserializeConstantInstruction(rightConstantInstructionSchema, rightConstantInstructionSchemaType)
