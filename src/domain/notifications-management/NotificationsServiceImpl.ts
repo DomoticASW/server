@@ -1,6 +1,6 @@
 import { Effect, map, succeed, flatMap, catch as catch_, match, if as if_ } from "effect/Effect";
 import { DeviceNotFoundError } from "../../ports/devices-management/Errors.js";
-import { NotificationsService } from "../../ports/notifications-management/NotificationsService.js";
+import { type NotificationsService } from "../../ports/notifications-management/NotificationsService.js";
 import { InvalidTokenError, UserNotFoundError } from "../../ports/users-management/Errors.js";
 import { DeviceId, DeviceStatus } from "../devices-management/Device.js";
 import { Email } from "../users-management/User.js";
