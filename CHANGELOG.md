@@ -1,3 +1,9 @@
+## [2.0.1](https://github.com/DomoticASW/server/compare/2.0.0...2.0.1) (2025-08-22)
+
+### Bug Fixes
+
+* restored dependecy versions ([16a477e](https://github.com/DomoticASW/server/commit/16a477e52bf731b71b92afa25a5f946e4f33ca04))
+
 ## [2.0.0](https://github.com/DomoticASW/server/compare/1.0.9...2.0.0) (2025-08-21)
 
 ### ⚠ BREAKING CHANGES
