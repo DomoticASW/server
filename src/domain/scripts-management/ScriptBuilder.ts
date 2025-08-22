@@ -32,11 +32,12 @@ abstract class ScriptBuilderImpl<S = Task | Automation> implements ScriptBuilder
   constructor(
     protected name: string,
     protected nodeRefs: Array<[NodeRef, Instruction]>,
+    protected constantRefs: Array<ConstantRef>,
     protected errors: Array<InvalidScriptError>
   ) { }
 
   private createCopy(ref: NodeRef, instruction: Instruction): ScriptBuilderImpl<S> {
-    const newBuilder = this.copy(this.nodeRefs, this.errors)
+    const newBuilder = this.copy(this.nodeRefs, this.constantRefs, this.errors)
 
     newBuilder.nodeRefs.push([ref, instruction])
 
@@ -58,7 +59,7 @@ abstract class ScriptBuilderImpl<S = Task | Automation> implements ScriptBuilder
   }
 
   private createIfOnBuilder(ref: NodeRef, left: ConstantRef, right: ConstantRef, instruction: Instruction): ScriptBuilder<S> {
-    const newBuilder = this.copy(this.nodeRefs, this.errors);
+    const newBuilder = this.copy(this.nodeRefs, this.constantRefs, this.errors);
 
     if (!this.checkIfOnInnerScope(ref, left.scopeNode)) {
       newBuilder.addOutsideScopeOfConstantError(left);
@@ -146,13 +147,31 @@ abstract class ScriptBuilderImpl<S = Task | Automation> implements ScriptBuilder
     return this.createCopy(ref, StartTaskInstruction(taskId))
   }
 
+  private constantAlreadyExists(name: string, ref: NodeRef): boolean {
+    const nameAlreadyExist = this.constantRefs.filter(c => c.scopeNode === ref).find(c => c.constantInstruction.name === name)
+    if (nameAlreadyExist) {
+      return true
+    } else {
+      if (ref.__brand === "RootNodeRef") {
+        return false
+      } else {
+        return this.constantAlreadyExists(name, ref.superNode)
+      }
+    }
+  }
+
   private addConstantInstructionToBuilder(ref: NodeRef, instruction: ConstantInstruction<unknown>): [ScriptBuilder<S>, ConstantRef] {
     if (instruction.name.length === 0) {
       this.errors.push(InvalidScriptError("Constants cannot have empty name"))
     }
+    if (this.constantAlreadyExists(instruction.name, ref)) {
+      this.errors.push(InvalidScriptError("The constant " + instruction.name + " is declared two times"))
+    }
     const constantRef = ConstantRef(instruction, ref)
+    const newBuilder = this.createCopy(ref, instruction)
+    newBuilder.constantRefs.push(constantRef)
     return [
-      this.createCopy(ref, instruction),
+      newBuilder,
       constantRef
     ]
   }
@@ -187,6 +206,7 @@ abstract class ScriptBuilderImpl<S = Task | Automation> implements ScriptBuilder
   abstract buildWithId(id: ScriptId): Effect<S, InvalidScriptError, never>
   protected abstract copy(
     nodeRefs: Array<[NodeRef, Instruction]>,
+    constantRefs: Array<ConstantRef>,
     errors: Array<InvalidScriptError>
   ): ScriptBuilderImpl<S>
 }
@@ -210,9 +230,10 @@ class TaskBuilderImpl extends ScriptBuilderImpl<Task> {
 
   protected copy(
     nodeRefs: Array<[NodeRef, Instruction]>,
+    constantRefs: Array<ConstantRef>,
     errors: Array<InvalidScriptError>
   ): TaskBuilderImpl {
-    return new TaskBuilderImpl(this.name, Array.from(nodeRefs), Array.from(errors))
+    return new TaskBuilderImpl(this.name, Array.from(nodeRefs), Array.from(constantRefs), Array.from(errors))
   }
 }
 
@@ -221,9 +242,10 @@ class AutomationBuilderImpl extends ScriptBuilderImpl<Automation> {
     name: string,
     private trigger: Trigger,
     nodeRefs: Array<[NodeRef, Instruction]>,
+    constantRefs: Array<ConstantRef>,
     errors: Array<InvalidScriptError>
   ) {
-    super(name, nodeRefs, errors)
+    super(name, nodeRefs, constantRefs, errors)
   }
 
   build(): Effect<Automation, InvalidScriptError> {
@@ -246,20 +268,21 @@ class AutomationBuilderImpl extends ScriptBuilderImpl<Automation> {
 
   protected copy(
     nodeRefs: Array<[NodeRef, Instruction]>,
+    constantRefs: Array<ConstantRef>,
     errors: Array<InvalidScriptError>
   ): AutomationBuilderImpl {
-    return new AutomationBuilderImpl(this.name, this.trigger, Array.from(nodeRefs), Array.from(errors))
+    return new AutomationBuilderImpl(this.name, this.trigger, Array.from(nodeRefs), Array.from(constantRefs), Array.from(errors))
   }
 }
 
 export function TaskBuilder(name: string): [TaskBuilder, NodeRef] {
-  return [new TaskBuilderImpl(name, [], []), RootNodeRef()]
+  return [new TaskBuilderImpl(name, [], [], []), RootNodeRef()]
 }
 
 export function AutomationBuilderWithPeriodtrigger(name: string, start: Date, periodSeconds: number): [AutomationBuilder, NodeRef] {
-  return [new AutomationBuilderImpl(name, PeriodTrigger(start, periodSeconds), [], []), RootNodeRef()]
+  return [new AutomationBuilderImpl(name, PeriodTrigger(start, periodSeconds), [], [], []), RootNodeRef()]
 }
 
 export function AutomationBuilderWithDeviceEventTrigger(name: string, deviceId: DeviceId, eventName: string): [AutomationBuilder, NodeRef] {
-  return [new AutomationBuilderImpl(name, DeviceEventTrigger(deviceId, eventName), [], []), RootNodeRef()]
+  return [new AutomationBuilderImpl(name, DeviceEventTrigger(deviceId, eventName), [], [], []), RootNodeRef()]
 }
