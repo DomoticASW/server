@@ -1,3 +1,9 @@
+## [2.0.3](https://github.com/DomoticASW/server/compare/2.0.2...2.0.3) (2025-08-22)
+
+### Bug Fixes
+
+* **ci:** remove unsupported docker compilation target ([d5481f7](https://github.com/DomoticASW/server/commit/d5481f70dd04533e4c9ae1ea387f8be8dcc91d67))
+
 ## [2.0.2](https://github.com/DomoticASW/server/compare/2.0.1...2.0.2) (2025-08-22)
 
 ### Bug Fixes
