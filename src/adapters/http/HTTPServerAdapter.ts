@@ -1,5 +1,6 @@
 import express, { NextFunction, Request, Response } from 'express';
 import http from "http";
+import history from 'connect-history-api-fallback'
 import { Server as SocketIOServer } from 'socket.io';
 import { registerDeviceGroupsServiceRoutes } from './routes/devices-management/DeviceGroupsService.js';
 import { DeviceGroupsService } from '../../ports/devices-management/DeviceGroupsService.js';
@@ -55,7 +56,6 @@ export class HTTPServerAdapter {
                 else { next(); }
             });
         });
-        app.use(express.static('client/dist'))
         app.use((req: Request, _res: Response, next: NextFunction) => {
             if (logRequestUrls) { console.log(`${req.method} ${req.url}`) }
             if (logRequestBodies) { console.log(req.body) }
@@ -70,6 +70,13 @@ export class HTTPServerAdapter {
         registerNotificationsServiceProtocol(socketIOServer, notificationsService)
         registerPermissionsServiceRoutes(app, permissionsService, usersService)
         registerUsersServiceRoutes(app, usersService);
+
+        // https://github.com/bripkens/connect-history-api-fallback?tab=readme-ov-file#introduction
+        // This middleware should be placed after every other handler or if you need to move it up 
+        // then you need to add an exception to not rewrite api paths, for example:
+        // app.use(history({ rewrites: [{ from: /^\/api\/.*/, to: context => context.request.path },] }))
+        app.use(history())
+        app.use(express.static('client/dist'))
 
         server.listen(port, async () => {
             return console.log(`Express is listening at http://${host}:${port}`);
