@@ -1,3 +1,10 @@
+## [2.0.4](https://github.com/DomoticASW/server/compare/2.0.3...2.0.4) (2025-08-22)
+
+### Bug Fixes
+
+* add back ts-node ([3726a8b](https://github.com/DomoticASW/server/commit/3726a8bea1f334d944d09571dfa42a04e13636e2))
+* issue when reloading client pages ([2149f4e](https://github.com/DomoticASW/server/commit/2149f4ef42e5377c0b3e34eec3cd5b751b68eba5))
+
 ## [2.0.3](https://github.com/DomoticASW/server/compare/2.0.2...2.0.3) (2025-08-22)
 
 ### Bug Fixes
