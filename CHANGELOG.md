@@ -1,3 +1,13 @@
+## [2.0.2](https://github.com/DomoticASW/server/compare/2.0.1...2.0.2) (2025-08-22)
+
+### Bug Fixes
+
+* problem in constant scoping ([#129](https://github.com/DomoticASW/server/issues/129)) ([20c274f](https://github.com/DomoticASW/server/commit/20c274f22b8c6400d1a79f1a2a5a9269d7ab0365))
+
+### Build and continuous integration
+
+* **docker img:** fix docker image not publishing ([4de5150](https://github.com/DomoticASW/server/commit/4de5150fc54e6563a5c190b80f33276d717e39d3))
+
 ## [2.0.1](https://github.com/DomoticASW/server/compare/2.0.0...2.0.1) (2025-08-22)
 
 ### Bug Fixes
