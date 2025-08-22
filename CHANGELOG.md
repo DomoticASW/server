@@ -1,3 +1,115 @@
+## [2.0.4](https://github.com/DomoticASW/server/compare/2.0.3...2.0.4) (2025-08-22)
+
+### Bug Fixes
+
+* add back ts-node ([3726a8b](https://github.com/DomoticASW/server/commit/3726a8bea1f334d944d09571dfa42a04e13636e2))
+* issue when reloading client pages ([2149f4e](https://github.com/DomoticASW/server/commit/2149f4ef42e5377c0b3e34eec3cd5b751b68eba5))
+
+## [2.0.3](https://github.com/DomoticASW/server/compare/2.0.2...2.0.3) (2025-08-22)
+
+### Bug Fixes
+
+* **ci:** remove unsupported docker compilation target ([d5481f7](https://github.com/DomoticASW/server/commit/d5481f70dd04533e4c9ae1ea387f8be8dcc91d67))
+
+## [2.0.2](https://github.com/DomoticASW/server/compare/2.0.1...2.0.2) (2025-08-22)
+
+### Bug Fixes
+
+* problem in constant scoping ([#129](https://github.com/DomoticASW/server/issues/129)) ([20c274f](https://github.com/DomoticASW/server/commit/20c274f22b8c6400d1a79f1a2a5a9269d7ab0365))
+
+### Build and continuous integration
+
+* **docker img:** fix docker image not publishing ([4de5150](https://github.com/DomoticASW/server/commit/4de5150fc54e6563a5c190b80f33276d717e39d3))
+
+## [2.0.1](https://github.com/DomoticASW/server/compare/2.0.0...2.0.1) (2025-08-22)
+
+### Bug Fixes
+
+* restored dependecy versions ([16a477e](https://github.com/DomoticASW/server/commit/16a477e52bf731b71b92afa25a5f946e4f33ca04))
+
+## [2.0.0](https://github.com/DomoticASW/server/compare/1.0.9...2.0.0) (2025-08-21)
+
+### ⚠ BREAKING CHANGES
+
+* exclude passwordHash from users responses
+
+### Features
+
+* add api routes for the new permissions service methods ([7f77e91](https://github.com/DomoticASW/server/commit/7f77e911945f913343a0a907cc88f2816107e4c5))
+* add password hashing ([0cf03b7](https://github.com/DomoticASW/server/commit/0cf03b72611d522c921efbb6f467ceb27b9261c8))
+* expose websocket for device property updates ([a39d763](https://github.com/DomoticASW/server/commit/a39d763e7c2ebb728c1fa759fdac1b4dc4602ea9))
+* implementing new method on Permissions service with tests ([c4078fa](https://github.com/DomoticASW/server/commit/c4078fa5b73cd74e550d1cd5cb059dca9e748074))
+* moved client submodule to 0.1.0 ([7906607](https://github.com/DomoticASW/server/commit/7906607991615261c103047d6f119ec08535b6bb))
+* user can check if he's subscribed to a device for offline notifications ([070fc23](https://github.com/DomoticASW/server/commit/070fc23058f1c1449b2fe50b4d7da9fe4771115e))
+
+### Dependency updates
+
+* **deps:** remove dependency as not needed ([b50329e](https://github.com/DomoticASW/server/commit/b50329e60a76d3b60c1b89e64242f9b84d0fe72f))
+
+### Bug Fixes
+
+* add ClearTextPassword type ([f8795f5](https://github.com/DomoticASW/server/commit/f8795f55bb49edb5a432a753f7e16ce28d54d5b5))
+* add missing argument in test ([3686926](https://github.com/DomoticASW/server/commit/3686926ae117dcc1c809c0f0ef594d3178821c20))
+* add missing email in arguments ([20c62f3](https://github.com/DomoticASW/server/commit/20c62f39105e34f7eb79467f30e161c4ccb02dc4))
+* allow user to login even if their email is in anoter registration request not approved ([3ec7061](https://github.com/DomoticASW/server/commit/3ec70619ce9d6e4a3851b18caf8ecf82a2f90c0f))
+* disable commit lint warning for unused variable in registration requests response ([d116a6d](https://github.com/DomoticASW/server/commit/d116a6de3107c1ed521d7ad8b37095632917019a))
+* enhance login logic to handle unapproved registration requests ([57b1136](https://github.com/DomoticASW/server/commit/57b1136fa8154c1a5dc4f7ccf41e76b56acd107b))
+* exclude passwordHash from registration requests response ([11c7868](https://github.com/DomoticASW/server/commit/11c7868a82a077345bb4fcfb523acadbb58af31f))
+* exclude passwordHash from users responses ([b873a82](https://github.com/DomoticASW/server/commit/b873a82ddce8479f37d7e1d33d720c7649bafd47))
+* fix bug in which PermissionError is never returned ([839133d](https://github.com/DomoticASW/server/commit/839133d7f3c51231bf3728d5d80934d2b6d84e4e))
+* fix error response in login logic ([b0f874b](https://github.com/DomoticASW/server/commit/b0f874b53019e87b130328178f36c7e72b2bd164))
+* input not mandatory for executing actions ([7088442](https://github.com/DomoticASW/server/commit/70884424a00793bf1d37e7557a168c6f5c5d17e8))
+* make password hashing async ([c5987b8](https://github.com/DomoticASW/server/commit/c5987b8d936543aa86fb37eed0fa364791c21603))
+* more detailed error messages ([7947fad](https://github.com/DomoticASW/server/commit/7947fad04fd29fd015a09a031f4cc37e756437eb))
+* nicer error message on malformed json ([74bfb10](https://github.com/DomoticASW/server/commit/74bfb100985e1fc2360bc5ee5cb0e43c64a238fa))
+* now automations are started only if they are not being started yet ([7b8fa1d](https://github.com/DomoticASW/server/commit/7b8fa1d270ddc9223a7d61f40d5f84e12d61dc81))
+* now automations does not duplicate their nested instructions on edit ([d90f586](https://github.com/DomoticASW/server/commit/d90f5867606f2ea1aadfc728179b22bc93f8d1df))
+* now check also inside ifs and elses for the recursion of tasks with start task ins ([46bf0c5](https://github.com/DomoticASW/server/commit/46bf0c5f29312f9d977d0091e71078b4559d257d))
+* now if the automation cannot be created or edited, it will be deleted from the repo ([872b5bd](https://github.com/DomoticASW/server/commit/872b5bd7bd35d735733c171a8ce76a262a64d3ae))
+* now if the task cannot be created, it will delete it from the repo ([91a57d2](https://github.com/DomoticASW/server/commit/91a57d2dedcc6f4df0c9ac7b607180a937e81ce0))
+* now tasks and automation are returned by their get just if the type is the same of get ([8370025](https://github.com/DomoticASW/server/commit/8370025533dbec1bc82bba12171825897a335e4b))
+* now the new automation is correctly deleted when editing with deleted user ([13fc6d9](https://github.com/DomoticASW/server/commit/13fc6d9c52ede78a21fe493139ff4bc2e4beade2))
+* now there is the check of actions permissions on edit of automation ([598878d](https://github.com/DomoticASW/server/commit/598878db50b7c9ee35911ad57ef6ecf72bd4e949))
+* now when editing the automation instead of setting it to enable, set it to the previous state ([a941f1e](https://github.com/DomoticASW/server/commit/a941f1ef757b856f64492e4fb1187e889088d432))
+* refactor user update to make nickname and password optional ([3674f08](https://github.com/DomoticASW/server/commit/3674f08de10d5fa51b55f34daa9963c6eeffafef))
+* rename fields ([7c9ff20](https://github.com/DomoticASW/server/commit/7c9ff203a8a10fd88a177f7be5da90c820b69606))
+* replace PasswordHash with ClearTextPassword in user registration and login ([58226fc](https://github.com/DomoticASW/server/commit/58226fc6cf6c22d1410a535b182fe72455cb9e53))
+* standardised device error responses ([dc5e05a](https://github.com/DomoticASW/server/commit/dc5e05aae2609672c5b1a8bee9c139767636bbc7))
+* update login logic to return the appropriate error ([5be218a](https://github.com/DomoticASW/server/commit/5be218acce96578b8a9b92be8a2a843fc9c9aea0))
+* update registration tests because of password encryption ([6b738d0](https://github.com/DomoticASW/server/commit/6b738d069436ef784706c6d7a828f04286a2c9e2))
+* update tests to use ClearTextPassword ([cfa2701](https://github.com/DomoticASW/server/commit/cfa2701576ec7d1057e2d7344ab8f08b93eddb1b))
+
+### Documentation
+
+* update readme with setup info ([dfae7f3](https://github.com/DomoticASW/server/commit/dfae7f3ef4d9b3f49a1ba9a59aabdce59a27cba0))
+
+### General maintenance
+
+* add a control in a permissionsService method ([2cfdfb0](https://github.com/DomoticASW/server/commit/2cfdfb0dc707b9de7ce9a27139e2b7edff14ce7f))
+* add findAllUserDevicePermissionsOfAnUser ([54042e9](https://github.com/DomoticASW/server/commit/54042e998d8b299a50240dd6227ed87768791e03))
+* add new errors ([42591af](https://github.com/DomoticASW/server/commit/42591af9dea2ada6a8b89ea91f7ec7e43a8de166))
+* add new method to the permissionsService interface and mock ([d88d22d](https://github.com/DomoticASW/server/commit/d88d22d287bdcd145abe97a28363f86a43cfc9aa))
+* add some new errors and manage the case in which an edited automation has errors ([2227d22](https://github.com/DomoticASW/server/commit/2227d22288e52f4b91947db20f930a4069feb239))
+* fix indentation ([8577de3](https://github.com/DomoticASW/server/commit/8577de32ad1b0e79c07cf627ad59c0a2ae5fa6eb))
+* fix password encryption in permission service test ([653fc17](https://github.com/DomoticASW/server/commit/653fc17d25fac3c16cb18a8761df053eb68eba9b))
+* now canExecuteAction accept all admin + update test ([ab87236](https://github.com/DomoticASW/server/commit/ab87236bc70490a3d54cc1629dfee001f31d29b0))
+* now canExecuteTask accept all admin user ([e48fe05](https://github.com/DomoticASW/server/commit/e48fe0597e96928f39325df1b3bf7ac13ba07228))
+* now it is again possible to have recursion in tasks ([14874e8](https://github.com/DomoticASW/server/commit/14874e875b2b11fa6225786bdaeeeee10a447976))
+* now script builder give errors when some important values are missing ([9377c6d](https://github.com/DomoticASW/server/commit/9377c6d33da22c967e874dd764fb84ceb4669838))
+* now tasks and automation cannot have empty names ([87f0e7d](https://github.com/DomoticASW/server/commit/87f0e7dd51567477ff3be637c4835e37da04d0c2))
+* now the start task instruction cannot refers to the same task in which it is present ([b9ed78f](https://github.com/DomoticASW/server/commit/b9ed78fa60e754a492ae78656f392e030fd014eb))
+* remove debugging console.log ([083dffe](https://github.com/DomoticASW/server/commit/083dffe971d53172ea214044598228dd5a76243d))
+* remove hardcoded address for mongodb ([2105dd3](https://github.com/DomoticASW/server/commit/2105dd33ef84aa6727680f86549b43c07785c2b0))
+* **security:** run npm audit fix ([69beb34](https://github.com/DomoticASW/server/commit/69beb3416440b58daaa019a6baf96953a095d01a))
+* simplified error handling ([af44669](https://github.com/DomoticASW/server/commit/af44669fa48dcd2618a6641cc64e0c522cc0c4c5))
+* simplified start-prod script ([378936e](https://github.com/DomoticASW/server/commit/378936ea016d09bce08df55c8e2a5812b3a1f70d))
+
+### Refactoring
+
+* now the code for creating tasks and automation and edit automation is clearer ([794c828](https://github.com/DomoticASW/server/commit/794c828fd10a2217811b9798226d6ef40f586ad4))
+* refactor test functions ([633cb5e](https://github.com/DomoticASW/server/commit/633cb5e6e6aa0bf70ac16ae325b7fcd7c5f2d09a))
+* remove DeviceFactory ([054f6b1](https://github.com/DomoticASW/server/commit/054f6b1c390ce43890789c30f4749cbc8a3be223))
+
 ## [1.0.9](https://github.com/DomoticASW/server/compare/1.0.8...1.0.9) (2025-08-20)
 
 ### Dependency updates
