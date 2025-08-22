@@ -165,7 +165,7 @@ abstract class ScriptBuilderImpl<S = Task | Automation> implements ScriptBuilder
       this.errors.push(InvalidScriptError("Constants cannot have empty name"))
     }
     if (this.constantAlreadyExists(instruction.name, ref)) {
-      this.errors.push(InvalidScriptError("The constant " + instruction.name + " is initialized two times"))
+      this.errors.push(InvalidScriptError("The constant " + instruction.name + " is declared two times"))
     }
     const constantRef = ConstantRef(instruction, ref)
     const newBuilder = this.createCopy(ref, instruction)
@@ -233,7 +233,7 @@ class TaskBuilderImpl extends ScriptBuilderImpl<Task> {
     constantRefs: Array<ConstantRef>,
     errors: Array<InvalidScriptError>
   ): TaskBuilderImpl {
-    return new TaskBuilderImpl(this.name, Array.from(nodeRefs), constantRefs, Array.from(errors))
+    return new TaskBuilderImpl(this.name, Array.from(nodeRefs), Array.from(constantRefs), Array.from(errors))
   }
 }
 
@@ -271,7 +271,7 @@ class AutomationBuilderImpl extends ScriptBuilderImpl<Automation> {
     constantRefs: Array<ConstantRef>,
     errors: Array<InvalidScriptError>
   ): AutomationBuilderImpl {
-    return new AutomationBuilderImpl(this.name, this.trigger, Array.from(nodeRefs), constantRefs, Array.from(errors))
+    return new AutomationBuilderImpl(this.name, this.trigger, Array.from(nodeRefs), Array.from(constantRefs), Array.from(errors))
   }
 }
 
