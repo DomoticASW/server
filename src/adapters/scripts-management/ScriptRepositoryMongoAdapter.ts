@@ -176,7 +176,7 @@ export class ScriptRepositoryMongoAdapter extends BaseRepositoryMongoAdapter<Scr
 
     protected toEntity(s: ScriptSchema): Script<ScriptId> {
         let trigger: PeriodTrigger | DeviceEventTrigger
-        const instructions: Instruction[] = this.deserializeInstructions(s.instructions)
+        const instructions: Instruction[] = this.deserializeInstructions(s.instructions, s.instructions)
         switch (s.scriptType) {
             case ScriptType.Automation:
                 if (s.automationData!.trigger.triggerType == TriggerType.Period) {
@@ -230,7 +230,7 @@ export class ScriptRepositoryMongoAdapter extends BaseRepositoryMongoAdapter<Scr
             return { instruction: instruction, type: type }
         })
     }
-    private deserializeInstructions(instructions: InstructionSchema[]): Instruction[] {
+    private deserializeInstructions(instructions: InstructionSchema[], superInstructions: InstructionSchema[]): Instruction[] {
         return instructions.map(instruction => {
             switch (instruction.type) {
                 case InstructionType.SendNotificationInstruction: {
@@ -254,17 +254,17 @@ export class ScriptRepositoryMongoAdapter extends BaseRepositoryMongoAdapter<Scr
                     const i = instruction.instruction as unknown as IfInstructionSchema
                     // Fiding the constant instructions
                     // These are safely unwrapped, the constants must be present as the script compiled when it was created
-                    const [leftConstantInstructionSchema, leftConstantInstructionSchemaType] = this.findConstantInstructionSchemaByName(instructions, i.condition.leftConstantName)!
-                    const [rightConstantInstructionSchema, rightConstantInstructionSchemaType] = this.findConstantInstructionSchemaByName(instructions, i.condition.rightConstantName)!
+                    const [leftConstantInstructionSchema, leftConstantInstructionSchemaType] = this.findConstantInstructionSchemaByName(superInstructions.concat(instructions), i.condition.leftConstantName)!
+                    const [rightConstantInstructionSchema, rightConstantInstructionSchemaType] = this.findConstantInstructionSchemaByName(superInstructions.concat(instructions), i.condition.rightConstantName)!
                     // Deserializing constant instructions
                     const leftConstantInstruction = this.deserializeConstantInstruction(leftConstantInstructionSchema, leftConstantInstructionSchemaType)
                     const rightConstantInstruction = this.deserializeConstantInstruction(rightConstantInstructionSchema, rightConstantInstructionSchemaType)
                     const conditionOperator = this.deserializeConditionOperator(i.condition.conditionOperatorType)
 
                     if (instruction.type == InstructionType.IfInstruction) {
-                        return IfInstruction(this.deserializeInstructions(i.then), Condition(leftConstantInstruction, rightConstantInstruction, conditionOperator, i.condition.negate))
+                        return IfInstruction(this.deserializeInstructions(i.then, superInstructions.concat(instructions)), Condition(leftConstantInstruction, rightConstantInstruction, conditionOperator, i.condition.negate))
                     } else {
-                        return IfElseInstruction(this.deserializeInstructions(i.then), this.deserializeInstructions((i as IfElseInstructionSchema).else), Condition(leftConstantInstruction, rightConstantInstruction, conditionOperator, i.condition.negate))
+                        return IfElseInstruction(this.deserializeInstructions(i.then, superInstructions.concat(instructions)), this.deserializeInstructions((i as IfElseInstructionSchema).else, superInstructions.concat(instructions)), Condition(leftConstantInstruction, rightConstantInstruction, conditionOperator, i.condition.negate))
                     }
                 }
                 case InstructionType.CreateDevicePropertyConstantInstruction:
