@@ -1,3 +1,9 @@
+## [2.0.6](https://github.com/DomoticASW/server/compare/2.0.5...2.0.6) (2025-08-23)
+
+### Bug Fixes
+
+* **deps:** update dependency effect to v3.17.9 ([#127](https://github.com/DomoticASW/server/issues/127)) ([60ca92c](https://github.com/DomoticASW/server/commit/60ca92cb393ec0f85ef79358721d30f3c071b6e7))
+
 ## [2.0.5](https://github.com/DomoticASW/server/compare/2.0.4...2.0.5) (2025-08-23)
 
 ### Bug Fixes
