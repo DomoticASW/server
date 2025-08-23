@@ -1,3 +1,13 @@
+## [2.0.5](https://github.com/DomoticASW/server/compare/2.0.4...2.0.5) (2025-08-23)
+
+### Bug Fixes
+
+* rollback to jest 29 ([f722932](https://github.com/DomoticASW/server/commit/f7229327116dd754d93c0d5ef0e8bbb0adbade51))
+
+### Build and continuous integration
+
+* making commitlint ignore ci-made commits ([74ea4d1](https://github.com/DomoticASW/server/commit/74ea4d184585579b1e54f61256eb271e3c045ec5))
+
 ## [2.0.4](https://github.com/DomoticASW/server/compare/2.0.3...2.0.4) (2025-08-22)
 
 ### Bug Fixes
