@@ -11,7 +11,9 @@ x-devices-common: &devices-common
   pull_policy: always
 
 x-devices-common-environment: &devices-common-environment
+  LAN_HOSTNAME: localhost # Since the network mode is "host" every device is reachable as localhost
   SERVER_DISCOVERY_PORT: 30000 # Port on which the device will announce in broadcast
+
   # Broadcast address to which the device will announce itself. (May need to be changed due to some firewall configurations)
   DISCOVERY_BROADCAST_ADDR: &discovery-broadcast-address 255.255.255.255
   # Some containers use this var name but the meaning is the same as DISCOVERY_BROADCAST_ADDR

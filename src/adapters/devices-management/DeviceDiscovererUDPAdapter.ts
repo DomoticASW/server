@@ -4,12 +4,13 @@ import { DeviceDiscoverer } from '../../ports/devices-management/DeviceDiscovere
 import { DiscoveredDevice } from '../../domain/devices-management/DiscoveredDevice.js';
 
 interface AnnounceMessage {
-    id: string,
-    name: string,
+    id: string
+    name: string
+    lanHostname: string
     port: number
 }
 interface AnnouncedDevice extends AnnounceMessage {
-    host: string,
+    lanHostname: string
     arrivedAt: Date
 }
 
@@ -17,6 +18,7 @@ function isAnnounceMessage(o: unknown): o is AnnounceMessage {
     return typeof o === 'object' && o !== null &&
         'id' in o && typeof o.id === 'string' &&
         'name' in o && typeof o.name === 'string' &&
+        'lanHostname' in o && typeof o.lanHostname === 'string' &&
         'port' in o && Number.isInteger(o.port)
 }
 
@@ -32,7 +34,7 @@ export class DeviceDiscovererUDPAdapter implements DeviceDiscoverer {
             if (logAnnounces) { console.log(`Announce from ${rinfo.address} - ${msg}`) }
             const obj = JSON.parse(msg.toString())
             if (isAnnounceMessage(obj)) {
-                this.receivedMessages.set(obj.id, { ...obj, host: rinfo.address, arrivedAt: new Date() })
+                this.receivedMessages.set(obj.id, { ...obj, arrivedAt: new Date() })
             } else {
                 if (logAnnounces) { console.log("Announce message format was invalid") }
             }
@@ -58,7 +60,7 @@ export class DeviceDiscovererUDPAdapter implements DeviceDiscoverer {
     discoveredDevices(): Iterable<DiscoveredDevice> {
         return Array.from(this.receivedMessages.values())
             .filter(m => !this.announceIsOld(m))
-            .map(m => DiscoveredDevice(DeviceId(m.id), m.name, DeviceAddress(m.host, m.port)))
+            .map(m => DiscoveredDevice(DeviceId(m.id), m.name, DeviceAddress(m.lanHostname, m.port)))
     }
 
     private announceIsOld(a: AnnouncedDevice): boolean {
