@@ -1,3 +1,13 @@
+## [2.0.7](https://github.com/DomoticASW/server/compare/2.0.6...2.0.7) (2025-08-24)
+
+### Dependency updates
+
+* **deps:** update eslint monorepo to v9.34.0 ([#133](https://github.com/DomoticASW/server/issues/133)) ([dde33ac](https://github.com/DomoticASW/server/commit/dde33ac0bd0a5cdda44d1abb1ad503a3244f25cb))
+
+### Bug Fixes
+
+* **deps:** update dependency mongoose to v8.18.0 ([#128](https://github.com/DomoticASW/server/issues/128)) ([963f3d7](https://github.com/DomoticASW/server/commit/963f3d7109fe8a613b1a2063e8eec02788275b8f))
+
 ## [2.0.6](https://github.com/DomoticASW/server/compare/2.0.5...2.0.6) (2025-08-23)
 
 ### Bug Fixes
