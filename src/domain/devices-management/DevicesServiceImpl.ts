@@ -47,7 +47,12 @@ export class DevicesServiceImpl implements DevicesService {
                     onTrue: () => this.usersService.verifyToken(token),
                     onFalse: () => Effect.fail(UnauthorizedError())
                 })),
+            Effect.bind("device", () => this.repo.find(deviceId)),
+            // I must be able to remove the device from the system even if it will not be reachable anymore (it may be broken)
             Effect.bind("__", () => this.repo.remove(deviceId)),
+            Effect.bind("___", ({ device }) => this.deviceCommunication.unregister(device.address)),
+            Effect.catch("__brand", { failure: "CommunicationError", onFailure: () => Effect.void }),
+            Effect.catch("__brand", { failure: "DeviceUnreachableError", onFailure: () => Effect.void }),
             Effect.mapError((e) => {
                 switch (e.__brand) {
                     case "NotFoundError":

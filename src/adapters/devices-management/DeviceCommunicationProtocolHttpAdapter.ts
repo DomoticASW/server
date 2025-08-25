@@ -1,4 +1,4 @@
-import { Effect, succeed, fail, tryPromise, flatMap, timeout, bind, catchIf, Do, all, if as if_, map } from "effect/Effect";
+import { Effect, succeed, fail, tryPromise, flatMap, timeout, bind, catchIf, Do, all, if as if_, map, void as void_ } from "effect/Effect";
 import { DeviceCommunicationProtocol } from "../../ports/devices-management/DeviceCommunicationProtocol.js";
 import { CommunicationError, DeviceUnreachableError, DeviceActionError } from "../../ports/devices-management/Errors.js";
 import { Device, DeviceAction, DeviceActionId, DeviceAddress, DeviceEvent, DeviceId, DeviceProperty, DevicePropertyId, DeviceStatus } from "../../domain/devices-management/Device.js";
@@ -60,6 +60,29 @@ export class DeviceCommunicationProtocolHttpAdapter implements DeviceCommunicati
         })
       )
     );
+  }
+
+  unregister(deviceAddress: DeviceAddress): Effect<void, DeviceUnreachableError | CommunicationError> {
+    const { host, port } = deviceAddress
+    return Do.pipe(
+      bind("response", () => tryPromise({
+        try: () => fetch(`http://${host}:${port}/unregister`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" }
+        }),
+        catch: (e) => CommunicationError((e as Error).message)
+      })),
+      timeout(millis(this.timeoutToReachDeviceMs)),
+      catchIf(e => e instanceof TimeoutException, () => fail(DeviceUnreachableError())),
+      flatMap(({ response }) =>
+        if_(response.ok, {
+          onTrue: () => void_,
+          onFalse: () => pipe(
+            decodeDeviceError(response),
+            flatMap((error) => fail(CommunicationError(`Something went wrong while trying to register the device:\n${error?.cause ?? response.statusText}`)))
+          )
+        }))
+    )
   }
 
   /**
