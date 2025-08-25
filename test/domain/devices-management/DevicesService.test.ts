@@ -6,7 +6,7 @@ import { DevicePropertyUpdatesSubscriber, DevicesService } from "../../../src/po
 import { InMemoryRepositoryMock } from "../../InMemoryRepositoryMock.js"
 import { DevicesServiceImpl } from "../../../src/domain/devices-management/DevicesServiceImpl.js"
 import { DeviceCommunicationProtocol } from "../../../src/ports/devices-management/DeviceCommunicationProtocol.js"
-import { DeviceUnreachableError } from "../../../src/ports/devices-management/Errors.js"
+import { CommunicationError, DeviceUnreachableError } from "../../../src/ports/devices-management/Errors.js"
 import { DeviceRepository } from "../../../src/ports/devices-management/DeviceRepository.js"
 import { NoneInt } from "../../../src/domain/devices-management/Types.js"
 import { InvalidTokenError } from "../../../src/ports/users-management/Errors.js"
@@ -39,8 +39,9 @@ beforeEach(() => {
             const actions: DeviceAction<unknown>[] = []
             const events: DeviceEvent[] = []
             return Effect.succeed(Device(DeviceId(deviceAddress.toString()), "device", deviceAddress, DeviceStatus.Online, properties, actions, events))
-        }
-    } as DeviceCommunicationProtocol
+        },
+        unregister() { return Effect.void }
+    } as unknown as DeviceCommunicationProtocol
     deviceDiscoverer = {
         discoveredDevices() {
             this.callsToDiscoveredDevices += 1
@@ -134,6 +135,50 @@ test("findUnsafe retrieves devices by id", () => {
 })
 
 test("remove removes devices by id", () => {
+    const devices = pipe(
+        Effect.gen(function* () {
+            const id = yield* service.add(makeToken(), DeviceAddress("localhost", 8080))
+            yield* service.remove(makeToken(), id)
+            return yield* service.getAllDevices(makeToken())
+        }),
+        Effect.runSync
+    )
+    expect(devices).toHaveLength(0)
+})
+
+test("remove a device will tell him to unregister", () => {
+    let calledUnregister = false
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    deviceCommunicationProtocol.unregister = (_deviceAddress) => {
+        calledUnregister = true
+        return Effect.void
+    }
+    expect(calledUnregister).toEqual(false)
+    pipe(
+        Effect.gen(function* () {
+            const id = yield* service.add(makeToken(), DeviceAddress("localhost", 8080))
+            yield* service.remove(makeToken(), id)
+        }),
+        Effect.runSync
+    )
+    expect(calledUnregister).toEqual(true)
+})
+
+test("remove removes devices even if they are not reachable", () => {
+    deviceCommunicationProtocol.unregister = () => Effect.fail(DeviceUnreachableError())
+    const devices = pipe(
+        Effect.gen(function* () {
+            const id = yield* service.add(makeToken(), DeviceAddress("localhost", 8080))
+            yield* service.remove(makeToken(), id)
+            return yield* service.getAllDevices(makeToken())
+        }),
+        Effect.runSync
+    )
+    expect(devices).toHaveLength(0)
+})
+
+test("remove removes devices even if unregistering goes wrong", () => {
+    deviceCommunicationProtocol.unregister = () => Effect.fail(CommunicationError())
     const devices = pipe(
         Effect.gen(function* () {
             const id = yield* service.add(makeToken(), DeviceAddress("localhost", 8080))

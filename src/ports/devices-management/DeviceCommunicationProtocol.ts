@@ -28,4 +28,13 @@ export interface DeviceCommunicationProtocol {
       * 2. The device should remember from now on that he is registered to this specific server.
     */
     register(deviceAddress: DeviceAddress): Effect<Device, DeviceUnreachableError | CommunicationError>
+
+    /**
+     * Reaches for a device at the given address and tells him that he's being unregistered.
+     * 
+     * A device is expected to return a successfull status code if either:
+     * - he successfully unregistered
+     * - he was already not registered
+     */
+    unregister(deviceAddress: DeviceAddress): Effect<void, DeviceUnreachableError | CommunicationError>
 }
