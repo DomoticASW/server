@@ -1,3 +1,33 @@
+## [3.0.0](https://github.com/DomoticASW/server/compare/2.0.7...3.0.0) (2025-08-25)
+
+### ⚠ BREAKING CHANGES
+
+* requiring device to announce its hostname
+
+### Features
+
+* make devices aware of getting unregistered ([e7a2beb](https://github.com/DomoticASW/server/commit/e7a2bebd23bf8b4f9ac76c7fa6673a4ab1eab395))
+* requiring device to announce its hostname ([e2d3904](https://github.com/DomoticASW/server/commit/e2d390438d9c3d6ecfec05abae5220867a92892f))
+
+### Bug Fixes
+
+* if was not searching costants in its scope but just inside all the outer scopes ([0b23b8e](https://github.com/DomoticASW/server/commit/0b23b8e3ec3d5af8a5ac88afa07ceb2c79c52689))
+* now cannot be more constants with same name on same scope ([964c3dc](https://github.com/DomoticASW/server/commit/964c3dc508aef68e2e003a33a4da2c5f419671a0))
+* now nested if searches constants along all the instructions that are above them ([d61eb4a](https://github.com/DomoticASW/server/commit/d61eb4aaeebfd734f53f53f41e3c0a5cda7c8ba9))
+* now the constantRefs array is correctly copied ([5be638c](https://github.com/DomoticASW/server/commit/5be638c80f29714d3b5caf19abd10189db5bad07))
+
+### Documentation
+
+* add inline doc for renovate.jsonc ([7e025e8](https://github.com/DomoticASW/server/commit/7e025e8295f42ad7ed334fdc14fa3b0b5d81cce3))
+
+### Build and continuous integration
+
+* **renovate:** changed pr logic on branches ([6a87ea2](https://github.com/DomoticASW/server/commit/6a87ea228e9f8e03134e1d534479dc8293f6712f))
+
+### Refactoring
+
+* renamed renovate.json to renovate.jsonc ([5e5d9fb](https://github.com/DomoticASW/server/commit/5e5d9fbb020776b30ad8c07c9aa43363d5bad70e))
+
 ## [2.0.7](https://github.com/DomoticASW/server/compare/2.0.6...2.0.7) (2025-08-24)
 
 ### Dependency updates
