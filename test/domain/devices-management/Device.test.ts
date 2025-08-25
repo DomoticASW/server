@@ -73,7 +73,10 @@ class DeviceCommunicationProtocolSpy implements DeviceCommunicationProtocol {
     checkDeviceStatus(): Effect.Effect<DeviceStatus, CommunicationError> {
         throw new Error("Unimplemented")
     }
-    register(): Effect.Effect<Device, DeviceUnreachableError> {
+    register(): Effect.Effect<Device, DeviceUnreachableError | CommunicationError> {
+        throw new Error("Unimplemented")
+    }
+    unregister(): Effect.Effect<Device, DeviceUnreachableError | CommunicationError> {
         throw new Error("Unimplemented")
     }
 }
