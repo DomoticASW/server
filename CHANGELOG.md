@@ -1,3 +1,9 @@
+## [3.1.0](https://github.com/DomoticASW/server/compare/3.0.0...3.1.0) (2025-08-25)
+
+### Features
+
+* checkout client at 0.2.0 ([f29a2c2](https://github.com/DomoticASW/server/commit/f29a2c237e7a1edc15824b9b7314699f0cbb4896))
+
 ## [3.0.0](https://github.com/DomoticASW/server/compare/2.0.7...3.0.0) (2025-08-25)
 
 ### ⚠ BREAKING CHANGES
