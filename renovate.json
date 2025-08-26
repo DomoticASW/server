@@ -1,7 +1,12 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["config:recommended"],
-  "baseBranchPatterns": ["$default", "develop"],
+  "extends": [
+    "config:recommended"
+  ],
+  "baseBranchPatterns": [
+    "$default",
+    "develop"
+  ],
   "packageRules": [
     {
       "description": "Enabling automerge for every update that is stable and non-major",
@@ -18,14 +23,22 @@
     },
     {
       "description": "Disabling renovate for dev dependencies on the default branch",
-      "matchDepTypes": ["devDependencies"],
-      "matchBaseBranches": ["$default"],
+      "matchDepTypes": [
+        "devDependencies"
+      ],
+      "matchBaseBranches": [
+        "$default"
+      ],
       "enabled": false
     },
     {
       "description": "Disabling renovate for prod dependencies on the develop branch",
-      "matchDepTypes": ["dependencies"],
-      "matchBaseBranches": ["develop"],
+      "matchDepTypes": [
+        "dependencies"
+      ],
+      "matchBaseBranches": [
+        "develop"
+      ],
       "enabled": false
     }
   ]
