@@ -1,3 +1,14 @@
+## [3.1.1](https://github.com/DomoticASW/server/compare/3.1.0...3.1.1) (2025-08-26)
+
+### Bug Fixes
+
+* rollback renovate file from jsonc to json ([40a3f32](https://github.com/DomoticASW/server/commit/40a3f325193bdc9211127c6d50958c50ea348c2a))
+
+### General maintenance
+
+* format file ([bf51de9](https://github.com/DomoticASW/server/commit/bf51de9eafa4ab81ba7fdd33fba0a491fb1e4697))
+* move renovate comments to descriptions ([700eb39](https://github.com/DomoticASW/server/commit/700eb398a099eea3336a89fdac4567271a381d75))
+
 ## [3.1.0](https://github.com/DomoticASW/server/compare/3.0.0...3.1.0) (2025-08-25)
 
 ### Features
