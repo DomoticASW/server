@@ -18,7 +18,7 @@ import { DeviceId, DeviceEvent } from "../devices-management/Device.js";
 import { DeviceEventTrigger, DeviceEventTriggerImpl, PeriodTrigger, PeriodTriggerImpl } from "./Trigger.js";
 import { millis, seconds } from "effect/Duration";
 import { DeviceActionsService } from "../../ports/devices-management/DeviceActionsService.js";
-import { isDeviceActionInstruction } from "./Instruction.js";
+import { Instruction, isDeviceActionInstruction, isIfElseInstruction, isIfInstruction } from "./Instruction.js";
 
 export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscriber {
   private automationsFiberMap: Map<AutomationId, (Fiber.RuntimeFiber<undefined, ScriptError | NotFoundError | UserNotFoundError>)> = new Map()
@@ -170,7 +170,7 @@ export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscribe
     return Do.pipe(
       bind("script", () => this.createScript(token, automation)),
       bind("automation", ({ script }) => succeed(script as Automation)),
-      bind("_", ({ automation }) => this.checkAutomationActionsPermissions(token, automation)),
+      bind("_", ({ automation }) => this.checkAutomationActionsPermissions(token, automation.instructions)),
       bind("__", ({ automation }) => this.scriptRepository.add(automation)),
       bind("___", ({ automation }) => pipe(
         this.permissionsService.addToEditlistUnsafe(token.userEmail, automation.id),
@@ -213,11 +213,17 @@ export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscribe
     )
   }
 
-  checkAutomationActionsPermissions(token: Token, automation: Automation): Effect<void, PermissionError | InvalidTokenError> {
+  checkAutomationActionsPermissions(token: Token, instructions: Instruction[]): Effect<void, PermissionError | InvalidTokenError> {
     return pipe(
-      forEach(automation.instructions, (instruction) => {
+      forEach(instructions, (instruction) => {
         if (isDeviceActionInstruction(instruction)) {
           return this.permissionsService.canExecuteActionOnDevice(token, instruction.deviceId)
+        }
+        if (isIfInstruction(instruction)) {
+          return this.checkAutomationActionsPermissions(token, instruction.then)
+        }
+        if (isIfElseInstruction(instruction)) {
+          return this.checkAutomationActionsPermissions(token, instruction.else)
         }
         return succeed(null)
       })
@@ -396,7 +402,7 @@ export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscribe
     return Do.pipe(
       bind("_", () => this.permissionsService.canEdit(token, scriptId)),
       bind("script", () => scriptBuilder.buildWithId(scriptId)),
-      bind("__", ({ script }) => isAutomation ? this.checkAutomationActionsPermissions(token, script as Automation) : succeed(undefined)),
+      bind("__", ({ script }) => isAutomation ? this.checkAutomationActionsPermissions(token, (script as Automation).instructions) : succeed(undefined)),
       bind("___", ({ script }) => this.scriptRepository.update(script)),
       map(({ script }) => script),
       mapError(err => {
