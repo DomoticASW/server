@@ -1,3 +1,13 @@
+## [3.1.2](https://github.com/DomoticASW/server/compare/3.1.1...3.1.2) (2025-08-26)
+
+### Dependency updates
+
+* **deps:** update dependency typescript-eslint to v8.41.0 ([#145](https://github.com/DomoticASW/server/issues/145)) ([a08da04](https://github.com/DomoticASW/server/commit/a08da044e72755789dbff3e1959115db12d0691c))
+
+### Bug Fixes
+
+* now device event triggered automations can be disabled ([85d5b0a](https://github.com/DomoticASW/server/commit/85d5b0a784c5e8e0603a529e18e6ba604c147304))
+
 ## [3.1.1](https://github.com/DomoticASW/server/compare/3.1.0...3.1.1) (2025-08-26)
 
 ### Bug Fixes
