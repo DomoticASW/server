@@ -182,7 +182,7 @@ export class PermissionsServiceImpl implements PermissionsService {
         }
 
         const deviceChecks = task.instructions
-          .flatMap(i => isIfElseInstruction(i) ? i.then.concat(i.else) : isIfInstruction(i) ? i.then : i)
+          .flatMap(i => this.flatInstructions(i))
           .filter(isDeviceActionInstruction)
           .map(instruction =>
             this.canExecuteActionOnDevice(token, instruction.deviceId)
@@ -204,6 +204,14 @@ export class PermissionsServiceImpl implements PermissionsService {
         }
       })
     )
+  }
+
+  private flatInstructions(instruction: Instruction): Instruction[] {
+    return isIfElseInstruction(instruction) ?
+      instruction.then.concat(instruction.else).flatMap(i => this.flatInstructions(i))
+      : isIfInstruction(instruction) ?
+        instruction.then.flatMap(i => this.flatInstructions(i))
+        : [instruction]
   }
 
   canEdit(token: Token, scriptId: ScriptId): Effect.Effect<void, PermissionError | InvalidTokenError | ScriptNotFoundError> {
