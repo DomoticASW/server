@@ -182,7 +182,7 @@ export class PermissionsServiceImpl implements PermissionsService {
         }
 
         const deviceChecks = task.instructions
-          .flatMap(i => isIfInstruction(i) ? i.then : isIfElseInstruction(i) ? i.else : i)
+          .flatMap(i => isIfElseInstruction(i) ? i.then.concat(i.else) : isIfInstruction(i) ? i.then : i)
           .filter(isDeviceActionInstruction)
           .map(instruction =>
             this.canExecuteActionOnDevice(token, instruction.deviceId)

@@ -219,11 +219,13 @@ export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscribe
         if (isDeviceActionInstruction(instruction)) {
           return this.permissionsService.canExecuteActionOnDevice(token, instruction.deviceId)
         }
-        if (isIfInstruction(instruction)) {
-          return this.checkAutomationActionsPermissions(token, instruction.then)
-        }
         if (isIfElseInstruction(instruction)) {
-          return this.checkAutomationActionsPermissions(token, instruction.else)
+          return pipe(
+            this.checkAutomationActionsPermissions(token, instruction.then),
+            flatMap(() => this.checkAutomationActionsPermissions(token, instruction.else))
+          )
+        } else if (isIfInstruction(instruction)) {
+          return this.checkAutomationActionsPermissions(token, instruction.then)
         }
         return succeed(null)
       })
