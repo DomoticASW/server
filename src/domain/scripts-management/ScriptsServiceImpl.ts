@@ -2,7 +2,7 @@ import { Effect, flatMap, catch as catch_, succeed, fail, mapError, map, forkDae
 import { PermissionError } from "../../ports/permissions-management/Errors.js";
 import { ScriptNotFoundError, TaskNameAlreadyInUseError, AutomationNameAlreadyInUseError, InvalidScriptError, ScriptError } from "../../ports/scripts-management/Errors.js";
 import { ScriptsService } from "../../ports/scripts-management/ScriptsService.js";
-import { InvalidTokenError } from "../../ports/users-management/Errors.js";
+import { InvalidTokenError, UserNotFoundError } from "../../ports/users-management/Errors.js";
 import { Token } from "../users-management/Token.js";
 import { TaskId, Task, AutomationId, Automation, TaskImpl, AutomationImpl, Script, ScriptId } from "./Script.js";
 import { AutomationBuilder, ScriptBuilder, TaskBuilder } from "./ScriptBuilder.js";
@@ -21,7 +21,7 @@ import { DeviceActionsService } from "../../ports/devices-management/DeviceActio
 import { isDeviceActionInstruction } from "./Instruction.js";
 
 export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscriber {
-  private automationsFiberMap: Map<AutomationId, (Fiber.RuntimeFiber<undefined, ScriptError | NotFoundError>)> = new Map()
+  private automationsFiberMap: Map<AutomationId, (Fiber.RuntimeFiber<undefined, ScriptError | NotFoundError | UserNotFoundError>)> = new Map()
   private startedAutomations: Map<AutomationId, boolean> = new Map()
 
   constructor(
@@ -126,7 +126,12 @@ export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscribe
           task.execute(this.notificationsService, this, this.permissionsService, this.devicesService, this.deviceActionsService, token),
           catch_("__brand", {
             failure: "ScriptError",
-            onFailure: () => succeed(undefined) // Here could be managed the errors sent from a script, maybe to send a notification to an admin
+            onFailure: err => pipe(
+              this.usersService.getAdmin(),
+              flatMap(admin =>
+                this.notificationsService.sendNotification(admin.email, "While executing the task " + task.name + " an error occurred: " + err.cause)
+              )
+            )
           })
         )
       ))
@@ -270,7 +275,7 @@ export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscribe
     return delay > 0 ? sleep(millis(delay)) : succeed(null)
   }
 
-  private periodLoop(automation: Automation, periodTrigger: PeriodTrigger): Effect<undefined, ScriptError | NotFoundError> {
+  private periodLoop(automation: Automation, periodTrigger: PeriodTrigger): Effect<undefined, ScriptError | NotFoundError | UserNotFoundError> {
     return pipe(
       this.startAutomation(automation),
       andThen(() => sleep(seconds(periodTrigger.periodSeconds))),
@@ -283,7 +288,12 @@ export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscribe
       automation.execute(this.notificationsService, this, this.permissionsService, this.devicesService, this.deviceActionsService),
       catch_("__brand", {
         failure: "ScriptError",
-        onFailure: () => succeed(undefined) // Here could be managed the errors sent from an automation, maybe to send a notification to an admin
+        onFailure: err => pipe(
+          this.usersService.getAdmin(),
+          flatMap(admin =>
+            this.notificationsService.sendNotification(admin.email, "While executing the automation " + automation.name + " an error occurred: " + err.cause)
+          )
+        )
       }),
     )
   }
