@@ -1,3 +1,86 @@
+## [3.1.2](https://github.com/DomoticASW/server/compare/3.1.1...3.1.2) (2025-08-26)
+
+### Dependency updates
+
+* **deps:** update dependency typescript-eslint to v8.41.0 ([#145](https://github.com/DomoticASW/server/issues/145)) ([a08da04](https://github.com/DomoticASW/server/commit/a08da044e72755789dbff3e1959115db12d0691c))
+
+### Bug Fixes
+
+* now device event triggered automations can be disabled ([85d5b0a](https://github.com/DomoticASW/server/commit/85d5b0a784c5e8e0603a529e18e6ba604c147304))
+
+## [3.1.1](https://github.com/DomoticASW/server/compare/3.1.0...3.1.1) (2025-08-26)
+
+### Bug Fixes
+
+* rollback renovate file from jsonc to json ([40a3f32](https://github.com/DomoticASW/server/commit/40a3f325193bdc9211127c6d50958c50ea348c2a))
+
+### General maintenance
+
+* format file ([bf51de9](https://github.com/DomoticASW/server/commit/bf51de9eafa4ab81ba7fdd33fba0a491fb1e4697))
+* move renovate comments to descriptions ([700eb39](https://github.com/DomoticASW/server/commit/700eb398a099eea3336a89fdac4567271a381d75))
+
+## [3.1.0](https://github.com/DomoticASW/server/compare/3.0.0...3.1.0) (2025-08-25)
+
+### Features
+
+* checkout client at 0.2.0 ([f29a2c2](https://github.com/DomoticASW/server/commit/f29a2c237e7a1edc15824b9b7314699f0cbb4896))
+
+## [3.0.0](https://github.com/DomoticASW/server/compare/2.0.7...3.0.0) (2025-08-25)
+
+### ⚠ BREAKING CHANGES
+
+* requiring device to announce its hostname
+
+### Features
+
+* make devices aware of getting unregistered ([e7a2beb](https://github.com/DomoticASW/server/commit/e7a2bebd23bf8b4f9ac76c7fa6673a4ab1eab395))
+* requiring device to announce its hostname ([e2d3904](https://github.com/DomoticASW/server/commit/e2d390438d9c3d6ecfec05abae5220867a92892f))
+
+### Bug Fixes
+
+* if was not searching costants in its scope but just inside all the outer scopes ([0b23b8e](https://github.com/DomoticASW/server/commit/0b23b8e3ec3d5af8a5ac88afa07ceb2c79c52689))
+* now cannot be more constants with same name on same scope ([964c3dc](https://github.com/DomoticASW/server/commit/964c3dc508aef68e2e003a33a4da2c5f419671a0))
+* now nested if searches constants along all the instructions that are above them ([d61eb4a](https://github.com/DomoticASW/server/commit/d61eb4aaeebfd734f53f53f41e3c0a5cda7c8ba9))
+* now the constantRefs array is correctly copied ([5be638c](https://github.com/DomoticASW/server/commit/5be638c80f29714d3b5caf19abd10189db5bad07))
+
+### Documentation
+
+* add inline doc for renovate.jsonc ([7e025e8](https://github.com/DomoticASW/server/commit/7e025e8295f42ad7ed334fdc14fa3b0b5d81cce3))
+
+### Build and continuous integration
+
+* **renovate:** changed pr logic on branches ([6a87ea2](https://github.com/DomoticASW/server/commit/6a87ea228e9f8e03134e1d534479dc8293f6712f))
+
+### Refactoring
+
+* renamed renovate.json to renovate.jsonc ([5e5d9fb](https://github.com/DomoticASW/server/commit/5e5d9fbb020776b30ad8c07c9aa43363d5bad70e))
+
+## [2.0.7](https://github.com/DomoticASW/server/compare/2.0.6...2.0.7) (2025-08-24)
+
+### Dependency updates
+
+* **deps:** update eslint monorepo to v9.34.0 ([#133](https://github.com/DomoticASW/server/issues/133)) ([dde33ac](https://github.com/DomoticASW/server/commit/dde33ac0bd0a5cdda44d1abb1ad503a3244f25cb))
+
+### Bug Fixes
+
+* **deps:** update dependency mongoose to v8.18.0 ([#128](https://github.com/DomoticASW/server/issues/128)) ([963f3d7](https://github.com/DomoticASW/server/commit/963f3d7109fe8a613b1a2063e8eec02788275b8f))
+
+## [2.0.6](https://github.com/DomoticASW/server/compare/2.0.5...2.0.6) (2025-08-23)
+
+### Bug Fixes
+
+* **deps:** update dependency effect to v3.17.9 ([#127](https://github.com/DomoticASW/server/issues/127)) ([60ca92c](https://github.com/DomoticASW/server/commit/60ca92cb393ec0f85ef79358721d30f3c071b6e7))
+
+## [2.0.5](https://github.com/DomoticASW/server/compare/2.0.4...2.0.5) (2025-08-23)
+
+### Bug Fixes
+
+* rollback to jest 29 ([f722932](https://github.com/DomoticASW/server/commit/f7229327116dd754d93c0d5ef0e8bbb0adbade51))
+
+### Build and continuous integration
+
+* making commitlint ignore ci-made commits ([74ea4d1](https://github.com/DomoticASW/server/commit/74ea4d184585579b1e54f61256eb271e3c045ec5))
+
 ## [2.0.4](https://github.com/DomoticASW/server/compare/2.0.3...2.0.4) (2025-08-22)
 
 ### Bug Fixes
