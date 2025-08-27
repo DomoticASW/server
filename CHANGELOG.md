@@ -1,3 +1,15 @@
+## [3.2.0](https://github.com/DomoticASW/server/compare/3.1.2...3.2.0) (2025-08-27)
+
+### Features
+
+* now admin receives notifications if a script return a runtime error ([aea1bbd](https://github.com/DomoticASW/server/commit/aea1bbdd77aad1be87228a501e8a81bbe8183429))
+
+### Bug Fixes
+
+* flat all instructions in canExecuteTask, also nested ones ([6418dea](https://github.com/DomoticASW/server/commit/6418dea19c8ba6f2367735871f536a06a9d3ba90))
+* now if else instructions are made first ([d5f7bdc](https://github.com/DomoticASW/server/commit/d5f7bdc93b6e49101156ad7d880ce0fbb9602bd4))
+* now scripts have right permission checks when executed ([077680e](https://github.com/DomoticASW/server/commit/077680eab30786944e97c102675cb6918fb39044))
+
 ## [3.1.2](https://github.com/DomoticASW/server/compare/3.1.1...3.1.2) (2025-08-26)
 
 ### Dependency updates
