@@ -40,7 +40,7 @@ export class UsersServiceImpl implements UsersService {
                 const hashedPass = PasswordHash(hashedPassword);
                 return pipe(
                     this.userRepository.getAll(),
-                    Eff.flatMap(users => 
+                    Eff.flatMap(users =>
                         Array.from(users).length === 0
                             ? this.userRepository.add(User(nickname, email, hashedPass, Role.Admin))
                             : this.regReqRepository.add(RegistrationRequest(nickname, email, hashedPass))
@@ -119,41 +119,41 @@ export class UsersServiceImpl implements UsersService {
     }
 
     updateUserData(
-    token: Token,
-    nickname?: Nickname,
-    password?: ClearTextPassword
-): Effect<void, UserNotFoundError | TokenError> {
-    return pipe(
-        this.verifyToken(token),
-        Eff.flatMap(() => this.userRepository.find(token.userEmail)),
-        Eff.flatMap((user) => {
-            const hashPasswordIfProvided = password 
-                ? pipe(
-                    Eff.tryPromise(() => bcrypt.hash(password, 10)),
-                    Eff.orDie,
-                    Eff.map(hash => PasswordHash(hash))
-                )
-                : Eff.succeed(user.passwordHash);
-            
-            return pipe(
-                hashPasswordIfProvided,
-                Eff.flatMap(passwordHash => {
-                    const updatedUser = User(
-                        nickname ?? user.nickname, 
-                        token.userEmail, 
-                        passwordHash, 
-                        user.role
-                    );
-                    return this.userRepository.update(updatedUser);
-                })
-            );
-        }),
-        Eff.catch("__brand", {
-            failure: "NotFoundError",
-            onFailure: () => Eff.fail(UserNotFoundError()),
-        })
-    )
-}
+        token: Token,
+        nickname?: Nickname,
+        password?: ClearTextPassword
+    ): Effect<void, UserNotFoundError | TokenError> {
+        return pipe(
+            this.verifyToken(token),
+            Eff.flatMap(() => this.userRepository.find(token.userEmail)),
+            Eff.flatMap((user) => {
+                const hashPasswordIfProvided = password
+                    ? pipe(
+                        Eff.tryPromise(() => bcrypt.hash(password, 10)),
+                        Eff.orDie,
+                        Eff.map(hash => PasswordHash(hash))
+                    )
+                    : Eff.succeed(user.passwordHash);
+
+                return pipe(
+                    hashPasswordIfProvided,
+                    Eff.flatMap(passwordHash => {
+                        const updatedUser = User(
+                            nickname ?? user.nickname,
+                            token.userEmail,
+                            passwordHash,
+                            user.role
+                        );
+                        return this.userRepository.update(updatedUser);
+                    })
+                );
+            }),
+            Eff.catch("__brand", {
+                failure: "NotFoundError",
+                onFailure: () => Eff.fail(UserNotFoundError()),
+            })
+        )
+    }
 
     getAllUsers(token: Token): Effect<Iterable<User>, InvalidTokenError> {
         return pipe(
@@ -178,6 +178,17 @@ export class UsersServiceImpl implements UsersService {
             this.userRepository.find(email),
             Eff.mapError(() => UserNotFoundError())
         );
+    }
+
+    getAdmin(): Effect<User, UserNotFoundError> {
+        return pipe(
+            this.userRepository.getAll(),
+            Eff.map(users => Array.from(users).find(u => u.role === Role.Admin)),
+            Eff.flatMap(admin => Eff.if(admin !== undefined, {
+                onTrue: () => Eff.succeed(admin as User),
+                onFalse: () => Eff.fail(UserNotFoundError("The admin does not exist"))
+            }))
+        )
     }
 
     login(email: Email, password: ClearTextPassword): Effect<Token, InvalidCredentialsError> {
@@ -214,7 +225,7 @@ export class UsersServiceImpl implements UsersService {
             }),
             Eff.flatten
         );
-    }   
+    }
 
     verifyToken(token: Token): Effect<void, InvalidTokenError> {
         return pipe(

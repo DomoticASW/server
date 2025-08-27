@@ -14,6 +14,7 @@ export interface UsersService {
     getAllUsers(token: Token): Effect<Iterable<User>, InvalidTokenError>;
     getUserData(token: Token): Effect<User, InvalidTokenError | UserNotFoundError>;
     getUserDataUnsafe(email: Email): Effect<User, UserNotFoundError>;
+    getAdmin(): Effect<User, UserNotFoundError>;
     login(email: Email, password: ClearTextPassword): Effect<Token, InvalidCredentialsError>;
     verifyToken(token: Token): Effect<void, InvalidTokenError>;
     makeToken(value: string): Effect<Token, InvalidTokenFormatError>;

@@ -2,7 +2,7 @@ import { Effect, flatMap, catch as catch_, succeed, fail, mapError, map, forkDae
 import { PermissionError } from "../../ports/permissions-management/Errors.js";
 import { ScriptNotFoundError, TaskNameAlreadyInUseError, AutomationNameAlreadyInUseError, InvalidScriptError, ScriptError } from "../../ports/scripts-management/Errors.js";
 import { ScriptsService } from "../../ports/scripts-management/ScriptsService.js";
-import { InvalidTokenError } from "../../ports/users-management/Errors.js";
+import { InvalidTokenError, UserNotFoundError } from "../../ports/users-management/Errors.js";
 import { Token } from "../users-management/Token.js";
 import { TaskId, Task, AutomationId, Automation, TaskImpl, AutomationImpl, Script, ScriptId } from "./Script.js";
 import { AutomationBuilder, ScriptBuilder, TaskBuilder } from "./ScriptBuilder.js";
@@ -18,10 +18,10 @@ import { DeviceId, DeviceEvent } from "../devices-management/Device.js";
 import { DeviceEventTrigger, DeviceEventTriggerImpl, PeriodTrigger, PeriodTriggerImpl } from "./Trigger.js";
 import { millis, seconds } from "effect/Duration";
 import { DeviceActionsService } from "../../ports/devices-management/DeviceActionsService.js";
-import { isDeviceActionInstruction } from "./Instruction.js";
+import { Instruction, isDeviceActionInstruction, isIfElseInstruction, isIfInstruction } from "./Instruction.js";
 
 export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscriber {
-  private automationsFiberMap: Map<AutomationId, (Fiber.RuntimeFiber<undefined, ScriptError | NotFoundError>)> = new Map()
+  private automationsFiberMap: Map<AutomationId, (Fiber.RuntimeFiber<undefined, ScriptError | NotFoundError | UserNotFoundError>)> = new Map()
   private startedAutomations: Map<AutomationId, boolean> = new Map()
 
   constructor(
@@ -126,7 +126,12 @@ export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscribe
           task.execute(this.notificationsService, this, this.permissionsService, this.devicesService, this.deviceActionsService, token),
           catch_("__brand", {
             failure: "ScriptError",
-            onFailure: () => succeed(undefined) // Here could be managed the errors sent from a script, maybe to send a notification to an admin
+            onFailure: err => pipe(
+              this.usersService.getAdmin(),
+              flatMap(admin =>
+                this.notificationsService.sendNotification(admin.email, "While executing the task " + task.name + " an error occurred: " + err.cause)
+              )
+            )
           })
         )
       ))
@@ -165,7 +170,7 @@ export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscribe
     return Do.pipe(
       bind("script", () => this.createScript(token, automation)),
       bind("automation", ({ script }) => succeed(script as Automation)),
-      bind("_", ({ automation }) => this.checkAutomationActionsPermissions(token, automation)),
+      bind("_", ({ automation }) => this.checkAutomationActionsPermissions(token, automation.instructions)),
       bind("__", ({ automation }) => this.scriptRepository.add(automation)),
       bind("___", ({ automation }) => pipe(
         this.permissionsService.addToEditlistUnsafe(token.userEmail, automation.id),
@@ -208,11 +213,19 @@ export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscribe
     )
   }
 
-  checkAutomationActionsPermissions(token: Token, automation: Automation): Effect<void, PermissionError | InvalidTokenError> {
+  checkAutomationActionsPermissions(token: Token, instructions: Instruction[]): Effect<void, PermissionError | InvalidTokenError> {
     return pipe(
-      forEach(automation.instructions, (instruction) => {
+      forEach(instructions, (instruction) => {
         if (isDeviceActionInstruction(instruction)) {
           return this.permissionsService.canExecuteActionOnDevice(token, instruction.deviceId)
+        }
+        if (isIfElseInstruction(instruction)) {
+          return pipe(
+            this.checkAutomationActionsPermissions(token, instruction.then),
+            flatMap(() => this.checkAutomationActionsPermissions(token, instruction.else))
+          )
+        } else if (isIfInstruction(instruction)) {
+          return this.checkAutomationActionsPermissions(token, instruction.then)
         }
         return succeed(null)
       })
@@ -270,7 +283,7 @@ export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscribe
     return delay > 0 ? sleep(millis(delay)) : succeed(null)
   }
 
-  private periodLoop(automation: Automation, periodTrigger: PeriodTrigger): Effect<undefined, ScriptError | NotFoundError> {
+  private periodLoop(automation: Automation, periodTrigger: PeriodTrigger): Effect<undefined, ScriptError | NotFoundError | UserNotFoundError> {
     return pipe(
       this.startAutomation(automation),
       andThen(() => sleep(seconds(periodTrigger.periodSeconds))),
@@ -283,7 +296,12 @@ export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscribe
       automation.execute(this.notificationsService, this, this.permissionsService, this.devicesService, this.deviceActionsService),
       catch_("__brand", {
         failure: "ScriptError",
-        onFailure: () => succeed(undefined) // Here could be managed the errors sent from an automation, maybe to send a notification to an admin
+        onFailure: err => pipe(
+          this.usersService.getAdmin(),
+          flatMap(admin =>
+            this.notificationsService.sendNotification(admin.email, "While executing the automation " + automation.name + " an error occurred: " + err.cause)
+          )
+        )
       }),
     )
   }
@@ -385,7 +403,7 @@ export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscribe
     return Do.pipe(
       bind("_", () => this.permissionsService.canEdit(token, scriptId)),
       bind("script", () => scriptBuilder.buildWithId(scriptId)),
-      bind("__", ({ script }) => isAutomation ? this.checkAutomationActionsPermissions(token, script as Automation) : succeed(undefined)),
+      bind("__", ({ script }) => isAutomation ? this.checkAutomationActionsPermissions(token, (script as Automation).instructions) : succeed(undefined)),
       bind("___", ({ script }) => this.scriptRepository.update(script)),
       map(({ script }) => script),
       mapError(err => {
