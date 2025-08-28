@@ -80,8 +80,9 @@ permissionsService.registerScriptService(scriptsService)
 
 const logRequestUrls = parseBooleanEnvVar("LOG_REQ_URLS") ?? false
 const logRequestBodies = parseBooleanEnvVar("LOG_REQ_BODIES") ?? false
+const addRandomDelay = parseBooleanEnvVar("ADD_RANDOM_DELAY") ?? false
 // Http server is started as a side effect
-new HTTPServerAdapter("localhost", serverPort, deviceGroupsService, devicesService, deviceActionsService, deviceEventsService, usersService, notificationsService, scriptsService, permissionsService, { logRequestUrls, logRequestBodies })
+new HTTPServerAdapter("localhost", serverPort, deviceGroupsService, devicesService, deviceActionsService, deviceEventsService, usersService, notificationsService, scriptsService, permissionsService, { logRequestUrls, logRequestBodies, addRandomDelay })
 
 function parseEnvVar(varName: string, defaultValue?: string): string | undefined {
     const value = process.env[varName]
