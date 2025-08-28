@@ -34,6 +34,8 @@ export function BadRequestError(message?: string, cause?: string): BadRequestErr
 
 export class HTTPServerAdapter {
 
+    private server: http.Server
+
     constructor(
         host: string,
         port: number,
@@ -48,8 +50,8 @@ export class HTTPServerAdapter {
         { logRequestBodies = false, logRequestUrls = false, addRandomDelay = false }: Options = {}
     ) {
         const app = express();
-        const server = http.createServer(app)
-        const socketIOServer = new SocketIOServer(server)
+        this.server = http.createServer(app)
+        const socketIOServer = new SocketIOServer(this.server)
 
         app.use((req, res, next) => {
             express.json()(req, res, err => {
@@ -80,9 +82,15 @@ export class HTTPServerAdapter {
         app.use(history())
         app.use(express.static('client/dist'))
 
-        server.listen(port, async () => {
+        this.server.listen(port, async () => {
             return console.log(`Express is listening at http://${host}:${port}`);
         });
+    }
+
+    gracefullyCloseHttpServer(): Promise<void> {
+        return new Promise(r => {
+            this.server.close(() => r())
+        })
     }
 }
 
