@@ -140,7 +140,7 @@ function parsePortEnvVar(varName: string, defaultPort: number): number {
 async function gracefullyShutdown(): Promise<void> {
     await httpServer.gracefullyCloseHttpServer()
     await mongoDBConnection.close()
-    process.exit(1)
+    process.exit(0)
 }
 
 process.on("SIGINT", () => gracefullyShutdown())
