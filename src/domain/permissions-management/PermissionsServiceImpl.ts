@@ -17,7 +17,7 @@ import { ScriptNotFoundError } from "../../ports/scripts-management/Errors.js";
 import { EditList } from "./EditList.js";
 import { TaskLists } from "./TaskLists.js";
 import { ScriptsService } from "../../ports/scripts-management/ScriptsService.js";
-import { DeviceActionInstruction, Instruction } from "../scripts-management/Instruction.js";
+import { DeviceActionInstruction, Instruction, isIfElseInstruction, isIfInstruction, isStartTaskInstruction } from "../scripts-management/Instruction.js";
 
 export class PermissionsServiceImpl implements PermissionsService {
 
@@ -61,22 +61,22 @@ export class PermissionsServiceImpl implements PermissionsService {
       Effect.flatMap((userDevicePermissions) => {
         const userDevicePermissionList = []
         for (const userDevicePermission of userDevicePermissions) {
-          if(userDevicePermission.email == email) {
+          if (userDevicePermission.email == email) {
             userDevicePermissionList.push(userDevicePermission)
           }
-        } 
+        }
         return Effect.succeed(userDevicePermissionList);
       })
     );
   }
 
   getAllUserDevicePermissions(token: Token): Effect.Effect<Iterable<UserDevicePermission>, TokenError> {
-  return pipe(
-    Effect.if(token.role == Role.Admin, {
-      onTrue: () => this.usersService.verifyToken(token),
-      onFalse: () => Effect.fail(UnauthorizedError())
-    }),
-    Effect.flatMap(() => this.userDevicePermissionRepo.getAll()))
+    return pipe(
+      Effect.if(token.role == Role.Admin, {
+        onTrue: () => this.usersService.verifyToken(token),
+        onFalse: () => Effect.fail(UnauthorizedError())
+      }),
+      Effect.flatMap(() => this.userDevicePermissionRepo.getAll()))
   }
 
   addUserDevicePermission(token: Token, email: Email, deviceId: DeviceId): Effect.Effect<void, UserNotFoundError | DeviceNotFoundError | TokenError> {
@@ -149,14 +149,14 @@ export class PermissionsServiceImpl implements PermissionsService {
       })
     )
   }
-  canExecuteTask(token: Token, taskId: TaskId): Effect.Effect<void, PermissionError | InvalidTokenError | ScriptNotFoundError> {
+  canExecuteTask(token: Token, taskId: TaskId, visitedTaskIds: TaskId[] = [taskId]): Effect.Effect<void, PermissionError | InvalidTokenError | ScriptNotFoundError> {
     return pipe(
       this.usersService.verifyToken(token),
       Effect.flatMap(() =>
         pipe(
           this.taskListsRepo.find(taskId),
           Effect.flatMap((taskList): Effect.Effect<Task | undefined, PermissionError | InvalidTokenError | ScriptNotFoundError> => {
-            if (token.role === Role.Admin) {return Effect.succeed(undefined)}
+            if (token.role === Role.Admin) { return Effect.succeed(undefined) }
             if (taskList.whitelist?.includes(token.userEmail)) {
               return Effect.succeed(undefined);
             }
@@ -181,14 +181,21 @@ export class PermissionsServiceImpl implements PermissionsService {
           return Effect.succeed(undefined);
         }
 
-        const deviceChecks = task.instructions
+        const flattenedInstructions = task.instructions
+          .flatMap(i => this.flatInstructions(i))
+
+        const deviceChecks = flattenedInstructions
           .filter(isDeviceActionInstruction)
-          .map(instruction =>
-            this.canExecuteActionOnDevice(token, instruction.deviceId)
-          );
+          .map(instruction => this.canExecuteActionOnDevice(token, instruction.deviceId));
+
+        const tasksChecks = flattenedInstructions
+          .filter(isStartTaskInstruction)
+          .filter(instruction => !visitedTaskIds.includes(instruction.taskId)) // Avoid recursive check of permissions
+          .map(instruction => this.canExecuteTask(token, instruction.taskId, visitedTaskIds.concat([instruction.taskId])));
 
         return pipe(
           Effect.all(deviceChecks),
+          Effect.flatMap(() => Effect.all(tasksChecks)),
           Effect.map(() => undefined as void)
         );
       }),
@@ -203,6 +210,14 @@ export class PermissionsServiceImpl implements PermissionsService {
         }
       })
     )
+  }
+
+  private flatInstructions(instruction: Instruction): Instruction[] {
+    return isIfElseInstruction(instruction) ?
+      instruction.then.concat(instruction.else).flatMap(i => this.flatInstructions(i))
+      : isIfInstruction(instruction) ?
+        instruction.then.flatMap(i => this.flatInstructions(i))
+        : [instruction]
   }
 
   canEdit(token: Token, scriptId: ScriptId): Effect.Effect<void, PermissionError | InvalidTokenError | ScriptNotFoundError> {
@@ -337,7 +352,7 @@ export class PermissionsServiceImpl implements PermissionsService {
         onFalse: () => Effect.fail(UnauthorizedError())
       }),
       Effect.flatMap(() => this.taskListsRepo.getAll())
-    );   
+    );
   }
 
   addToWhitelist(token: Token, email: Email, taskId: TaskId): Effect.Effect<void, TokenError | UserNotFoundError | ScriptNotFoundError | InvalidOperationError> {

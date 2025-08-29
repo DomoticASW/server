@@ -186,7 +186,7 @@ export class UsersServiceImpl implements UsersService {
             Eff.map(users => Array.from(users).find(u => u.role === Role.Admin)),
             Eff.flatMap(admin => Eff.if(admin !== undefined, {
                 onTrue: () => Eff.succeed(admin as User),
-                onFalse: () => Eff.fail(UserNotFoundError("The admin does not exists"))
+                onFalse: () => Eff.fail(UserNotFoundError("The admin does not exist"))
             }))
         )
     }

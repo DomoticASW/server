@@ -22,7 +22,7 @@ class SendNotificationInstructionImpl implements SendNotificationInstruction {
     return pipe(
       env.notificationsService.sendNotification(this.email, this.message),
       map(() => env),
-      mapError(error => ScriptError(error.message + ", " + error.cause))
+      mapError(error => ScriptError(error.message + (error.cause ? (": " + error.cause) : '')))
     )
   }
 }
@@ -71,7 +71,7 @@ class StartTaskInstructionImpl implements StartTaskInstruction {
           )
         )
       ),
-      mapError(error => ScriptError(error.message + ", " + error.cause))
+      mapError(error => ScriptError(error.message + (error.cause ? (": " + error.cause) : '')))
     )
   }
 }
@@ -94,7 +94,7 @@ class DeviceActionInstructionImpl implements DeviceActionInstruction {
     return pipe(
       env.deviceActionsService.executeAutomationAction(this.deviceId, this.deviceActionId, this.input),
       map(() => env),
-      mapError(error => ScriptError(error.message + ", " + error.cause))
+      mapError(error => ScriptError(error.message + (error.cause ? (": " + error.cause) : '')))
     )
   }
 }
@@ -139,7 +139,7 @@ class CreateConstantInstructionImpl<T> implements CreateConstantInstruction<T> {
         newEnv.constants.set(this, ConstantValue(this.value))
         return succeed(newEnv)
       }),
-      mapError(error => ScriptError(error.message + ": " + error.cause))
+      mapError(error => ScriptError(error.message + (error.cause ? (": " + error.cause) : '')))
     )
   }
 }
@@ -183,7 +183,7 @@ class CreateDevicePropertyConstantInstructionImpl<T> implements CreateDeviceProp
           })
         )
       }),
-      mapError(error => ScriptError(error.message + ", " + error.cause))
+      mapError(error => ScriptError(error.message + (error.cause ? (": " + error.cause) : '')))
     )
   }
 }
