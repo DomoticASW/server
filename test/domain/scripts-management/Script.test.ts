@@ -80,7 +80,7 @@ test("A task cannot execute another task if token has not the permissions", asyn
       onSuccess() { throw Error("Should not be here") },
       onFailure(err) {
         expect(err.__brand).toBe("ScriptError")
-        expect(err.cause).toBe(PermissionError().message + ", " + PermissionError().cause)
+        expect(err.cause).toBe(PermissionError().message)
       }
     }),
     runPromise
