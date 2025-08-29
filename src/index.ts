@@ -82,7 +82,7 @@ const logRequestUrls = parseBooleanEnvVar("LOG_REQ_URLS") ?? false
 const logRequestBodies = parseBooleanEnvVar("LOG_REQ_BODIES") ?? false
 const addRandomDelay = parseBooleanEnvVar("ADD_RANDOM_DELAY") ?? false
 // Http server is started as a side effect
-new HTTPServerAdapter("localhost", serverPort, deviceGroupsService, devicesService, deviceActionsService, deviceEventsService, usersService, notificationsService, scriptsService, permissionsService, { logRequestUrls, logRequestBodies, addRandomDelay })
+const httpServer = new HTTPServerAdapter("localhost", serverPort, deviceGroupsService, devicesService, deviceActionsService, deviceEventsService, usersService, notificationsService, scriptsService, permissionsService, { logRequestUrls, logRequestBodies, addRandomDelay })
 
 function parseEnvVar(varName: string, defaultValue?: string): string | undefined {
     const value = process.env[varName]
@@ -137,7 +137,11 @@ function parsePortEnvVar(varName: string, defaultPort: number): number {
     )
 }
 
-process.on("SIGINT", () => {
-    mongoDBConnection.close()
-    process.exit(1)
-})
+async function gracefullyShutdown(): Promise<void> {
+    await httpServer.gracefullyCloseHttpServer()
+    await mongoDBConnection.close()
+    process.exit(0)
+}
+
+process.on("SIGINT", () => gracefullyShutdown())
+process.on("SIGTERM", () => gracefullyShutdown())
