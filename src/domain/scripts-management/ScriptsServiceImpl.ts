@@ -18,7 +18,7 @@ import { DeviceId, DeviceEvent } from "../devices-management/Device.js";
 import { DeviceEventTrigger, DeviceEventTriggerImpl, PeriodTrigger, PeriodTriggerImpl } from "./Trigger.js";
 import { millis, seconds } from "effect/Duration";
 import { DeviceActionsService } from "../../ports/devices-management/DeviceActionsService.js";
-import { Instruction, isDeviceActionInstruction, isIfElseInstruction, isIfInstruction } from "./Instruction.js";
+import { Instruction, isDeviceActionInstruction, isIfElseInstruction, isIfInstruction, isStartTaskInstruction } from "./Instruction.js";
 
 export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscriber {
   private automationsFiberMap: Map<AutomationId, (Fiber.RuntimeFiber<undefined, ScriptError | NotFoundError | UserNotFoundError>)> = new Map()
@@ -207,17 +207,22 @@ export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscribe
             return AutomationNameAlreadyInUseError(err.cause)
           case "NotFoundError":
             return InvalidTokenError(err.cause)
+          case "ScriptNotFoundError":
+            return InvalidScriptError(err.cause)
         }
         return err
       })
     )
   }
 
-  checkAutomationActionsPermissions(token: Token, instructions: Instruction[]): Effect<void, PermissionError | InvalidTokenError> {
+  checkAutomationActionsPermissions(token: Token, instructions: Instruction[]): Effect<void, PermissionError | InvalidTokenError | ScriptNotFoundError> {
     return pipe(
       forEach(instructions, (instruction) => {
         if (isDeviceActionInstruction(instruction)) {
           return this.permissionsService.canExecuteActionOnDevice(token, instruction.deviceId)
+        }
+        if (isStartTaskInstruction(instruction)) {
+          return this.permissionsService.canExecuteTask(token, instruction.taskId)
         }
         if (isIfElseInstruction(instruction)) {
           return pipe(
