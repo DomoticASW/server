@@ -17,7 +17,7 @@ import { ScriptNotFoundError } from "../../ports/scripts-management/Errors.js";
 import { EditList } from "./EditList.js";
 import { TaskLists } from "./TaskLists.js";
 import { ScriptsService } from "../../ports/scripts-management/ScriptsService.js";
-import { DeviceActionInstruction, Instruction, isIfElseInstruction, isIfInstruction } from "../scripts-management/Instruction.js";
+import { DeviceActionInstruction, Instruction, isIfElseInstruction, isIfInstruction, isStartTaskInstruction } from "../scripts-management/Instruction.js";
 
 export class PermissionsServiceImpl implements PermissionsService {
 
@@ -149,7 +149,7 @@ export class PermissionsServiceImpl implements PermissionsService {
       })
     )
   }
-  canExecuteTask(token: Token, taskId: TaskId): Effect.Effect<void, PermissionError | InvalidTokenError | ScriptNotFoundError> {
+  canExecuteTask(token: Token, taskId: TaskId, visitedTaskIds: TaskId[] = [taskId]): Effect.Effect<void, PermissionError | InvalidTokenError | ScriptNotFoundError> {
     return pipe(
       this.usersService.verifyToken(token),
       Effect.flatMap(() =>
@@ -181,15 +181,21 @@ export class PermissionsServiceImpl implements PermissionsService {
           return Effect.succeed(undefined);
         }
 
-        const deviceChecks = task.instructions
+        const flattenedInstructions = task.instructions
           .flatMap(i => this.flatInstructions(i))
+
+        const deviceChecks = flattenedInstructions
           .filter(isDeviceActionInstruction)
-          .map(instruction =>
-            this.canExecuteActionOnDevice(token, instruction.deviceId)
-          );
+          .map(instruction => this.canExecuteActionOnDevice(token, instruction.deviceId));
+
+        const tasksChecks = flattenedInstructions
+          .filter(isStartTaskInstruction)
+          .filter(instruction => !visitedTaskIds.includes(instruction.taskId)) // Avoid recursive check of permissions
+          .map(instruction => this.canExecuteTask(token, instruction.taskId, visitedTaskIds.concat([instruction.taskId])));
 
         return pipe(
           Effect.all(deviceChecks),
+          Effect.flatMap(() => Effect.all(tasksChecks)),
           Effect.map(() => undefined as void)
         );
       }),
