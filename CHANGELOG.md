@@ -1,3 +1,25 @@
+## [3.3.0](https://github.com/DomoticASW/server/compare/3.2.0...3.3.0) (2025-08-30)
+
+### Features
+
+* checkout client at 0.3.0 ([64c78c1](https://github.com/DomoticASW/server/commit/64c78c14ce864cbeee501bcc05f45aa395b01c52))
+
+### Bug Fixes
+
+* gracefully shutdown on SIGTERM ([b96cb00](https://github.com/DomoticASW/server/commit/b96cb00827a3a7dd4b4e236e6f752b7edae666b7))
+* now all tests are updated with new script errors formats ([9717e99](https://github.com/DomoticASW/server/commit/9717e99151fcf869c5320accd6da0b2cf87b39ee))
+* now automations checks for start task permissions when created ([bb81f90](https://github.com/DomoticASW/server/commit/bb81f905454d90be419ca7e83cebc868da134861))
+* now tasks cannot run other tasks if the permissions are not enough ([fa43bbc](https://github.com/DomoticASW/server/commit/fa43bbc5f50c37cec3f42e46ce24c1259a490836))
+
+### General maintenance
+
+* flag to enable random delay for debugging ([b089bfa](https://github.com/DomoticASW/server/commit/b089bfaf0f1c766aad92f6b824eff44b2be6b32a))
+* graceful exit returns code 0 ([2fb39dc](https://github.com/DomoticASW/server/commit/2fb39dcd631561614797397a40f8508e02f9591b))
+
+### Refactoring
+
+* now scripts errors do not have cause if not present ([032071c](https://github.com/DomoticASW/server/commit/032071c8f04467b47a4d32f307e190a56e71acb5))
+
 ## [3.2.0](https://github.com/DomoticASW/server/compare/3.1.2...3.2.0) (2025-08-27)
 
 ### Features
