@@ -73,3 +73,4 @@ For debugging purposes multiple console logs can be enabled distincively through
 | LOG_REQ_URLS              | Logs every request url with the relative http method         |
 | LOG_REQ_BODIES            | Logs every request body                                      |
 | LOG_ANNOUNCES             | Logs every device announce for discovery                     |
+| ADD_RANDOM_DELAY          | Adds a random delay between 0 and 1000 ms to every response  |

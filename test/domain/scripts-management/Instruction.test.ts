@@ -336,7 +336,7 @@ test("A send notification instruction should return an error if the user does no
       onSuccess() { throw Error("Should not be here") },
       onFailure(err) {
         expect(err.__brand).toBe("ScriptError")
-        expect(err.cause).toBe(UserNotFoundErrorMock().message + ", " + UserNotFoundErrorMock().cause)
+        expect(err.cause).toBe(UserNotFoundErrorMock().message)
       }
     }),
     Effect.runPromise
@@ -370,7 +370,7 @@ test("A start task instruction should return an error if the task does not exist
       onSuccess() { throw Error("Should not be here") },
       onFailure(err) {
         expect(err.__brand).toBe("ScriptError")
-        expect(err.cause).toBe(ScriptNotFoundError().message + ", " + ScriptNotFoundError().cause)
+        expect(err.cause).toBe(ScriptNotFoundError().message)
       }
     }),
     Effect.runPromise
@@ -382,7 +382,7 @@ test("A start task instruction should return an error if the task does not exist
       onSuccess() { throw Error("Should not be here") },
       onFailure(err) {
         expect(err.__brand).toBe("ScriptError")
-        expect(err.cause).toBe(ScriptError().message + ", " + ScriptError().cause)
+        expect(err.cause).toBe(ScriptError().message)
       }
     }),
     Effect.runPromise
@@ -408,7 +408,7 @@ test("A DeviceActionInstruction should return an error if the execution of the a
       onSuccess() { throw Error("Should not be here") },
       onFailure(err) {
         expect(err.__brand).toBe("ScriptError")
-        expect(err.cause).toBe(DeviceNotFoundError().message + ", " + DeviceNotFoundError().cause)
+        expect(err.cause).toBe(DeviceNotFoundError().message)
       }
     }),
     Effect.runPromise
@@ -442,7 +442,7 @@ test("A CreateDevicePropertyConstantInstruction execution should return a Script
       onSuccess() { throw Error("Should not be here") },
       onFailure(err) {
         expect(err.__brand).toBe("ScriptError")
-        expect(err.cause).toBe(DeviceNotFoundError().message + ", " + DeviceNotFoundError().cause)
+        expect(err.cause).toBe(DeviceNotFoundError().message)
       }
     }),
     Effect.runPromise
@@ -460,7 +460,7 @@ test("A CreateDevicePropertyConstantInstruction execution should return a Script
       onSuccess() { throw Error("Should not be here") },
       onFailure(err) {
         expect(err.__brand).toBe("ScriptError")
-        expect(err.cause).toBe(DevicePropertyNotFound().message + `, Property ${DevicePropertyId("otherId")} not found in device ${device.id}`)
+        expect(err.cause).toBe(DevicePropertyNotFound().message + `: Property ${DevicePropertyId("otherId")} not found in device ${device.id}`)
       }
     }),
     Effect.runPromise
@@ -478,7 +478,7 @@ test("A CreateDevicePropertyConstantInstruction execution should return a Script
       onSuccess() { throw Error("Should not be here") },
       onFailure(err) {
         expect(err.__brand).toBe("ScriptError")
-        expect(err.cause).toBe(InvalidConstantTypeError().message + ", " + Type.StringType + " is not " + device.properties.at(0)!.typeConstraints.type)
+        expect(err.cause).toBe(InvalidConstantTypeError().message + ": " + Type.StringType + " is not " + device.properties.at(0)!.typeConstraints.type)
       }
     }),
     Effect.runPromise
@@ -499,7 +499,7 @@ test("A StartTaskInstruction should return an error if the user trying to execut
       onSuccess() { throw Error("Should not be here") },
       onFailure(err) {
         expect(err.__brand).toBe("ScriptError")
-        expect(err.cause).toBe(PermissionError().message + ", " + PermissionError().cause)
+        expect(err.cause).toBe(PermissionError().message)
       }
     }),
     Effect.runPromise
