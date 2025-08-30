@@ -24,7 +24,8 @@ import { Error } from '../../ports/Error.js';
 interface Options {
     logRequestUrls?: boolean
     logRequestBodies?: boolean
-    addRandomDelay?: boolean
+    randomDelayMultiplierMs?: number
+    baseDelayMs?: number
 }
 
 type BadRequestError = Brand<Error, "BadRequestError">
@@ -47,7 +48,7 @@ export class HTTPServerAdapter {
         notificationsService: NotificationsService,
         scriptsService: ScriptsService,
         permissionsService: PermissionsService,
-        { logRequestBodies = false, logRequestUrls = false, addRandomDelay = false }: Options = {}
+        { logRequestBodies = false, logRequestUrls = false, randomDelayMultiplierMs = 0, baseDelayMs = 0 }: Options = {}
     ) {
         const app = express();
         this.server = http.createServer(app)
@@ -63,7 +64,8 @@ export class HTTPServerAdapter {
             if (logRequestUrls) { console.log(`${req.method} ${req.url}`) }
             if (logRequestBodies) { console.log(req.body) }
             if (logRequestUrls || logRequestBodies) { console.log() }
-            if (addRandomDelay) { await new Promise(r => setTimeout(r, Math.random() * 1000)) }
+            const delay = baseDelayMs + Math.random() * randomDelayMultiplierMs
+            if (delay > 0) { await new Promise(r => setTimeout(r, delay)) }
             next()
         })
         registerDevicesServiceRoutes(app, socketIOServer, devicesService, deviceActionsService, usersService)
