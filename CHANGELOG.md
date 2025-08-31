@@ -1,3 +1,13 @@
+## [3.3.1](https://github.com/DomoticASW/server/compare/3.3.0...3.3.1) (2025-08-31)
+
+### Bug Fixes
+
+* renovate ignores devDeps on main ([e21b375](https://github.com/DomoticASW/server/commit/e21b37571e776d2cdfb59a3172cc0038eec11b2c))
+
+### General maintenance
+
+* more flexible random delay debugging ([e5bb924](https://github.com/DomoticASW/server/commit/e5bb924bb92646b05789083d1503182e5715900b))
+
 ## [3.3.0](https://github.com/DomoticASW/server/compare/3.2.0...3.3.0) (2025-08-30)
 
 ### Features
