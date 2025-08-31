@@ -101,8 +101,9 @@ function parseEnvVar(varName: string, defaultValue?: string): string | undefined
 function parseIntEnvVar(varName: string): number | undefined {
     const str = process.env[varName]
     if (str) {
-        if (Number.isInteger(str)) {
-            return Number.parseInt(str)
+        const n = Number(str)
+        if (Number.isInteger(n)) {
+            return n
         } else {
             console.error(`Ignoring invalid value "${str}" for integer env var "${varName}"`)
         }
