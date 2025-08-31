@@ -67,10 +67,11 @@ The same as [`test`](#test) but it doesn't compute coverage
 
 For debugging purposes multiple console logs can be enabled distincively through boolean environment variables:
 
-| Variable                  | What it does                                                 |
-| ------------------------- | ------------------------------------------------------------ |
-| LOG_DEVICE_STATUS_CHANGES | Logs every time a device changes its status (Online/Offline) |
-| LOG_REQ_URLS              | Logs every request url with the relative http method         |
-| LOG_REQ_BODIES            | Logs every request body                                      |
-| LOG_ANNOUNCES             | Logs every device announce for discovery                     |
-| ADD_RANDOM_DELAY          | Adds a random delay between 0 and 1000 ms to every response  |
+| Variable                   | What it does                                                                                                         |
+| -------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| LOG_DEVICE_STATUS_CHANGES  | Logs every time a device changes its status (Online/Offline)                                                         |
+| LOG_REQ_URLS               | Logs every request url with the relative http method                                                                 |
+| LOG_REQ_BODIES             | Logs every request body                                                                                              |
+| LOG_ANNOUNCES              | Logs every device announce for discovery                                                                             |
+| BASE_DELAY_MS              | Milliseconds of delay to add to every response                                                                       |
+| RANDOM_DELAY_MULTIPLIER_MS | Milliseconds to multiply by a random delay from 0 to 1 (ex: 1000 -> delay between 0 and 1s) to add to every response |

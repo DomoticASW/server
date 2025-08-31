@@ -80,9 +80,10 @@ permissionsService.registerScriptService(scriptsService)
 
 const logRequestUrls = parseBooleanEnvVar("LOG_REQ_URLS") ?? false
 const logRequestBodies = parseBooleanEnvVar("LOG_REQ_BODIES") ?? false
-const addRandomDelay = parseBooleanEnvVar("ADD_RANDOM_DELAY") ?? false
+const randomDelayMultiplierMs = parsePositiveIntEnvVar("RANDOM_DELAY_MULTIPLIER_MS") ?? 0
+const baseDelayMs = parsePositiveIntEnvVar("BASE_DELAY_MS") ?? 0
 // Http server is started as a side effect
-const httpServer = new HTTPServerAdapter("localhost", serverPort, deviceGroupsService, devicesService, deviceActionsService, deviceEventsService, usersService, notificationsService, scriptsService, permissionsService, { logRequestUrls, logRequestBodies, addRandomDelay })
+const httpServer = new HTTPServerAdapter("localhost", serverPort, deviceGroupsService, devicesService, deviceActionsService, deviceEventsService, usersService, notificationsService, scriptsService, permissionsService, { logRequestUrls, logRequestBodies, randomDelayMultiplierMs, baseDelayMs })
 
 function parseEnvVar(varName: string, defaultValue?: string): string | undefined {
     const value = process.env[varName]
@@ -96,6 +97,25 @@ function parseEnvVar(varName: string, defaultValue?: string): string | undefined
             return undefined
         }
     }
+}
+function parseIntEnvVar(varName: string): number | undefined {
+    const str = process.env[varName]
+    if (str) {
+        if (Number.isInteger(str)) {
+            return Number.parseInt(str)
+        } else {
+            console.error(`Ignoring invalid value "${str}" for integer env var "${varName}"`)
+        }
+    }
+    return undefined
+}
+function parsePositiveIntEnvVar(varName: string): number | undefined {
+    const int = parseIntEnvVar(varName)
+    if (int && int < 0) {
+        console.error(`Ignoring invalid value "${int}" for positive integer env var "${varName}"`)
+        return
+    }
+    return int
 }
 function parseBooleanEnvVar(varName: string): boolean | undefined {
     const str = process.env[varName]?.toLocaleLowerCase()
