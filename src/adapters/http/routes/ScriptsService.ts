@@ -250,8 +250,8 @@ function isCreateConstantInstructionSchema(o: any): o is CreateConstantInstructi
   )
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function isCreateDevicePropertyConstantInstructionSchema(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   o: any
 ): o is CreateDevicePropertyConstantInstructionSchema {
   return (
