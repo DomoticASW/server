@@ -63,6 +63,14 @@ Runs `eslint`
 
 The same as [`test`](#test) but it doesn't compute coverage
 
+### `format`
+
+Uses prettier to formats the src folder according to [.prettierrc.json](./.prettierrc.json)
+
+### `format-check`
+
+Uses prettier to check if the src folder is formatted according to [.prettierrc.json](./.prettierrc.json)
+
 ## Debugging
 
 For debugging purposes multiple console logs can be enabled distincively through boolean environment variables:

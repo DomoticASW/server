@@ -1,14 +1,17 @@
-import { DeviceId } from "../devices-management/Device.js";
-import { Email } from "../users-management/User.js";
+import { DeviceId } from "../devices-management/Device.js"
+import { Email } from "../users-management/User.js"
 
 export interface DeviceOfflineNotificationSubscription {
-  readonly email: Email;
-  readonly deviceId: DeviceId;
+  readonly email: Email
+  readonly deviceId: DeviceId
 }
 
-export function DeviceOfflineNotificationSubscription(email: Email, deviceId: DeviceId): DeviceOfflineNotificationSubscription {
+export function DeviceOfflineNotificationSubscription(
+  email: Email,
+  deviceId: DeviceId
+): DeviceOfflineNotificationSubscription {
   return {
     email: email,
-    deviceId: deviceId
+    deviceId: deviceId,
   }
 }

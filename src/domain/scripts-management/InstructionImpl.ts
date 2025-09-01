@@ -1,28 +1,59 @@
-import { Duration, pipe } from "effect";
-import { Type } from "../../ports/devices-management/Types.js";
-import { DeviceActionId, DeviceId, DevicePropertyId } from "../devices-management/Device.js";
-import { Email } from "../users-management/User.js";
-import { Condition, ConstantValue, type CreateConstantInstruction, type CreateDevicePropertyConstantInstruction, type DeviceActionInstruction, type IfElseInstruction, ExecutionEnvironment, ExecutionEnvironmentCopy, type IfInstruction, Instruction, type SendNotificationInstruction, type StartTaskInstruction, type WaitInstruction } from "./Instruction.js";
-import { TaskId } from "./Script.js";
-import { andThen, map, mapError, sleep, succeed, orDie, flatMap, sync, reduce, fail, fromNullable, Effect, void as voidEffect } from "effect/Effect";
-import { InvalidConstantTypeError, ScriptError } from "../../ports/scripts-management/Errors.js";
-import { isColor } from "../devices-management/Types.js";
-import { DevicePropertyNotFound } from "../../ports/devices-management/Errors.js";
+import { Duration, pipe } from "effect"
+import { Type } from "../../ports/devices-management/Types.js"
+import { DeviceActionId, DeviceId, DevicePropertyId } from "../devices-management/Device.js"
+import { Email } from "../users-management/User.js"
+import {
+  Condition,
+  ConstantValue,
+  type CreateConstantInstruction,
+  type CreateDevicePropertyConstantInstruction,
+  type DeviceActionInstruction,
+  type IfElseInstruction,
+  ExecutionEnvironment,
+  ExecutionEnvironmentCopy,
+  type IfInstruction,
+  Instruction,
+  type SendNotificationInstruction,
+  type StartTaskInstruction,
+  type WaitInstruction,
+} from "./Instruction.js"
+import { TaskId } from "./Script.js"
+import {
+  andThen,
+  map,
+  mapError,
+  sleep,
+  succeed,
+  orDie,
+  flatMap,
+  sync,
+  reduce,
+  fail,
+  fromNullable,
+  Effect,
+  void as voidEffect,
+} from "effect/Effect"
+import { InvalidConstantTypeError, ScriptError } from "../../ports/scripts-management/Errors.js"
+import { isColor } from "../devices-management/Types.js"
+import { DevicePropertyNotFound } from "../../ports/devices-management/Errors.js"
 
-export function SendNotificationInstruction(email: Email, message: string): SendNotificationInstruction {
+export function SendNotificationInstruction(
+  email: Email,
+  message: string
+): SendNotificationInstruction {
   return new SendNotificationInstructionImpl(email, message)
 }
 class SendNotificationInstructionImpl implements SendNotificationInstruction {
   constructor(
     public email: Email,
     public message: string
-  ) { }
+  ) {}
 
   execute(env: ExecutionEnvironment): Effect<ExecutionEnvironment, ScriptError> {
     return pipe(
       env.notificationsService.sendNotification(this.email, this.message),
       map(() => env),
-      mapError(error => ScriptError(error.message + (error.cause ? (": " + error.cause) : '')))
+      mapError((error) => ScriptError(error.message + (error.cause ? ": " + error.cause : "")))
     )
   }
 }
@@ -31,7 +62,7 @@ export function WaitInstruction(seconds: number): WaitInstruction {
   return new WaitInstructionImpl(seconds)
 }
 class WaitInstructionImpl implements WaitInstruction {
-  constructor(public seconds: number) { }
+  constructor(public seconds: number) {}
 
   execute(env: ExecutionEnvironment): Effect<ExecutionEnvironment, ScriptError> {
     return pipe(
@@ -46,7 +77,7 @@ export function StartTaskInstruction(taskId: TaskId): StartTaskInstruction {
   return new StartTaskInstructionImpl(taskId)
 }
 class StartTaskInstructionImpl implements StartTaskInstruction {
-  constructor(public taskId: TaskId) { }
+  constructor(public taskId: TaskId) {}
 
   execute(env: ExecutionEnvironment): Effect<ExecutionEnvironment, ScriptError> {
     return pipe(
@@ -56,7 +87,7 @@ class StartTaskInstructionImpl implements StartTaskInstruction {
       flatMap(() =>
         pipe(
           env.scriptsService.findTaskUnsafe(this.taskId),
-          flatMap(task =>
+          flatMap((task) =>
             pipe(
               task.execute(
                 env.notificationsService,
@@ -71,7 +102,7 @@ class StartTaskInstructionImpl implements StartTaskInstruction {
           )
         )
       ),
-      mapError(error => ScriptError(error.message + (error.cause ? (": " + error.cause) : '')))
+      mapError((error) => ScriptError(error.message + (error.cause ? ": " + error.cause : "")))
     )
   }
 }
@@ -88,13 +119,17 @@ class DeviceActionInstructionImpl implements DeviceActionInstruction {
     public deviceId: DeviceId,
     public deviceActionId: DeviceActionId,
     public input: unknown
-  ) { }
+  ) {}
 
   execute(env: ExecutionEnvironment): Effect<ExecutionEnvironment, ScriptError> {
     return pipe(
-      env.deviceActionsService.executeAutomationAction(this.deviceId, this.deviceActionId, this.input),
+      env.deviceActionsService.executeAutomationAction(
+        this.deviceId,
+        this.deviceActionId,
+        this.input
+      ),
       map(() => env),
-      mapError(error => ScriptError(error.message + (error.cause ? (": " + error.cause) : '')))
+      mapError((error) => ScriptError(error.message + (error.cause ? ": " + error.cause : "")))
     )
   }
 }
@@ -111,7 +146,7 @@ class CreateConstantInstructionImpl<T> implements CreateConstantInstruction<T> {
     public name: string,
     public type: Type,
     public value: T
-  ) { }
+  ) {}
 
   execute(env: ExecutionEnvironment): Effect<ExecutionEnvironment, ScriptError> {
     return pipe(
@@ -130,16 +165,14 @@ class CreateConstantInstructionImpl<T> implements CreateConstantInstruction<T> {
             return typeof this.value === "undefined"
         }
       }),
-      flatMap(isValid =>
-        isValid
-          ? succeed(ExecutionEnvironmentCopy(env))
-          : fail(InvalidConstantTypeError(this.type))
+      flatMap((isValid) =>
+        isValid ? succeed(ExecutionEnvironmentCopy(env)) : fail(InvalidConstantTypeError(this.type))
       ),
-      flatMap(newEnv => {
+      flatMap((newEnv) => {
         newEnv.constants.set(this, ConstantValue(this.value))
         return succeed(newEnv)
       }),
-      mapError(error => ScriptError(error.message + (error.cause ? (": " + error.cause) : '')))
+      mapError((error) => ScriptError(error.message + (error.cause ? ": " + error.cause : "")))
     )
   }
 }
@@ -152,59 +185,64 @@ export function CreateDevicePropertyConstantInstruction<T>(
 ): CreateDevicePropertyConstantInstruction<T> {
   return new CreateDevicePropertyConstantInstructionImpl(name, type, deviceId, devicePropertyId)
 }
-class CreateDevicePropertyConstantInstructionImpl<T> implements CreateDevicePropertyConstantInstruction<T> {
+class CreateDevicePropertyConstantInstructionImpl<T>
+  implements CreateDevicePropertyConstantInstruction<T>
+{
   constructor(
     public name: string,
     public type: Type,
     public deviceId: DeviceId,
     public devicePropertyId: DevicePropertyId
-  ) { }
+  ) {}
 
   execute(env: ExecutionEnvironment): Effect<ExecutionEnvironment, ScriptError> {
     return pipe(
       env.devicesService.findUnsafe(this.deviceId),
-      flatMap(device => {
-        const property = device.properties.find(p => p.id === this.devicePropertyId)
+      flatMap((device) => {
+        const property = device.properties.find((p) => p.id === this.devicePropertyId)
         return pipe(
           property,
           fromNullable,
           mapError(() =>
-            DevicePropertyNotFound(`Property ${this.devicePropertyId} not found in device ${device.id}`)
+            DevicePropertyNotFound(
+              `Property ${this.devicePropertyId} not found in device ${device.id}`
+            )
           ),
-          flatMap(prop =>
+          flatMap((prop) =>
             this.type !== prop.typeConstraints.type
               ? fail(InvalidConstantTypeError(`${this.type} is not ${prop.typeConstraints.type}`))
               : succeed(prop)
           ),
-          map(prop => {
+          map((prop) => {
             const newEnv = ExecutionEnvironmentCopy(env)
             newEnv.constants.set(this, ConstantValue(prop.value))
             return newEnv
           })
         )
       }),
-      mapError(error => ScriptError(error.message + (error.cause ? (": " + error.cause) : '')))
+      mapError((error) => ScriptError(error.message + (error.cause ? ": " + error.cause : "")))
     )
   }
 }
 
-export function IfInstruction(instructions: Array<Instruction>, condition: Condition<never>): IfInstruction {
+export function IfInstruction(
+  instructions: Array<Instruction>,
+  condition: Condition<never>
+): IfInstruction {
   return new IfInstructionImpl(instructions, condition)
 }
 class IfInstructionImpl implements IfInstruction {
   constructor(
     public then: Array<Instruction>,
     public condition: Condition<never>
-  ) { }
+  ) {}
 
   execute(env: ExecutionEnvironment): Effect<ExecutionEnvironment, ScriptError> {
     const newEnv = ExecutionEnvironmentCopy(env)
     return pipe(
       sync(() => this.condition.evaluate(newEnv)),
-      flatMap(shouldRun =>
-        shouldRun
-          ? reduce(this.then, newEnv, (env, instr) => instr.execute(env))
-          : succeed(newEnv)
+      flatMap((shouldRun) =>
+        shouldRun ? reduce(this.then, newEnv, (env, instr) => instr.execute(env)) : succeed(newEnv)
       )
     )
   }
@@ -222,11 +260,7 @@ class IfElseInstructionImpl implements IfElseInstruction {
   else: Array<Instruction>
   condition: Condition<never>
 
-  constructor(
-    then: Array<Instruction>,
-    else_: Array<Instruction>,
-    condition: Condition<never>
-  ) {
+  constructor(then: Array<Instruction>, else_: Array<Instruction>, condition: Condition<never>) {
     this.then = then
     this.else = else_
     this.condition = condition
@@ -236,7 +270,7 @@ class IfElseInstructionImpl implements IfElseInstruction {
     const newEnv = ExecutionEnvironmentCopy(env)
     return pipe(
       sync(() => this.condition.evaluate(newEnv)),
-      flatMap(shouldRun =>
+      flatMap((shouldRun) =>
         shouldRun
           ? reduce(this.then, newEnv, (env, instr) => instr.execute(env))
           : reduce(this.else, newEnv, (env, instr) => instr.execute(env))
