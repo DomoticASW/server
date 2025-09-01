@@ -1,3 +1,33 @@
+## [3.4.0](https://github.com/DomoticASW/server/compare/3.3.1...3.4.0) (2025-09-01)
+
+### Features
+
+* checkout client at 0.4.0 ([069686e](https://github.com/DomoticASW/server/commit/069686ecb011f975f9ea0efd244b30b287064c6f))
+
+### Dependency updates
+
+* **deps:** update dep semantic-release-preconfigured-conventional-commits to v1.1.141 ([#161](https://github.com/DomoticASW/server/issues/161)) ([ce53d20](https://github.com/DomoticASW/server/commit/ce53d20710b53f689cc86c7a0593f8bce275fa7c))
+
+### Bug Fixes
+
+* now automations can be enabled/disabled only if the user has edit permissions on it ([6f645ab](https://github.com/DomoticASW/server/commit/6f645ab782efeedd977486538a1929ddf8fcf4fa))
+* now notifications are sent to the right sockets ([6f013a0](https://github.com/DomoticASW/server/commit/6f013a0fa5c2f14151d06ae7004ef8e3c29a6be0))
+* parsing of delay env variable not working ([81896a0](https://github.com/DomoticASW/server/commit/81896a01881329642fee8f5782561a4336ac925c))
+
+### Build and continuous integration
+
+* add github action to check code format ([8886e92](https://github.com/DomoticASW/server/commit/8886e92fa5fdf6378f744831051b15ee053753e2))
+
+### General maintenance
+
+* add hook for checking code format on commit ([817d1d7](https://github.com/DomoticASW/server/commit/817d1d75b7eb2d9011df8bb5718cec0330dc5fd2))
+* fix linting issues ([504be43](https://github.com/DomoticASW/server/commit/504be43f167c87f021064f1d9d2a7435d46ee952))
+* format code & add script to automate that ([89ff54b](https://github.com/DomoticASW/server/commit/89ff54b9f113e59467fb5037c65886a098c4f133))
+
+### Refactoring
+
+* use formatter ([a6a4a57](https://github.com/DomoticASW/server/commit/a6a4a57e6a4cc8ebe55d8446e587e9498aafc78b))
+
 ## [3.3.1](https://github.com/DomoticASW/server/compare/3.3.0...3.3.1) (2025-08-31)
 
 ### Bug Fixes
