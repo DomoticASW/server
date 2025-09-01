@@ -1,6 +1,6 @@
-import { Server as SocketIOServer, Socket } from 'socket.io';
-import { NotificationProtocol } from '../../ports/notifications-management/NotificationProtocol.js';
-import { Email } from '../../domain/users-management/User.js';
+import { Server as SocketIOServer, Socket } from "socket.io"
+import { NotificationProtocol } from "../../ports/notifications-management/NotificationProtocol.js"
+import { Email } from "../../domain/users-management/User.js"
 
 export class NotificationProtocolSocketIOAdapter implements NotificationProtocol {
   private io: SocketIOServer

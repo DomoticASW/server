@@ -25,13 +25,13 @@ export interface WaitInstruction extends Instruction {
 }
 
 export interface StartTaskInstruction extends Instruction {
-  taskId: TaskId,
+  taskId: TaskId
 }
 
 export interface DeviceActionInstruction extends Instruction {
   deviceId: DeviceId
   deviceActionId: DeviceActionId
-  input: unknown,
+  input: unknown
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -46,7 +46,7 @@ export interface CreateConstantInstruction<T> extends ConstantInstruction<T> {
 
 export interface CreateDevicePropertyConstantInstruction<T> extends ConstantInstruction<T> {
   deviceId: DeviceId
-  devicePropertyId: DevicePropertyId,
+  devicePropertyId: DevicePropertyId
 }
 
 export interface IfInstruction extends Instruction {
@@ -68,7 +68,7 @@ export interface Condition<T> {
 }
 
 export interface ConditionOperator<T> {
-  evaluate(left: ConstantValue<T>, right: ConstantValue<T>): boolean;
+  evaluate(left: ConstantValue<T>, right: ConstantValue<T>): boolean
 }
 
 export interface ConstantValue<T> {
@@ -85,7 +85,12 @@ export interface ExecutionEnvironment {
   readonly taskToken?: Token
 }
 
-export function Condition<T>(left: ConstantInstruction<T>, right: ConstantInstruction<T>, operator: ConditionOperator<T>, negate: boolean = false): Condition<T> {
+export function Condition<T>(
+  left: ConstantInstruction<T>,
+  right: ConstantInstruction<T>,
+  operator: ConditionOperator<T>,
+  negate: boolean = false
+): Condition<T> {
   return new ConditionImpl(left, right, operator, negate)
 }
 class ConditionImpl<T> implements Condition<T> {
@@ -93,22 +98,33 @@ class ConditionImpl<T> implements Condition<T> {
     public leftConstant: ConstantInstruction<T>,
     public rightConstant: ConstantInstruction<T>,
     public operator: ConditionOperator<T>,
-    public negate: boolean,
-  ) { }
+    public negate: boolean
+  ) {}
   evaluate(env: ExecutionEnvironment): boolean {
-    const left = Array.from(env.constants.entries()).find(instruction => instruction[0].name == this.leftConstant.name)?.[1] as ConstantValue<T>
-    const right = Array.from(env.constants.entries()).find(instruction => instruction[0].name == this.rightConstant.name)?.[1] as ConstantValue<T>
-    return this.negate !== this.operator.evaluate(left, right);
+    const left = Array.from(env.constants.entries()).find(
+      (instruction) => instruction[0].name == this.leftConstant.name
+    )?.[1] as ConstantValue<T>
+    const right = Array.from(env.constants.entries()).find(
+      (instruction) => instruction[0].name == this.rightConstant.name
+    )?.[1] as ConstantValue<T>
+    return this.negate !== this.operator.evaluate(left, right)
   }
 }
 
 export function ConstantValue<T>(value: T): ConstantValue<T> {
   return {
-    value: value
+    value: value,
   }
 }
 
-export function ExecutionEnvironment(notificationsService: NotificationsService, scriptsService: ScriptsService, permissionsService: PermissionsService, devicesService: DevicesService, deviceActionsService: DeviceActionsService, token?: Token,): ExecutionEnvironment {
+export function ExecutionEnvironment(
+  notificationsService: NotificationsService,
+  scriptsService: ScriptsService,
+  permissionsService: PermissionsService,
+  devicesService: DevicesService,
+  deviceActionsService: DeviceActionsService,
+  token?: Token
+): ExecutionEnvironment {
   return {
     notificationsService: notificationsService,
     scriptsService: scriptsService,
@@ -116,7 +132,7 @@ export function ExecutionEnvironment(notificationsService: NotificationsService,
     devicesService: devicesService,
     deviceActionsService: deviceActionsService,
     constants: new Map<ConstantInstruction<unknown>, ConstantValue<unknown>>(),
-    taskToken: token
+    taskToken: token,
   }
 }
 
@@ -128,7 +144,7 @@ export function ExecutionEnvironmentCopy(env: ExecutionEnvironment): ExecutionEn
     devicesService: env.devicesService,
     deviceActionsService: env.deviceActionsService,
     constants: new Map(env.constants),
-    taskToken: env.taskToken
+    taskToken: env.taskToken,
   }
 }
 
@@ -136,71 +152,100 @@ export function ExecutionEnvironmentCopy(env: ExecutionEnvironment): ExecutionEn
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function isSendNotificationInstruction(o: any): o is SendNotificationInstruction {
-  return o &&
-    typeof o === 'object' &&
-    'email' in o && typeof o.email === 'string' &&
-    'message' in o && typeof o.message === 'string' &&
-    typeof o.execute === 'function';
+  return (
+    o &&
+    typeof o === "object" &&
+    "email" in o &&
+    typeof o.email === "string" &&
+    "message" in o &&
+    typeof o.message === "string" &&
+    typeof o.execute === "function"
+  )
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function isWaitInstruction(o: any): o is WaitInstruction {
-  return o &&
-    typeof o === 'object' &&
-    'seconds' in o && typeof o.seconds === 'number' &&
-    typeof o.execute === 'function';
+  return (
+    o &&
+    typeof o === "object" &&
+    "seconds" in o &&
+    typeof o.seconds === "number" &&
+    typeof o.execute === "function"
+  )
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function isStartTaskInstruction(o: any): o is StartTaskInstruction {
-  return o &&
-    typeof o === 'object' &&
-    'taskId' in o && typeof o.taskId === 'string' &&
-    typeof o.execute === 'function';
+  return (
+    o &&
+    typeof o === "object" &&
+    "taskId" in o &&
+    typeof o.taskId === "string" &&
+    typeof o.execute === "function"
+  )
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function isDeviceActionInstruction(o: any): o is DeviceActionInstruction {
-  return o &&
-    typeof o === 'object' &&
-    'deviceId' in o && typeof o.deviceId === 'string' &&
-    'deviceActionId' in o && typeof o.deviceActionId === 'string' &&
-    'input' in o &&
-    typeof o.execute === 'function';
+  return (
+    o &&
+    typeof o === "object" &&
+    "deviceId" in o &&
+    typeof o.deviceId === "string" &&
+    "deviceActionId" in o &&
+    typeof o.deviceActionId === "string" &&
+    "input" in o &&
+    typeof o.execute === "function"
+  )
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function isCreateConstantInstruction<T>(o: any): o is CreateConstantInstruction<T> {
-  return o &&
-    typeof o === 'object' &&
-    'name' in o && typeof o.name === 'string' &&
-    'type' in o && typeof o.type === 'string' &&
-    'value' in o &&
-    typeof o.execute === 'function';
+  return (
+    o &&
+    typeof o === "object" &&
+    "name" in o &&
+    typeof o.name === "string" &&
+    "type" in o &&
+    typeof o.type === "string" &&
+    "value" in o &&
+    typeof o.execute === "function"
+  )
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function isCreateDevicePropertyConstantInstruction<T>(o: any): o is CreateDevicePropertyConstantInstruction<T> {
-  return o &&
-    typeof o === 'object' &&
-    'name' in o && typeof o.name === 'string' &&
-    'type' in o && typeof o.type === 'string' &&
-    'deviceId' in o && typeof o.deviceId === 'string' &&
-    'devicePropertyId' in o && typeof o.devicePropertyId === 'string' &&
-    typeof o.execute === 'function';
+export function isCreateDevicePropertyConstantInstruction<T>(
+  o: any
+): o is CreateDevicePropertyConstantInstruction<T> {
+  return (
+    o &&
+    typeof o === "object" &&
+    "name" in o &&
+    typeof o.name === "string" &&
+    "type" in o &&
+    typeof o.type === "string" &&
+    "deviceId" in o &&
+    typeof o.deviceId === "string" &&
+    "devicePropertyId" in o &&
+    typeof o.devicePropertyId === "string" &&
+    typeof o.execute === "function"
+  )
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function isIfInstruction(o: any): o is IfInstruction {
-  return o &&
-    typeof o === 'object' &&
-    'then' in o && Array.isArray(o.then) &&
-    'condition' in o && typeof o.condition === 'object' &&
-    typeof o.execute === 'function';
+  return (
+    o &&
+    typeof o === "object" &&
+    "then" in o &&
+    Array.isArray(o.then) &&
+    "condition" in o &&
+    typeof o.condition === "object" &&
+    typeof o.execute === "function"
+  )
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function isIfElseInstruction(o: any): o is IfElseInstruction {
-  return isIfInstruction(o) &&
-    'else' in o && Array.isArray(o.else);
+  return isIfInstruction(o) && "else" in o && Array.isArray(o.else)
 }
