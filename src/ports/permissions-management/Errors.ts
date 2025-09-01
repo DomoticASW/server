@@ -11,17 +11,31 @@ export function PermissionError(cause?: string): PermissionError {
 }
 
 export function InvalidOperationError(cause?: string): InvalidOperationError {
-  return { message: "This operation cannot be executed", cause: cause, __brand: "InvalidOperationError" }
+  return {
+    message: "This operation cannot be executed",
+    cause: cause,
+    __brand: "InvalidOperationError",
+  }
 }
 
 export function EditListNotFoundError(cause?: string): EditListNotFoundError {
   return { message: "The editlist didn't exist", cause: cause, __brand: "EditListNotFoundError" }
 }
 
-export function UserDevicePermissionNotFoundError(cause?: string): UserDevicePermissionNotFoundError {
-  return { message: "This user-device permission rule was not found", cause: cause, __brand: "UserDevicePermissionNotFoundError" }
+export function UserDevicePermissionNotFoundError(
+  cause?: string
+): UserDevicePermissionNotFoundError {
+  return {
+    message: "This user-device permission rule was not found",
+    cause: cause,
+    __brand: "UserDevicePermissionNotFoundError",
+  }
 }
 
 export function TaskListsNotFoundError(cause?: string): TaskListsNotFoundError {
-  return { message: "Task lists (editlist, whitelist and blacklist) was not found", cause: cause, __brand: "TaskListsNotFoundError" }
+  return {
+    message: "Task lists (editlist, whitelist and blacklist) was not found",
+    cause: cause,
+    __brand: "TaskListsNotFoundError",
+  }
 }

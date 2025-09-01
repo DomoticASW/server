@@ -1,5 +1,5 @@
-import { TaskId } from "../scripts-management/Script.js";
-import { Email } from "../users-management/User.js";
+import { TaskId } from "../scripts-management/Script.js"
+import { Email } from "../users-management/User.js"
 
 export interface TaskLists {
   readonly id: TaskId
@@ -14,41 +14,41 @@ export interface TaskLists {
 }
 
 export function TaskLists(id: TaskId, blacklist: Email[], whitelist: Email[]): TaskLists {
-  return new TaskListsImpl(id, blacklist, whitelist);
+  return new TaskListsImpl(id, blacklist, whitelist)
 }
 
 class TaskListsImpl implements TaskLists {
-  readonly id: TaskId;
+  readonly id: TaskId
 
-  readonly blacklist: Email[];
-  readonly whitelist: Email[];
+  readonly blacklist: Email[]
+  readonly whitelist: Email[]
 
   constructor(id: TaskId, blacklist: Email[], whitelist: Email[]) {
-    this.id = id;
-    this.blacklist = blacklist;
-    this.whitelist = whitelist;
+    this.id = id
+    this.blacklist = blacklist
+    this.whitelist = whitelist
   }
 
   addEmailToBlacklist(email: Email): void {
     if (!this.blacklist.includes(email) && !this.whitelist.includes(email)) {
-      this.blacklist.push(email);
+      this.blacklist.push(email)
     }
   }
   addEmailToWhitelist(email: Email): void {
     if (!this.whitelist.includes(email) && !this.blacklist.includes(email)) {
-      this.whitelist.push(email);
+      this.whitelist.push(email)
     }
   }
   removeEmailFromBlacklist(email: Email): void {
-    const index = this.blacklist.indexOf(email);
+    const index = this.blacklist.indexOf(email)
     if (index >= 0) {
-      this.blacklist.splice(index, 1);
+      this.blacklist.splice(index, 1)
     }
   }
   removeEmailFromWhitelist(email: Email): void {
-    const index = this.whitelist.indexOf(email);
+    const index = this.whitelist.indexOf(email)
     if (index >= 0) {
-      this.whitelist.splice(index, 1);
+      this.whitelist.splice(index, 1)
     }
   }
 }

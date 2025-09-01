@@ -1,5 +1,5 @@
-import { DeviceId } from "../devices-management/Device.js";
-import { Email } from "../users-management/User.js";
+import { DeviceId } from "../devices-management/Device.js"
+import { Email } from "../users-management/User.js"
 
 export interface UserDevicePermission {
   readonly email: Email
@@ -11,7 +11,6 @@ export function UserDevicePermission(email: Email, deviceId: DeviceId): UserDevi
 }
 
 class UserDevicePermissionImpl implements UserDevicePermission {
-
   readonly email: Email
   readonly deviceId: DeviceId
 

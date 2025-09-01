@@ -16,7 +16,14 @@ export interface Script<Id extends ScriptId> {
 
   instructions: Array<Instruction>
 
-  execute(notificationsService: NotificationsService, scriptsService: ScriptsService, permissionsService: PermissionsService, devicesService: DevicesService, deviceActionsService: DeviceActionsService, token?: Token): Effect<ExecutionEnvironment, ScriptError>
+  execute(
+    notificationsService: NotificationsService,
+    scriptsService: ScriptsService,
+    permissionsService: PermissionsService,
+    devicesService: DevicesService,
+    deviceActionsService: DeviceActionsService,
+    token?: Token
+  ): Effect<ExecutionEnvironment, ScriptError>
 }
 
 export type Task = Script<TaskId>
@@ -31,8 +38,12 @@ export type ScriptId = TaskId | AutomationId
 export type TaskId = Brand<string, "TaskId">
 export type AutomationId = Brand<string, "AutomationId">
 
-export function TaskId(id: string): TaskId { return id as TaskId }
-export function AutomationId(id: string): AutomationId { return id as AutomationId }
+export function TaskId(id: string): TaskId {
+  return id as TaskId
+}
+export function AutomationId(id: string): AutomationId {
+  return id as AutomationId
+}
 
 export function Task(id: TaskId, name: string, instructions: Array<Instruction>): Task {
   return new TaskImpl(id, name, instructions)
@@ -49,8 +60,26 @@ export class TaskImpl implements Task {
     this.instructions = instructions
   }
 
-  execute(notificationsService: NotificationsService, scriptsService: ScriptsService, permissionsService: PermissionsService, devicesService: DevicesService, deviceActionsService: DeviceActionsService, token?: Token): Effect<ExecutionEnvironment, ScriptError> {
-    return reduce(this.instructions, ExecutionEnvironment(notificationsService, scriptsService, permissionsService, devicesService, deviceActionsService, token), (env, instr) => instr.execute(env))
+  execute(
+    notificationsService: NotificationsService,
+    scriptsService: ScriptsService,
+    permissionsService: PermissionsService,
+    devicesService: DevicesService,
+    deviceActionsService: DeviceActionsService,
+    token?: Token
+  ): Effect<ExecutionEnvironment, ScriptError> {
+    return reduce(
+      this.instructions,
+      ExecutionEnvironment(
+        notificationsService,
+        scriptsService,
+        permissionsService,
+        devicesService,
+        deviceActionsService,
+        token
+      ),
+      (env, instr) => instr.execute(env)
+    )
   }
 }
 
@@ -61,7 +90,13 @@ export class AutomationImpl implements Automation {
   name: string
   instructions: Instruction[]
 
-  constructor(id: AutomationId, name: string, trigger: Trigger, enabled: boolean, instructions: Array<Instruction>) {
+  constructor(
+    id: AutomationId,
+    name: string,
+    trigger: Trigger,
+    enabled: boolean,
+    instructions: Array<Instruction>
+  ) {
     this.id = id
     this.name = name
     this.trigger = trigger
@@ -69,11 +104,33 @@ export class AutomationImpl implements Automation {
     this.enabled = enabled
   }
 
-  execute(notificationsService: NotificationsService, scriptsService: ScriptsService, permissionsService: PermissionsService, devicesService: DevicesService, deviceActionsService: DeviceActionsService): Effect<ExecutionEnvironment, ScriptError> {
-    return reduce(this.instructions, ExecutionEnvironment(notificationsService, scriptsService, permissionsService, devicesService, deviceActionsService), (env, instr) => instr.execute(env))
+  execute(
+    notificationsService: NotificationsService,
+    scriptsService: ScriptsService,
+    permissionsService: PermissionsService,
+    devicesService: DevicesService,
+    deviceActionsService: DeviceActionsService
+  ): Effect<ExecutionEnvironment, ScriptError> {
+    return reduce(
+      this.instructions,
+      ExecutionEnvironment(
+        notificationsService,
+        scriptsService,
+        permissionsService,
+        devicesService,
+        deviceActionsService
+      ),
+      (env, instr) => instr.execute(env)
+    )
   }
 }
 
-export function Automation(id: AutomationId, name: string, trigger: Trigger, instructions: Array<Instruction>, enabled: boolean = false): Automation {
+export function Automation(
+  id: AutomationId,
+  name: string,
+  trigger: Trigger,
+  instructions: Array<Instruction>,
+  enabled: boolean = false
+): Automation {
   return new AutomationImpl(id, name, trigger, enabled, instructions)
 }
