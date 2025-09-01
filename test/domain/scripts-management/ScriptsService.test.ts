@@ -22,6 +22,7 @@ import { DeviceEventsServiceImpl } from "../../../src/domain/devices-management/
 import { ScriptsService } from "../../../src/ports/scripts-management/ScriptsService.js"
 import { DeviceActionsService } from "../../../src/ports/devices-management/DeviceActionsService.js"
 import { DeviceActionId, DeviceId } from "../../../src/domain/devices-management/Device.js"
+import { Email, Role } from "../../../src/domain/users-management/User.js"
 
 const user = UserMock()
 const email = user.email
@@ -367,16 +368,16 @@ test("An automation can be edited", async () => {
 
   expect(notificationsServiceSpy.call()).toBe(2)
   expect(notificationsServiceSpy.getMessages()).toStrictEqual(["message", "newMessage"])
-  expect(permissionsServiceSpy.call()).toBe(2)
+  expect(permissionsServiceSpy.call()).toBe(4)
 })
 
 test("Cannot edit an automation if the token is invalid", async () => {
-  permissionsServiceSpy = PermissionsServiceSpy(TokenMock("otherEmail"), true, true)
+  permissionsServiceSpy = PermissionsServiceSpy(token, true, true)
   scriptsService = new ScriptsServiceImpl(scriptsRepository, devicesServiceSpy.get(), deviceActionsServiceSpy.get(), notificationsServiceSpy.get(), usersServiceSpy.get(), permissionsServiceSpy.get(), deviceEventsService)
   const taskId = await runPromise(scriptsService.createAutomation(token, automationBuilder))
 
   await runPromise(pipe(
-    scriptsService.editAutomation(token, taskId, automationBuilder),
+    scriptsService.editAutomation(TokenMock("otherEmail"), taskId, automationBuilder),
     match({
       onSuccess: () => { throw Error("Should not be here") },
       onFailure: err => {
@@ -387,12 +388,14 @@ test("Cannot edit an automation if the token is invalid", async () => {
 })
 
 test("Cannot edit an automation if the user has not the right permissions", async () => {
-  permissionsServiceSpy = PermissionsServiceSpy(TokenMock("otherEmail"))
+  const otherToken = TokenMock("otherEmail")
+  permissionsServiceSpy = PermissionsServiceSpy(otherToken, true) // otherToken has permissions to edit
+  usersServiceSpy = UsersServiceSpy(UserMock(Email("email"), Role.Admin), token) // Set the user checked in usersService to be admin so it does not throw invalid token error
   scriptsService = new ScriptsServiceImpl(scriptsRepository, devicesServiceSpy.get(), deviceActionsServiceSpy.get(), notificationsServiceSpy.get(), usersServiceSpy.get(), permissionsServiceSpy.get(), deviceEventsService)
-  const automationId = await runPromise(scriptsService.createAutomation(token, automationBuilder))
+  const automationId = await runPromise(scriptsService.createAutomation(otherToken, automationBuilder))
 
   await runPromise(pipe(
-    scriptsService.editAutomation(token, automationId, automationBuilder),
+    scriptsService.editAutomation(token, automationId, automationBuilder), // token has not permissions to edit
     match({
       onSuccess: () => { throw Error("Should not be here") },
       onFailure: err => {
@@ -553,7 +556,7 @@ test("Can be possible to edit an automation with action device instruction if to
   const automationBuilderNew = automationBuilder.addDeviceAction(root, deviceId, DeviceActionId("1"), 10)
   const automation = await runPromise(Do.pipe(
     bind("id", () => scriptsService.createAutomation(token, automationBuilder)),
-    bind("_" , ({ id }) => scriptsService.editAutomation(token, id, automationBuilderNew)),
+    bind("_", ({ id }) => scriptsService.editAutomation(token, id, automationBuilderNew)),
     flatMap(({ id }) => scriptsService.findAutomation(token, id))
   ))
 

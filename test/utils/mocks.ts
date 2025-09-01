@@ -336,10 +336,10 @@ export function DeviceStatusesServiceSpy(): Spy<DeviceStatusesService> {
   }
 }
 
-export function UserMock(email: Email = Email("test")): User {
+export function UserMock(email: Email = Email("test"), role: Role = Role.User): User {
   return {
     email: email,
-    role: Role.Admin
+    role: role
   } as unknown as User
 }
 
@@ -355,7 +355,7 @@ export function UsersServiceSpy(user: User = UserMock(), usedToken: Token = Toke
         },
         verifyToken: function (token: Token): Effect<void, InvalidTokenError> {
           call++
-          return usedToken == token ? succeed(null) : fail(InvalidTokenError())
+          return usedToken == token || user.role === Role.Admin ? succeed(null) : fail(InvalidTokenError())
         },
         makeToken: function (value: string): Effect<Token, InvalidTokenFormatError> {
           throw new Error("Function not implemented.");

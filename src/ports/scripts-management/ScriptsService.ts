@@ -70,7 +70,7 @@ export interface ScriptsService {
     token: Token,
     automationId: AutomationId,
     enable: boolean
-  ): Effect<void, InvalidTokenError | ScriptNotFoundError>
+  ): Effect<void, InvalidTokenError | ScriptNotFoundError | PermissionError>
   removeAutomation(
     token: Token,
     automationId: AutomationId
