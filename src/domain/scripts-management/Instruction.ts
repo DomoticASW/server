@@ -213,8 +213,8 @@ export function isCreateConstantInstruction<T>(o: any): o is CreateConstantInstr
   )
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function isCreateDevicePropertyConstantInstruction<T>(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   o: any
 ): o is CreateDevicePropertyConstantInstruction<T> {
   return (

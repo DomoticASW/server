@@ -17,10 +17,10 @@ export function registerUsersServiceRoutes(app: express.Application, service: Us
     const response = await Effect.Do.pipe(
       Effect.bind("token", () => deserializeToken(req, service)),
       Effect.bind("requests", ({ token }) => service.getAllRegistrationRequests(token)),
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       Effect.map(({ requests }) =>
         Response(
           StatusCodes.OK,
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
           Array.from(requests).map(({ passwordHash, ...rest }) => rest)
         )
       ),
@@ -196,10 +196,10 @@ export function registerUsersServiceRoutes(app: express.Application, service: Us
     const response = await Effect.Do.pipe(
       Effect.bind("token", () => deserializeToken(req, service)),
       Effect.bind("users", ({ token }) => service.getAllUsers(token)),
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       Effect.map(({ users }) =>
         Response(
           StatusCodes.OK,
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
           Array.from(users).map(({ passwordHash, ...rest }) => rest)
         )
       ),
