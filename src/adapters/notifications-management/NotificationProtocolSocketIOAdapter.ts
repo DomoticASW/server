@@ -19,18 +19,18 @@ export class NotificationProtocolSocketIOAdapter implements NotificationProtocol
   }
 
   sendNotification(email: Email, message: string): void {
-    if (this.findSocketByEmail(email)) {
-      this.io.emit("notification", { message })
-    }
+    const sockets = this.findSocketByEmail(email)
+    sockets.forEach(s => s.emit("notification", { message }))
   }
 
-  private findSocketByEmail(email: Email): Socket | undefined {
+  private findSocketByEmail(email: Email): Socket[] {
     const sockets = this.io.sockets.sockets.values()
+    const emailSockets: Socket[] = []
     for (const socket of sockets) {
       if (socket.data.email === email) {
-        return socket
+        emailSockets.push(socket)
       }
     }
-    return undefined
+    return emailSockets
   }
 }
