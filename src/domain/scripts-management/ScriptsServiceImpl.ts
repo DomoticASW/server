@@ -501,23 +501,26 @@ export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscribe
     token: Token,
     automationId: AutomationId,
     enable: boolean
-  ): Effect<void, InvalidTokenError | ScriptNotFoundError> {
+  ): Effect<void, InvalidTokenError | ScriptNotFoundError | PermissionError> {
     return pipe(
       this.findAutomation(token, automationId),
       flatMap((automation) =>
         pipe(
-          if_(enable, {
-            onTrue: () => pipe(succeed(this.startAutomationHandler(automation))),
-            onFalse: () =>
-              if_(this.automationsFiberMap.get(automationId) !== undefined, {
-                onTrue: () =>
-                  pipe(
-                    Fiber.interrupt(this.automationsFiberMap.get(automationId)!),
-                    map(() => this.startedAutomations.set(automationId, false))
-                  ),
-                onFalse: () => succeed(null),
-              }),
-          }),
+          this.permissionsService.canEdit(token, automationId),
+          flatMap(() =>
+            if_(enable, {
+              onTrue: () => pipe(succeed(this.startAutomationHandler(automation))),
+              onFalse: () =>
+                if_(this.automationsFiberMap.get(automationId) !== undefined, {
+                  onTrue: () =>
+                    pipe(
+                      Fiber.interrupt(this.automationsFiberMap.get(automationId)!),
+                      map(() => this.startedAutomations.set(automationId, false))
+                    ),
+                  onFalse: () => succeed(null),
+                }),
+            })
+          ),
           tap(() => (automation.enabled = enable)),
           flatMap(() => this.scriptRepository.update(automation))
         )
