@@ -1,4 +1,4 @@
 export interface Error {
-    message: string
-    cause?: string
+  message: string
+  cause?: string
 }

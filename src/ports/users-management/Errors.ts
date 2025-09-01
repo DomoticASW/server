@@ -11,29 +11,49 @@ export type InvalidTokenError = Brand<Error, "InvalidTokenError">
 export type UnauthorizedError = Brand<Error, "UnauthorizedError">
 
 export function EmailAlreadyInUseError(cause?: string): EmailAlreadyInUseError {
-    return { message: "This email is already used", cause: cause, __brand: "EmailAlreadyInUseError" }
+  return { message: "This email is already used", cause: cause, __brand: "EmailAlreadyInUseError" }
 }
 
 export function UserNotFoundError(cause?: string): UserNotFoundError {
-    return { message: "This user was not found", cause: cause, __brand: "UserNotFoundError" }
+  return { message: "This user was not found", cause: cause, __brand: "UserNotFoundError" }
 }
 
 export function RegistrationRequestNotFoundError(cause?: string): RegistrationRequestNotFoundError {
-    return { message: "This registration request was not found", cause: cause, __brand: "RegistrationRequestNotFoundError" }
+  return {
+    message: "This registration request was not found",
+    cause: cause,
+    __brand: "RegistrationRequestNotFoundError",
+  }
 }
 
 export function InvalidTokenError(cause?: string): InvalidTokenError {
-    return { message: "The provided authentication token is not valid", cause: cause, __brand: "InvalidTokenError" }
+  return {
+    message: "The provided authentication token is not valid",
+    cause: cause,
+    __brand: "InvalidTokenError",
+  }
 }
 
 export function InvalidCredentialsError(cause?: string): InvalidCredentialsError {
-    return { message: "The provided credentials are not valid", cause: cause, __brand: "InvalidCredentialsError" }
+  return {
+    message: "The provided credentials are not valid",
+    cause: cause,
+    __brand: "InvalidCredentialsError",
+  }
 }
 
 export function InvalidTokenFormatError(cause?: string): InvalidTokenFormatError {
-    return { message: "The provided authentication token format is not valid", cause: cause, __brand: "InvalidTokenFormatError" }
+  return {
+    message: "The provided authentication token format is not valid",
+    cause: cause,
+    __brand: "InvalidTokenFormatError",
+  }
 }
 
 export function UnauthorizedError(cause?: string): UnauthorizedError {
-    return { message: "You are not authorized to perform this operation", cause: cause, __brand: "UnauthorizedError" }
+  return {
+    message: "You are not authorized to perform this operation",
+    cause: cause,
+    __brand: "UnauthorizedError",
+  }
 }

@@ -9,7 +9,11 @@ export type ScriptError = Brand<Error, "ScriptError">
 export type InvalidConstantTypeError = Brand<Error, "InvalidConstantType">
 
 export function ScriptError(cause?: string): ScriptError {
-  return { message: "There was an error in the script execution", cause: cause, __brand: "ScriptError" }
+  return {
+    message: "There was an error in the script execution",
+    cause: cause,
+    __brand: "ScriptError",
+  }
 }
 
 export function ScriptNotFoundError(cause?: string): ScriptNotFoundError {
@@ -21,13 +25,25 @@ export function InvalidConstantTypeError(cause?: string): InvalidConstantTypeErr
 }
 
 export function InvalidScriptError(cause?: string): InvalidScriptError {
-  return { message: "There is an error in the script syntax", cause: cause, __brand: "InvalidScriptError" }
+  return {
+    message: "There is an error in the script syntax",
+    cause: cause,
+    __brand: "InvalidScriptError",
+  }
 }
 
 export function TaskNameAlreadyInUseError(cause?: string): TaskNameAlreadyInUseError {
-  return { message: "A task with this name already exists", cause: cause, __brand: "TaskNameAlreadyInUse" }
+  return {
+    message: "A task with this name already exists",
+    cause: cause,
+    __brand: "TaskNameAlreadyInUse",
+  }
 }
 
 export function AutomationNameAlreadyInUseError(cause?: string): AutomationNameAlreadyInUseError {
-  return { message: "An automation with this name already exists", cause: cause, __brand: "AutomationNameAlreadyInUse" }
+  return {
+    message: "An automation with this name already exists",
+    cause: cause,
+    __brand: "AutomationNameAlreadyInUse",
+  }
 }

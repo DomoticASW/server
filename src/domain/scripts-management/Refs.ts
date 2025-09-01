@@ -1,8 +1,8 @@
-import { Brand } from "../../utils/Brand.js";
-import { ConstantInstruction, IfElseInstruction, IfInstruction } from "./Instruction.js";
+import { Brand } from "../../utils/Brand.js"
+import { ConstantInstruction, IfElseInstruction, IfInstruction } from "./Instruction.js"
 
 interface Constant {
-  constantInstruction: ConstantInstruction<unknown>,
+  constantInstruction: ConstantInstruction<unknown>
   scopeNode: NodeRef
 }
 
@@ -26,18 +26,20 @@ export type RootNodeRef = Brand<Ref, "RootNodeRef">
 export type ThenNodeRef = Brand<IfRef, "ThenNodeRef">
 export type ElseNodeRef = Brand<IfElseRef, "ElseNodeRef">
 
-
-export function ConstantRef(constantInstruction: ConstantInstruction<unknown>, scopeNode: NodeRef): ConstantRef {
+export function ConstantRef(
+  constantInstruction: ConstantInstruction<unknown>,
+  scopeNode: NodeRef
+): ConstantRef {
   return {
     constantInstruction: constantInstruction,
     scopeNode: scopeNode,
-    __brand: "ConstantRef"
+    __brand: "ConstantRef",
   }
 }
 
 class RootNodeRefImpl implements RootNodeRef {
   superNode: NodeRef = this
-  __brand = "RootNodeRef" as const;
+  __brand = "RootNodeRef" as const
 }
 
 export function RootNodeRef(): RootNodeRef {
@@ -48,7 +50,7 @@ export function ThenNodeRef(ifInstruction: IfInstruction, superNode: NodeRef): T
   return {
     superNode: superNode,
     instruction: ifInstruction,
-    __brand: "ThenNodeRef"
+    __brand: "ThenNodeRef",
   }
 }
 
@@ -56,6 +58,6 @@ export function ElseNodeRef(ifElseInstruction: IfElseInstruction, superNode: Nod
   return {
     superNode: superNode,
     instruction: ifElseInstruction,
-    __brand: "ElseNodeRef"
+    __brand: "ElseNodeRef",
   }
 }

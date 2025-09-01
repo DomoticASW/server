@@ -1,92 +1,171 @@
-import { Effect, succeed, fail, tryPromise, flatMap, timeout, bind, catchIf, Do, all, if as if_, map, void as void_ } from "effect/Effect";
-import { DeviceCommunicationProtocol } from "../../ports/devices-management/DeviceCommunicationProtocol.js";
-import { CommunicationError, DeviceUnreachableError, DeviceActionError } from "../../ports/devices-management/Errors.js";
-import { Device, DeviceAction, DeviceActionId, DeviceAddress, DeviceEvent, DeviceId, DeviceProperty, DevicePropertyId, DeviceStatus } from "../../domain/devices-management/Device.js";
-import { pipe } from "effect";
-import { millis } from "effect/Duration";
-import { TimeoutException } from "effect/Cause";
-import { DoubleRange, Enum, IntRange, NoneBoolean, NoneColor, NoneDouble, NoneInt, NoneString, NoneVoid, TypeConstraints } from "../../domain/devices-management/Types.js";
-
+import {
+  Effect,
+  succeed,
+  fail,
+  tryPromise,
+  flatMap,
+  timeout,
+  bind,
+  catchIf,
+  Do,
+  all,
+  if as if_,
+  map,
+  void as void_,
+} from "effect/Effect"
+import { DeviceCommunicationProtocol } from "../../ports/devices-management/DeviceCommunicationProtocol.js"
+import {
+  CommunicationError,
+  DeviceUnreachableError,
+  DeviceActionError,
+} from "../../ports/devices-management/Errors.js"
+import {
+  Device,
+  DeviceAction,
+  DeviceActionId,
+  DeviceAddress,
+  DeviceEvent,
+  DeviceId,
+  DeviceProperty,
+  DevicePropertyId,
+  DeviceStatus,
+} from "../../domain/devices-management/Device.js"
+import { pipe } from "effect"
+import { millis } from "effect/Duration"
+import { TimeoutException } from "effect/Cause"
+import {
+  DoubleRange,
+  Enum,
+  IntRange,
+  NoneBoolean,
+  NoneColor,
+  NoneDouble,
+  NoneInt,
+  NoneString,
+  NoneVoid,
+  TypeConstraints,
+} from "../../domain/devices-management/Types.js"
 
 export class DeviceCommunicationProtocolHttpAdapter implements DeviceCommunicationProtocol {
-
   /**
    * @param serverPort The port on which devices are able to reach the server.
    * @param timeoutToReachDeviceMs The amount of time after which a non responding device is considered unreachable
    */
-  constructor(readonly serverPort: number, readonly timeoutToReachDeviceMs: number = 5000) { }
+  constructor(
+    readonly serverPort: number,
+    readonly timeoutToReachDeviceMs: number = 5000
+  ) {}
 
   checkDeviceStatus(deviceAddress: DeviceAddress): Effect<DeviceStatus, CommunicationError> {
     const { host, port } = deviceAddress
     return Do.pipe(
-      bind("response", () => tryPromise({
-        try: () => fetch(`http://${host}:${port}/check-status`, { method: "GET" }),
-        catch: (e) => CommunicationError((e as Error).message)
-      })),
+      bind("response", () =>
+        tryPromise({
+          try: () => fetch(`http://${host}:${port}/check-status`, { method: "GET" }),
+          catch: (e) => CommunicationError((e as Error).message),
+        })
+      ),
       timeout(millis(this.timeoutToReachDeviceMs)),
       flatMap(({ response }) =>
         if_(response.ok, {
           onTrue: () => succeed(DeviceStatus.Online),
-          onFalse: () => pipe(
-            decodeDeviceError(response),
-            flatMap((error) => fail(CommunicationError(`While checking if device is online it responded but with an error:\n${error?.cause ?? response.statusText}`)))
-          )
+          onFalse: () =>
+            pipe(
+              decodeDeviceError(response),
+              flatMap((error) =>
+                fail(
+                  CommunicationError(
+                    `While checking if device is online it responded but with an error:\n${error?.cause ?? response.statusText}`
+                  )
+                )
+              )
+            ),
         })
       ),
-      catchIf(e => e instanceof TimeoutException, () => succeed(DeviceStatus.Offline))
-    );
+      catchIf(
+        (e) => e instanceof TimeoutException,
+        () => succeed(DeviceStatus.Offline)
+      )
+    )
   }
 
-  executeDeviceAction(deviceAddress: DeviceAddress, deviceActionId: DeviceActionId, input: unknown): Effect<void, DeviceUnreachableError | CommunicationError | DeviceActionError> {
+  executeDeviceAction(
+    deviceAddress: DeviceAddress,
+    deviceActionId: DeviceActionId,
+    input: unknown
+  ): Effect<void, DeviceUnreachableError | CommunicationError | DeviceActionError> {
     const { host, port } = deviceAddress
     return Do.pipe(
-      bind("response", () => tryPromise({
-        try: () => fetch(`http://${host}:${port}/execute/${deviceActionId}`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ input: input })
-        }),
-        catch: (e) => CommunicationError((e as Error).message)
-      })),
+      bind("response", () =>
+        tryPromise({
+          try: () =>
+            fetch(`http://${host}:${port}/execute/${deviceActionId}`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ input: input }),
+            }),
+          catch: (e) => CommunicationError((e as Error).message),
+        })
+      ),
       timeout(millis(this.timeoutToReachDeviceMs)),
-      catchIf(e => e instanceof TimeoutException, () => fail(DeviceUnreachableError())),
+      catchIf(
+        (e) => e instanceof TimeoutException,
+        () => fail(DeviceUnreachableError())
+      ),
       bind("_", ({ response }) =>
         if_(response.ok, {
           onTrue: () => succeed(null),
-          onFalse: () => pipe(
-            decodeDeviceError(response),
-            flatMap((error) => fail(DeviceActionError(error?.cause)))
-          )
+          onFalse: () =>
+            pipe(
+              decodeDeviceError(response),
+              flatMap((error) => fail(DeviceActionError(error?.cause)))
+            ),
         })
       )
-    );
+    )
   }
 
-  unregister(deviceAddress: DeviceAddress): Effect<void, DeviceUnreachableError | CommunicationError> {
+  unregister(
+    deviceAddress: DeviceAddress
+  ): Effect<void, DeviceUnreachableError | CommunicationError> {
     const { host, port } = deviceAddress
     return Do.pipe(
-      bind("response", () => tryPromise({
-        try: () => fetch(`http://${host}:${port}/unregister`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" }
-        }),
-        catch: (e) => CommunicationError((e as Error).message)
-      })),
+      bind("response", () =>
+        tryPromise({
+          try: () =>
+            fetch(`http://${host}:${port}/unregister`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+            }),
+          catch: (e) => CommunicationError((e as Error).message),
+        })
+      ),
       timeout(millis(this.timeoutToReachDeviceMs)),
-      catchIf(e => e instanceof TimeoutException, () => fail(DeviceUnreachableError())),
+      catchIf(
+        (e) => e instanceof TimeoutException,
+        () => fail(DeviceUnreachableError())
+      ),
       flatMap(({ response }) =>
         if_(response.ok, {
           onTrue: () => void_,
-          onFalse: () => pipe(
-            decodeDeviceError(response),
-            flatMap((error) => fail(CommunicationError(`Something went wrong while trying to register the device:\n${error?.cause ?? response.statusText}`)))
-          )
-        }))
+          onFalse: () =>
+            pipe(
+              decodeDeviceError(response),
+              flatMap((error) =>
+                fail(
+                  CommunicationError(
+                    `Something went wrong while trying to register the device:\n${error?.cause ?? response.statusText}`
+                  )
+                )
+              )
+            ),
+        })
+      )
     )
   }
 
   /**
-   * 
+   *
    * **An example of expected device response**:
    * ```json
    * {
@@ -162,116 +241,249 @@ export class DeviceCommunicationProtocolHttpAdapter implements DeviceCommunicati
    * ```
    * @inheritdoc
    */
-  register(deviceAddress: DeviceAddress): Effect<Device, DeviceUnreachableError | CommunicationError> {
+  register(
+    deviceAddress: DeviceAddress
+  ): Effect<Device, DeviceUnreachableError | CommunicationError> {
     const { host, port } = deviceAddress
     return Do.pipe(
-      bind("response", () => tryPromise({
-        try: () => fetch(`http://${host}:${port}/register`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ serverPort: this.serverPort })
-        }),
-        catch: (e) => CommunicationError((e as Error).message)
-      })),
+      bind("response", () =>
+        tryPromise({
+          try: () =>
+            fetch(`http://${host}:${port}/register`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ serverPort: this.serverPort }),
+            }),
+          catch: (e) => CommunicationError((e as Error).message),
+        })
+      ),
       timeout(millis(this.timeoutToReachDeviceMs)),
-      catchIf(e => e instanceof TimeoutException, () => fail(DeviceUnreachableError())),
-      bind("body", ({ response }) => if_(response.ok, {
-        onTrue: () => tryPromise({
-          try: () => response.json(),
-          catch: (e) => CommunicationError((e as Error).message)
-        }),
-        onFalse: () => pipe(
-          decodeDeviceError(response),
-          flatMap((error) => fail(CommunicationError(`Something went wrong while trying to register the device:\n${error?.cause ?? response.statusText}`)))
-        )
-      })),
-      bind("d", ({ body }) => isDeviceRegistration(body) ? succeed(body) : fail(CommunicationError("Received device description format was wrong"))),
+      catchIf(
+        (e) => e instanceof TimeoutException,
+        () => fail(DeviceUnreachableError())
+      ),
+      bind("body", ({ response }) =>
+        if_(response.ok, {
+          onTrue: () =>
+            tryPromise({
+              try: () => response.json(),
+              catch: (e) => CommunicationError((e as Error).message),
+            }),
+          onFalse: () =>
+            pipe(
+              decodeDeviceError(response),
+              flatMap((error) =>
+                fail(
+                  CommunicationError(
+                    `Something went wrong while trying to register the device:\n${error?.cause ?? response.statusText}`
+                  )
+                )
+              )
+            ),
+        })
+      ),
+      bind("d", ({ body }) =>
+        isDeviceRegistration(body)
+          ? succeed(body)
+          : fail(CommunicationError("Received device description format was wrong"))
+      ),
       flatMap(({ d }) => {
-        const actions = d.actions.map(a => DeviceAction(DeviceActionId(a.id), a.name, decodeTypeConstraint(a.inputTypeConstraints), a.description))
-        const events = d.events.map(e => DeviceEvent(e))
-        const properties = d.properties.map(p => {
+        const actions = d.actions.map((a) =>
+          DeviceAction(
+            DeviceActionId(a.id),
+            a.name,
+            decodeTypeConstraint(a.inputTypeConstraints),
+            a.description
+          )
+        )
+        const events = d.events.map((e) => DeviceEvent(e))
+        const properties = d.properties.map((p) => {
           if (isDevicePropertyWithSetterRegistration(p)) {
-            const action = actions.find(a => a.id == p.setterActionId)
+            const action = actions.find((a) => a.id == p.setterActionId)
             if (action) {
               return succeed(DeviceProperty(DevicePropertyId(p.id), p.name, p.value, action))
             } else {
-              return fail(CommunicationError("Received device description where property ${p.name} declares setter ${p.setterOrTypeConstraint} which is missing in the actions"))
+              return fail(
+                CommunicationError(
+                  "Received device description where property ${p.name} declares setter ${p.setterOrTypeConstraint} which is missing in the actions"
+                )
+              )
             }
           } else if (isDevicePropertyWithTypeConstraintsRegistration(p)) {
-            return succeed(DeviceProperty(DevicePropertyId(p.id), p.name, p.value, decodeTypeConstraint(p.typeConstraints)))
+            return succeed(
+              DeviceProperty(
+                DevicePropertyId(p.id),
+                p.name,
+                p.value,
+                decodeTypeConstraint(p.typeConstraints)
+              )
+            )
           } else {
-            return fail(CommunicationError("Unable to decode device property setter or type constraints"))
+            return fail(
+              CommunicationError("Unable to decode device property setter or type constraints")
+            )
           }
         })
         return pipe(
           all(properties),
-          flatMap((properties) => succeed(Device(DeviceId(d.id), d.name, deviceAddress, DeviceStatus.Online, properties, actions, events)))
+          flatMap((properties) =>
+            succeed(
+              Device(
+                DeviceId(d.id),
+                d.name,
+                deviceAddress,
+                DeviceStatus.Online,
+                properties,
+                actions,
+                events
+              )
+            )
+          )
         )
       })
     )
-  };
+  }
 }
 function isDeviceRegistration(o: unknown): o is DeviceRegistration {
-  return o != null && typeof o == "object" &&
-    "id" in o && typeof o.id == "string" &&
-    "name" in o && typeof o.name == "string" &&
-    "properties" in o && Array.isArray(o.properties) && reduceOrDefault(o.properties.map(p => isDevicePropertyRegistration(p)), ((a, b) => a && b), true) &&
-    "actions" in o && Array.isArray(o.actions) && reduceOrDefault(o.actions.map(a => isDeviceActionRegistration(a)), ((a, b) => a && b), true) &&
-    "events" in o && Array.isArray(o.events) && reduceOrDefault(o.events.map(e => typeof e == "string"), ((a, b) => a && b), true)
+  return (
+    o != null &&
+    typeof o == "object" &&
+    "id" in o &&
+    typeof o.id == "string" &&
+    "name" in o &&
+    typeof o.name == "string" &&
+    "properties" in o &&
+    Array.isArray(o.properties) &&
+    reduceOrDefault(
+      o.properties.map((p) => isDevicePropertyRegistration(p)),
+      (a, b) => a && b,
+      true
+    ) &&
+    "actions" in o &&
+    Array.isArray(o.actions) &&
+    reduceOrDefault(
+      o.actions.map((a) => isDeviceActionRegistration(a)),
+      (a, b) => a && b,
+      true
+    ) &&
+    "events" in o &&
+    Array.isArray(o.events) &&
+    reduceOrDefault(
+      o.events.map((e) => typeof e == "string"),
+      (a, b) => a && b,
+      true
+    )
+  )
 }
 function isDevicePropertyRegistration(o: unknown): o is DevicePropertyRegistration {
-  return o != null && typeof o == "object" &&
-    "id" in o && typeof o.id == "string" &&
-    "name" in o && typeof o.name == "string" &&
+  return (
+    o != null &&
+    typeof o == "object" &&
+    "id" in o &&
+    typeof o.id == "string" &&
+    "name" in o &&
+    typeof o.name == "string" &&
     "value" in o &&
-    (("setterActionId" in o && typeof o.setterActionId == "string") || ("typeConstraints" in o && isTypeConstraintsRegistration(o.typeConstraints)))
+    (("setterActionId" in o && typeof o.setterActionId == "string") ||
+      ("typeConstraints" in o && isTypeConstraintsRegistration(o.typeConstraints)))
+  )
 }
-function isDevicePropertyWithSetterRegistration(o: unknown): o is DevicePropertyWithSetterRegistration {
-  return isDevicePropertyRegistration(o) &&
-    "setterActionId" in o && typeof o.setterActionId == "string"
+function isDevicePropertyWithSetterRegistration(
+  o: unknown
+): o is DevicePropertyWithSetterRegistration {
+  return (
+    isDevicePropertyRegistration(o) && "setterActionId" in o && typeof o.setterActionId == "string"
+  )
 }
-function isDevicePropertyWithTypeConstraintsRegistration(o: unknown): o is DevicePropertyWithTypeConstraintsRegistration {
-  return isDevicePropertyRegistration(o) &&
-    "typeConstraints" in o && isTypeConstraintsRegistration(o.typeConstraints)
+function isDevicePropertyWithTypeConstraintsRegistration(
+  o: unknown
+): o is DevicePropertyWithTypeConstraintsRegistration {
+  return (
+    isDevicePropertyRegistration(o) &&
+    "typeConstraints" in o &&
+    isTypeConstraintsRegistration(o.typeConstraints)
+  )
 }
 function isDeviceActionRegistration(o: unknown): o is DeviceActionRegistration {
-  return o != null && typeof o == "object" &&
-    "id" in o && typeof o.id == "string" &&
-    "name" in o && typeof o.name == "string" &&
+  return (
+    o != null &&
+    typeof o == "object" &&
+    "id" in o &&
+    typeof o.id == "string" &&
+    "name" in o &&
+    typeof o.name == "string" &&
     (!("description" in o) || typeof o.description == "string") &&
-    "inputTypeConstraints" in o && isTypeConstraintsRegistration(o.inputTypeConstraints)
+    "inputTypeConstraints" in o &&
+    isTypeConstraintsRegistration(o.inputTypeConstraints)
+  )
 }
 function isTypeConstraintsRegistration(o: unknown): o is TypeConstraintsRegistration {
-  return isEnumTypeConstraint(o) || isIntRangeTypeConstraint(o) || isDoubleRangeTypeConstraint(o) || isNoneTypeConstraint(o)
+  return (
+    isEnumTypeConstraint(o) ||
+    isIntRangeTypeConstraint(o) ||
+    isDoubleRangeTypeConstraint(o) ||
+    isNoneTypeConstraint(o)
+  )
 }
 
 function isEnumTypeConstraint(o: unknown): o is EnumRegistration {
-  return o != null && typeof o == "object" &&
-    "constraint" in o && typeof o.constraint == "string" && o.constraint == "Enum" &&
-    "values" in o && Array.isArray(o.values) && reduceOrDefault(o.values.map(v => typeof v == "string"), ((a, b) => a && b), true)
+  return (
+    o != null &&
+    typeof o == "object" &&
+    "constraint" in o &&
+    typeof o.constraint == "string" &&
+    o.constraint == "Enum" &&
+    "values" in o &&
+    Array.isArray(o.values) &&
+    reduceOrDefault(
+      o.values.map((v) => typeof v == "string"),
+      (a, b) => a && b,
+      true
+    )
+  )
 }
 
 function isIntRangeTypeConstraint(o: unknown): o is IntRangeRegistration {
-  return o != null && typeof o == "object" &&
-    "constraint" in o && typeof o.constraint == "string" && o.constraint == "IntRange" &&
-    "min" in o && Number.isInteger(o.min) &&
-    "max" in o && Number.isInteger(o.max)
+  return (
+    o != null &&
+    typeof o == "object" &&
+    "constraint" in o &&
+    typeof o.constraint == "string" &&
+    o.constraint == "IntRange" &&
+    "min" in o &&
+    Number.isInteger(o.min) &&
+    "max" in o &&
+    Number.isInteger(o.max)
+  )
 }
 function isDoubleRangeTypeConstraint(o: unknown): o is DoubleRangeRegistration {
-  return o != null && typeof o == "object" &&
-    "constraint" in o && typeof o.constraint == "string" && o.constraint == "DoubleRange" &&
-    "min" in o && typeof o.min == "number" &&
-    "max" in o && typeof o.max == "number"
+  return (
+    o != null &&
+    typeof o == "object" &&
+    "constraint" in o &&
+    typeof o.constraint == "string" &&
+    o.constraint == "DoubleRange" &&
+    "min" in o &&
+    typeof o.min == "number" &&
+    "max" in o &&
+    typeof o.max == "number"
+  )
 }
 function isNoneTypeConstraint(o: unknown): o is NoneRegistration {
-  return o != null && typeof o == "object" &&
-    "constraint" in o && typeof o.constraint == "string" && o.constraint == "None" &&
-    "type" in o && typeof o.type == "string" && ["String", "Int", "Double", "Boolean", "Color", "Void"].indexOf(o.type) != -1
+  return (
+    o != null &&
+    typeof o == "object" &&
+    "constraint" in o &&
+    typeof o.constraint == "string" &&
+    o.constraint == "None" &&
+    "type" in o &&
+    typeof o.type == "string" &&
+    ["String", "Int", "Double", "Boolean", "Color", "Void"].indexOf(o.type) != -1
+  )
 }
 
 function isDeviceError(o: unknown): o is DeviceError {
-  return o != undefined && typeof o == "object" &&
-    "cause" in o && typeof o.cause === "string"
+  return o != undefined && typeof o == "object" && "cause" in o && typeof o.cause === "string"
 }
 
 function reduceOrDefault<T>(array: Array<T>, reducer: (a: T, b: T) => T, def: T) {
@@ -287,12 +499,18 @@ function decodeTypeConstraint(tc: TypeConstraintsRegistration): TypeConstraints<
     return DoubleRange(tc.min, tc.max)
   } else if (isNoneTypeConstraint(tc)) {
     switch (tc.type) {
-      case "String": return NoneString()
-      case "Int": return NoneInt()
-      case "Double": return NoneDouble()
-      case "Boolean": return NoneBoolean()
-      case "Color": return NoneColor()
-      case "Void": return NoneVoid()
+      case "String":
+        return NoneString()
+      case "Int":
+        return NoneInt()
+      case "Double":
+        return NoneDouble()
+      case "Boolean":
+        return NoneBoolean()
+      case "Color":
+        return NoneColor()
+      case "Void":
+        return NoneVoid()
     }
   }
   throw new Error("A new type of type constraint was added and the decode function was not updated")
@@ -300,23 +518,26 @@ function decodeTypeConstraint(tc: TypeConstraintsRegistration): TypeConstraints<
 
 function decodeDeviceError(res: Response): Effect<DeviceError | undefined, CommunicationError> {
   return Do.pipe(
-    bind("body", () => tryPromise({
-      try: () => res.json(),
-      catch: (e) => CommunicationError((e as Error).message)
-    })),
+    bind("body", () =>
+      tryPromise({
+        try: () => res.json(),
+        catch: (e) => CommunicationError((e as Error).message),
+      })
+    ),
     bind("error", ({ body }) => {
       if (body == null) {
         return succeed(undefined)
       } else if (isDeviceError(body)) {
         return succeed(body)
       } else {
-        return fail(CommunicationError(`The device responded with an error but it was malformed:\n${body}`))
+        return fail(
+          CommunicationError(`The device responded with an error but it was malformed:\n${body}`)
+        )
       }
     }),
     map(({ error }) => error)
   )
 }
-
 
 interface DeviceRegistration {
   id: string
@@ -326,23 +547,33 @@ interface DeviceRegistration {
   events: [string]
 }
 
-type TypeConstraintsRegistration = EnumRegistration | IntRangeRegistration | DoubleRangeRegistration | NoneRegistration
+type TypeConstraintsRegistration =
+  | EnumRegistration
+  | IntRangeRegistration
+  | DoubleRangeRegistration
+  | NoneRegistration
 
 class EnumRegistration {
   constraint = "Enum" as const
-  constructor(public values: [string]) { }
+  constructor(public values: [string]) {}
 }
 class IntRangeRegistration {
   constraint = "IntRange" as const
-  constructor(public min: number, public max: number) { }
+  constructor(
+    public min: number,
+    public max: number
+  ) {}
 }
 class DoubleRangeRegistration {
   constraint = "DoubleRange" as const
-  constructor(public min: number, public max: number) { }
+  constructor(
+    public min: number,
+    public max: number
+  ) {}
 }
 class NoneRegistration {
   constraint = "None" as const
-  constructor(public type: "String" | "Int" | "Double" | "Boolean" | "Color" | "Void") { }
+  constructor(public type: "String" | "Int" | "Double" | "Boolean" | "Color" | "Void") {}
 }
 
 interface DevicePropertyRegistration {
