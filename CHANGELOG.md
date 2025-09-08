@@ -1,3 +1,14 @@
+## [3.4.4](https://github.com/DomoticASW/server/compare/3.4.3...3.4.4) (2025-09-08)
+
+### Dependency updates
+
+* **deps:** update actions/checkout action to v5 ([793be91](https://github.com/DomoticASW/server/commit/793be918f30bc256fb4648892d35d09d99518957))
+* **deps:** update actions/setup-node action to v5 ([93f16d5](https://github.com/DomoticASW/server/commit/93f16d50ce64a2484edb4b8eb1305bbca4f694d8))
+
+### Bug Fixes
+
+* **deps:** update dependency mongoose to v8.18.1 ([#177](https://github.com/DomoticASW/server/issues/177)) ([0a804a9](https://github.com/DomoticASW/server/commit/0a804a9f3562a38aafbd798dcd2cc2f32697c992))
+
 ## [3.4.3](https://github.com/DomoticASW/server/compare/3.4.2...3.4.3) (2025-09-04)
 
 ### Bug Fixes
