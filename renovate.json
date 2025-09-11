@@ -4,7 +4,7 @@
     "config:recommended"
   ],
   "baseBranchPatterns": [
-    "$default",
+    "main",
     "develop"
   ],
   "packageRules": [
@@ -27,7 +27,7 @@
         "devDependencies"
       ],
       "matchBaseBranches": [
-        "$default"
+        "main"
       ],
       "enabled": false
     },

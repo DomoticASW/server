@@ -27,7 +27,7 @@
     "format-check": "prettier --check src/"
   },
   "author": "Alessandro Venturini, Corrado Stortini, Marco Raggini, Francesco Carlucci",
-  "license": "ISC",
+  "license": "LGPL-3.0-only",
   "devDependencies": {
     "@commitlint/cli": "^19.8.1",
     "@commitlint/config-conventional": "^19.8.1",

@@ -1,3 +1,104 @@
+## [3.5.0](https://github.com/DomoticASW/server/compare/3.4.4...3.5.0) (2025-09-11)
+
+### Features
+
+* **licence:** add licence to package.json ([dc1dff8](https://github.com/DomoticASW/server/commit/dc1dff8e3e39f49ac66c9a8d2e79be19d8cf6d97))
+
+### General maintenance
+
+* add LGPL licence ([802c7ee](https://github.com/DomoticASW/server/commit/802c7ee8106bf9e6afe59e24b575e7860e5db65e))
+
+## [3.4.4](https://github.com/DomoticASW/server/compare/3.4.3...3.4.4) (2025-09-08)
+
+### Dependency updates
+
+* **deps:** update actions/checkout action to v5 ([793be91](https://github.com/DomoticASW/server/commit/793be918f30bc256fb4648892d35d09d99518957))
+* **deps:** update actions/setup-node action to v5 ([93f16d5](https://github.com/DomoticASW/server/commit/93f16d50ce64a2484edb4b8eb1305bbca4f694d8))
+
+### Bug Fixes
+
+* **deps:** update dependency mongoose to v8.18.1 ([#177](https://github.com/DomoticASW/server/issues/177)) ([0a804a9](https://github.com/DomoticASW/server/commit/0a804a9f3562a38aafbd798dcd2cc2f32697c992))
+
+## [3.4.3](https://github.com/DomoticASW/server/compare/3.4.2...3.4.3) (2025-09-04)
+
+### Bug Fixes
+
+* **deps:** update dependency effect to v3.17.13 ([#171](https://github.com/DomoticASW/server/issues/171)) ([c549b4b](https://github.com/DomoticASW/server/commit/c549b4b3a078fe71ca45820a175421391f12a9ab))
+
+## [3.4.2](https://github.com/DomoticASW/server/compare/3.4.1...3.4.2) (2025-09-03)
+
+### Bug Fixes
+
+* **deps:** update dependency effect to v3.17.11 ([#170](https://github.com/DomoticASW/server/issues/170)) ([2cbc4d3](https://github.com/DomoticASW/server/commit/2cbc4d3a608f5a64b8c6847a3de64e398c25a1d6))
+
+## [3.4.1](https://github.com/DomoticASW/server/compare/3.4.0...3.4.1) (2025-09-02)
+
+### Bug Fixes
+
+* **deps:** update dependency effect to v3.17.10 ([#164](https://github.com/DomoticASW/server/issues/164)) ([d11258e](https://github.com/DomoticASW/server/commit/d11258ea9dbc0dae725fb0de6d36f4e0ac9dd75e))
+
+## [3.4.0](https://github.com/DomoticASW/server/compare/3.3.1...3.4.0) (2025-09-01)
+
+### Features
+
+* checkout client at 0.4.0 ([069686e](https://github.com/DomoticASW/server/commit/069686ecb011f975f9ea0efd244b30b287064c6f))
+
+### Dependency updates
+
+* **deps:** update dep semantic-release-preconfigured-conventional-commits to v1.1.141 ([#161](https://github.com/DomoticASW/server/issues/161)) ([ce53d20](https://github.com/DomoticASW/server/commit/ce53d20710b53f689cc86c7a0593f8bce275fa7c))
+
+### Bug Fixes
+
+* now automations can be enabled/disabled only if the user has edit permissions on it ([6f645ab](https://github.com/DomoticASW/server/commit/6f645ab782efeedd977486538a1929ddf8fcf4fa))
+* now notifications are sent to the right sockets ([6f013a0](https://github.com/DomoticASW/server/commit/6f013a0fa5c2f14151d06ae7004ef8e3c29a6be0))
+* parsing of delay env variable not working ([81896a0](https://github.com/DomoticASW/server/commit/81896a01881329642fee8f5782561a4336ac925c))
+
+### Build and continuous integration
+
+* add github action to check code format ([8886e92](https://github.com/DomoticASW/server/commit/8886e92fa5fdf6378f744831051b15ee053753e2))
+
+### General maintenance
+
+* add hook for checking code format on commit ([817d1d7](https://github.com/DomoticASW/server/commit/817d1d75b7eb2d9011df8bb5718cec0330dc5fd2))
+* fix linting issues ([504be43](https://github.com/DomoticASW/server/commit/504be43f167c87f021064f1d9d2a7435d46ee952))
+* format code & add script to automate that ([89ff54b](https://github.com/DomoticASW/server/commit/89ff54b9f113e59467fb5037c65886a098c4f133))
+
+### Refactoring
+
+* use formatter ([a6a4a57](https://github.com/DomoticASW/server/commit/a6a4a57e6a4cc8ebe55d8446e587e9498aafc78b))
+
+## [3.3.1](https://github.com/DomoticASW/server/compare/3.3.0...3.3.1) (2025-08-31)
+
+### Bug Fixes
+
+* renovate ignores devDeps on main ([e21b375](https://github.com/DomoticASW/server/commit/e21b37571e776d2cdfb59a3172cc0038eec11b2c))
+
+### General maintenance
+
+* more flexible random delay debugging ([e5bb924](https://github.com/DomoticASW/server/commit/e5bb924bb92646b05789083d1503182e5715900b))
+
+## [3.3.0](https://github.com/DomoticASW/server/compare/3.2.0...3.3.0) (2025-08-30)
+
+### Features
+
+* checkout client at 0.3.0 ([64c78c1](https://github.com/DomoticASW/server/commit/64c78c14ce864cbeee501bcc05f45aa395b01c52))
+
+### Bug Fixes
+
+* gracefully shutdown on SIGTERM ([b96cb00](https://github.com/DomoticASW/server/commit/b96cb00827a3a7dd4b4e236e6f752b7edae666b7))
+* now all tests are updated with new script errors formats ([9717e99](https://github.com/DomoticASW/server/commit/9717e99151fcf869c5320accd6da0b2cf87b39ee))
+* now automations checks for start task permissions when created ([bb81f90](https://github.com/DomoticASW/server/commit/bb81f905454d90be419ca7e83cebc868da134861))
+* now tasks cannot run other tasks if the permissions are not enough ([fa43bbc](https://github.com/DomoticASW/server/commit/fa43bbc5f50c37cec3f42e46ce24c1259a490836))
+
+### General maintenance
+
+* flag to enable random delay for debugging ([b089bfa](https://github.com/DomoticASW/server/commit/b089bfaf0f1c766aad92f6b824eff44b2be6b32a))
+* graceful exit returns code 0 ([2fb39dc](https://github.com/DomoticASW/server/commit/2fb39dcd631561614797397a40f8508e02f9591b))
+
+### Refactoring
+
+* now scripts errors do not have cause if not present ([032071c](https://github.com/DomoticASW/server/commit/032071c8f04467b47a4d32f307e190a56e71acb5))
+
 ## [3.2.0](https://github.com/DomoticASW/server/compare/3.1.2...3.2.0) (2025-08-27)
 
 ### Features
