@@ -1,3 +1,13 @@
+## [3.5.0](https://github.com/DomoticASW/server/compare/3.4.4...3.5.0) (2025-09-11)
+
+### Features
+
+* **licence:** add licence to package.json ([dc1dff8](https://github.com/DomoticASW/server/commit/dc1dff8e3e39f49ac66c9a8d2e79be19d8cf6d97))
+
+### General maintenance
+
+* add LGPL licence ([802c7ee](https://github.com/DomoticASW/server/commit/802c7ee8106bf9e6afe59e24b575e7860e5db65e))
+
 ## [3.4.4](https://github.com/DomoticASW/server/compare/3.4.3...3.4.4) (2025-09-08)
 
 ### Dependency updates
