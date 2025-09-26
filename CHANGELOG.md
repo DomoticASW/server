@@ -1,3 +1,49 @@
+## [3.6.0](https://github.com/DomoticASW/server/compare/3.5.2...3.6.0) (2025-09-26)
+
+### Features
+
+* **licence:** add licence to package.json ([c5293ab](https://github.com/DomoticASW/server/commit/c5293ab597108d4364a73bb51c3fed6a121cc86d))
+
+### Dependency updates
+
+* **deps:** update actions/checkout action to v5 ([579bd76](https://github.com/DomoticASW/server/commit/579bd7681b385ba97a8fc4f23292023ed0911f09))
+* **deps:** update actions/setup-node action to v5 ([4ac85b7](https://github.com/DomoticASW/server/commit/4ac85b73dad1a7b13cf7ed9db44d98aa42d4d3d0))
+* **deps:** update dependency globals to v16.4.0 ([#181](https://github.com/DomoticASW/server/issues/181)) ([1bcd0b9](https://github.com/DomoticASW/server/commit/1bcd0b934d05d313d8b2a714e07b07a35c11a0c8))
+* **deps:** update dependency semantic-release-preconfigured-conventional-commits to v1.1.142([#176](https://github.com/DomoticASW/server/issues/176)) ([744af33](https://github.com/DomoticASW/server/commit/744af33b835f7c3c94a79bc99123f028378f4060))
+* **deps:** update dependency semantic-release-preconfigured-conventional-commits to v1.1.143([#180](https://github.com/DomoticASW/server/issues/180)) ([32dbf6a](https://github.com/DomoticASW/server/commit/32dbf6a590bbf1f652c3d842f85a30462c67577b))
+* **deps:** update dependency semantic-release-preconfigured-conventional-commits to v1.1.145([#183](https://github.com/DomoticASW/server/issues/183)) ([ebb5d38](https://github.com/DomoticASW/server/commit/ebb5d38937a74535c3f4cdb6355f8982f9badc4d))
+* **deps:** update dependency semantic-release-preconfigured-conventional-commits to v1.1.146([#192](https://github.com/DomoticASW/server/issues/192)) ([01a0e89](https://github.com/DomoticASW/server/commit/01a0e89862d6d048750d3691bf996850c585f553))
+* **deps:** update dependency ts-jest to v29.4.2 ([#184](https://github.com/DomoticASW/server/issues/184)) ([0bad81a](https://github.com/DomoticASW/server/commit/0bad81ad03799f5a63b09895db94c921e283c906))
+* **deps:** update dependency ts-jest to v29.4.3 ([#186](https://github.com/DomoticASW/server/issues/186)) ([dfa0aac](https://github.com/DomoticASW/server/commit/dfa0aacca80911e1e0431813ab64155d85717b19))
+* **deps:** update dependency ts-jest to v29.4.4 ([#187](https://github.com/DomoticASW/server/issues/187)) ([169e8b9](https://github.com/DomoticASW/server/commit/169e8b9cbdff143c9a2c1cfc2134af95f8d4864a))
+* **deps:** update dependency typescript-eslint to v8.42.0 ([#147](https://github.com/DomoticASW/server/issues/147)) ([8a20115](https://github.com/DomoticASW/server/commit/8a20115a7420c93569435109428210a53f635cb9))
+* **deps:** update dependency typescript-eslint to v8.43.0 ([#178](https://github.com/DomoticASW/server/issues/178)) ([330e17a](https://github.com/DomoticASW/server/commit/330e17a81eb57fc28cd2ff80331d683469b1e3f5))
+* **deps:** update dependency typescript-eslint to v8.44.0 ([#185](https://github.com/DomoticASW/server/issues/185)) ([0f16767](https://github.com/DomoticASW/server/commit/0f16767754c948b22dbb9d431223e17d441ba179))
+* **deps:** update dependency typescript-eslint to v8.44.1 ([#191](https://github.com/DomoticASW/server/issues/191)) ([28645fc](https://github.com/DomoticASW/server/commit/28645fc5aaee20847a2e5a2a1c69b3aa92555d2a))
+* **deps:** update eslint monorepo to v9.35.0 ([#175](https://github.com/DomoticASW/server/issues/175)) ([8a2ee5f](https://github.com/DomoticASW/server/commit/8a2ee5fae95400b7be835ea686fb0594137ecf48))
+* **deps:** update eslint monorepo to v9.36.0 ([#188](https://github.com/DomoticASW/server/issues/188)) ([9a477ca](https://github.com/DomoticASW/server/commit/9a477cac15696f4b58a69713caffaddd339423ea))
+
+### Bug Fixes
+
+* **deps:** update dependency effect to v3.17.10 ([#164](https://github.com/DomoticASW/server/issues/164)) ([24a2c0e](https://github.com/DomoticASW/server/commit/24a2c0e447540620b2fe05a105adf95a15dc83f9))
+* **deps:** update dependency effect to v3.17.11 ([#170](https://github.com/DomoticASW/server/issues/170)) ([00ff936](https://github.com/DomoticASW/server/commit/00ff9365a3c0f7b8142c55779d0ffcbdd24b4588))
+* **deps:** update dependency effect to v3.17.13 ([#171](https://github.com/DomoticASW/server/issues/171)) ([9379579](https://github.com/DomoticASW/server/commit/93795797a97b64d17129a4a28407f927fe69a093))
+* **deps:** update dependency mongoose to v8.18.1 ([#177](https://github.com/DomoticASW/server/issues/177)) ([09e33c1](https://github.com/DomoticASW/server/commit/09e33c1e3f55c7e1991d10f7a44f36d1d6593f6a))
+* renovate ignores devDeps on main ([8773fd1](https://github.com/DomoticASW/server/commit/8773fd1e79a796dcadab92e7042412b3649cca4a))
+* update client submodule ([c1942d8](https://github.com/DomoticASW/server/commit/c1942d8010ea2f2aa604953c7b95d9adc69f36c1))
+
+### General maintenance
+
+* add LGPL licence ([c6fcece](https://github.com/DomoticASW/server/commit/c6fcece7cfefd24fffcf067f905511c41c69aa98))
+* **release:** 3.3.0 [skip ci] ([64ddba9](https://github.com/DomoticASW/server/commit/64ddba9478364dca3d31f1c1097288950f446fc3))
+* **release:** 3.3.1 [skip ci] ([d0c4379](https://github.com/DomoticASW/server/commit/d0c43792822c0eeaf272d2a3af19fa8d50a73cd0))
+* **release:** 3.4.0 [skip ci] ([2df7233](https://github.com/DomoticASW/server/commit/2df7233af951fa8a217aa4546b5a9abdfd39bbd2)), closes [#161](https://github.com/DomoticASW/server/issues/161)
+* **release:** 3.4.1 [skip ci] ([25bd44e](https://github.com/DomoticASW/server/commit/25bd44ef21a4ef1d54261f86c0f9e694961b9203)), closes [#164](https://github.com/DomoticASW/server/issues/164)
+* **release:** 3.4.2 [skip ci] ([c1dcbf3](https://github.com/DomoticASW/server/commit/c1dcbf3a45a93b80cd3d62b0b95f7209815a48a8)), closes [#170](https://github.com/DomoticASW/server/issues/170)
+* **release:** 3.4.3 [skip ci] ([3a418f1](https://github.com/DomoticASW/server/commit/3a418f12a88c41d901e07f6d8bebdcee46f7f76c)), closes [#171](https://github.com/DomoticASW/server/issues/171)
+* **release:** 3.4.4 [skip ci] ([d64c6cc](https://github.com/DomoticASW/server/commit/d64c6cc82da85570b55270749e43cf024570a138)), closes [#177](https://github.com/DomoticASW/server/issues/177)
+* **release:** 3.5.0 [skip ci] ([3ca6b21](https://github.com/DomoticASW/server/commit/3ca6b218ed8729cea9ba9411bb0f844bb039a257))
+
 ## [3.5.0](https://github.com/DomoticASW/server/compare/3.4.4...3.5.0) (2025-09-11)
 
 ### Features
