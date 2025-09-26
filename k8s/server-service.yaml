@@ -1,17 +1,15 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: domoticASW-server-service
+  name: server
+  labels:
+    app: server
 spec:
-  selector:
-    app: domoticASW-server
+  # Use NodePort to expose the service on a high port on the host machine.
+  type: NodePort
   ports:
-    - name: http
-      port: 3000
-      targetPort: 3000
-      protocol: TCP
-    - name: discovery
-      port: 30000
-      targetPort: 30000
-      protocol: UDP
-  type: ClusterIP
+    - port: 3000        # Internal port for cluster communication
+      targetPort: 3000  # Port on the container
+      nodePort: 30000   # The external port you will use on your host machine
+  selector:
+    app: server

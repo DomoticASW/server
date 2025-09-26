@@ -1,9 +1,0 @@
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: devices-config
-data:
-  LAN_HOSTNAME: "domoticASW-server-service"
-  SERVER_DISCOVERY_PORT: "30000"
-  DISCOVERY_BROADCAST_ADDR: "255.255.255.255"
-  SERVER_DISCOVERY_ADDR: "255.255.255.255"

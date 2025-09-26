@@ -1,25 +1,43 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: domoticASW-server
+  name: server
+  labels:
+    app: server
 spec:
   replicas: 3
   selector:
     matchLabels:
-      app: domoticASW-server
+      app: server
   template:
     metadata:
       labels:
-        app: domoticASW-server
+        app: server
     spec:
       containers:
-        - name: domoticASW-server
-          image: ventus218/domoticasw-server:latest
+        - name: server
+          image: ventus218/domoticasw-server@sha256:f90d14df8db47413deb1ca0e2c1ce0b78ed097c8d701cea2a9311932c46277a3
           ports:
             - containerPort: 3000
-              protocol: TCP
-            - containerPort: 30000
-              protocol: UDP
           env:
-            - name: NODE_ENV
-              value: "production"
+            - name: MONGO_HOST
+              value: "mongo" # This uses the Kubernetes service name
+            - name: MONGO_PORT
+              value: "27017"
+            - name: SERVER_PORT
+              value: "3000"
+            - name: DISCOVERY_PORT
+              value: "30000"
+            - name: JWT_SECRET
+              value: "secret"
+            - name: BASE_DELAY_MS
+              value: "100"
+            - name: RANDOM_DELAY_MULTIPLIER_MS
+              value: "700"
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 15
+            timeoutSeconds: 10
