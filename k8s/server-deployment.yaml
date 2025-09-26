@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: domoticASW-server
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: domoticASW-server
+  template:
+    metadata:
+      labels:
+        app: domoticASW-server
+    spec:
+      containers:
+        - name: domoticASW-server
+          image: ventus218/domoticasw-server:latest
+          ports:
+            - containerPort: 3000
+              protocol: TCP
+            - containerPort: 30000
+              protocol: UDP
+          env:
+            - name: NODE_ENV
+              value: "production"
