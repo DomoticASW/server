@@ -1,3 +1,9 @@
+## [3.6.1](https://github.com/DomoticASW/server/compare/3.6.0...3.6.1) (2025-09-26)
+
+### Bug Fixes
+
+* update of client ([5a192d9](https://github.com/DomoticASW/server/commit/5a192d9f983f4408f802b9015081dcadbefa15c5))
+
 ## [3.6.0](https://github.com/DomoticASW/server/compare/3.5.2...3.6.0) (2025-09-26)
 
 ### Features
