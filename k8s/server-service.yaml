@@ -5,11 +5,9 @@ metadata:
   labels:
     app: server
 spec:
-  # Use NodePort to expose the service on a high port on the host machine.
-  type: NodePort
+  type: ClusterIP
   ports:
     - port: 3000        # Internal port for cluster communication
       targetPort: 3000  # Port on the container
-      nodePort: 30000   # The external port you will use on your host machine
   selector:
     app: server

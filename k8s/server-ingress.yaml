@@ -1,0 +1,23 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: domoticasw-ingress
+  annotations:
+    # Essential for WebSockets: ensures the connection isn't closed prematurely
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    # Ensure Ingress Controller knows this is an HTTP/WebSocket route
+    nginx.ingress.kubernetes.io/upgrade-websocket: "true" 
+spec:
+  # Use the default Ingress Class (which is often NGINX or Traefik on Docker Desktop)
+  ingressClassName: nginx 
+  rules:
+    - http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: server
+                port:
+                  number: 3000
