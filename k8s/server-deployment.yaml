@@ -5,7 +5,7 @@ metadata:
   labels:
     app: server
 spec:
-  replicas: 3
+  replicas: 1
   selector:
     matchLabels:
       app: server
@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: server
-          image: ventus218/domoticasw-server@sha256:f90d14df8db47413deb1ca0e2c1ce0b78ed097c8d701cea2a9311932c46277a3
+          image: ventus218/domoticasw-server@sha256:dabb6478b76b12eaf53f184b792196679873ce54ced9ea2bfd254056c9e41c5c
           ports:
             - containerPort: 3000
           env:
@@ -25,6 +25,8 @@ spec:
             - name: MONGO_PORT
               value: "27017"
             - name: SERVER_PORT
+              value: "3000"
+            - name: WEBSOCKET_PORT
               value: "3000"
             - name: DISCOVERY_PORT
               value: "30000"
