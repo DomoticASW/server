@@ -6,9 +6,15 @@ metadata:
     # Essential for WebSockets: ensures the connection isn't closed prematurely
     nginx.ingress.kubernetes.io/proxy-read-timeout: "4000"
     nginx.ingress.kubernetes.io/proxy-send-timeout: "4000"
-    # Ensure Ingress Controller knows this is an HTTP/WebSocket route
-    nginx.ingress.kubernetes.io/upgrade-websocket: "true"
-    nginx.ingress.kubernetes.io/proxy-set-header: "Connection 'Upgrade'" 
+    
+    nginx.ingress.kubernetes.io/affinity: "cookie" 
+    
+    # Define the name of the cookie (e.g., 'route')
+    nginx.ingress.kubernetes.io/session-cookie-name: "route"
+    
+    # Define how long the cookie is valid (e.g., 1 hour = 3600 seconds)
+    nginx.ingress.kubernetes.io/session-cookie-expires: "3600"
+    nginx.ingress.kubernetes.io/session-cookie-max-age: "3600"
 spec:
   # Use the default Ingress Class (which is often NGINX or Traefik on Docker Desktop)
   ingressClassName: nginx 
