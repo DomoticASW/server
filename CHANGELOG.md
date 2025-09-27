@@ -1,3 +1,9 @@
+## [3.7.0](https://github.com/DomoticASW/server/compare/3.6.1...3.7.0) (2025-09-27)
+
+### Features
+
+* now it is possible to give a personalized websocket host and port ([82d68b3](https://github.com/DomoticASW/server/commit/82d68b3453853bfd2eb9b96f633e4d61299082b0))
+
 ## [3.6.1](https://github.com/DomoticASW/server/compare/3.6.0...3.6.1) (2025-09-26)
 
 ### Bug Fixes
