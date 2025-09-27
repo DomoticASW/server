@@ -28,12 +28,6 @@ spec:
               value: "3000"
             - name: DISCOVERY_PORT
               value: "30000"
-            - name: JWT_SECRET
-              value: "secret"
-            - name: BASE_DELAY_MS
-              value: "100"
-            - name: RANDOM_DELAY_MULTIPLIER_MS
-              value: "700"
           readinessProbe:
             httpGet:
               path: /
