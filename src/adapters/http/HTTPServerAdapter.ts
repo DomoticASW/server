@@ -43,6 +43,8 @@ export class HTTPServerAdapter {
   constructor(
     host: string,
     port: number,
+    websocketHost: string,
+    websocketPort: number,
     deviceGroupsService: DeviceGroupsService,
     devicesService: DevicesService,
     deviceActionsService: DeviceActionsService,
@@ -59,8 +61,15 @@ export class HTTPServerAdapter {
     }: Options = {}
   ) {
     const app = express()
+    app.set("trust proxy", 1)
     this.server = http.createServer(app)
-    const socketIOServer = new SocketIOServer(this.server)
+    const socketIOServer = new SocketIOServer(this.server, {
+      cors: {
+        origin: websocketHost + ":" + websocketPort,
+        methods: ["GET", "POST"],
+        credentials: true,
+      },
+    })
 
     app.use((req, res, next) => {
       express.json()(req, res, (err) => {
