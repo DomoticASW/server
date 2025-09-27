@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mongo-pvc
+  labels:
+    app: mongo
+spec:
+  # The mode for read/write access: allows one node to mount it read-write.
+  # This is suitable for a single-replica database.
+  accessModes:
+    - ReadWriteOnce
+  # Requests a size suitable for development data
+  resources:
+    requests:
+      storage: 1Gi
