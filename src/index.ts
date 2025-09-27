@@ -56,6 +56,8 @@ const usersService: UsersService = new UsersServiceImpl(
 )
 
 const serverPort = parsePortEnvVar("SERVER_PORT", 3000)
+const websocketHost = parseEnvVar("WEBSOCKET_HOST", "http://localhost")!
+const websocketPort = parsePortEnvVar("WEBSOCKET_PORT", 3000)
 const deviceCommunicationProtocol: DeviceCommunicationProtocol =
   new DeviceCommunicationProtocolHttpAdapter(serverPort)
 
@@ -136,6 +138,8 @@ const baseDelayMs = parsePositiveIntEnvVar("BASE_DELAY_MS") ?? 0
 const httpServer = new HTTPServerAdapter(
   "localhost",
   serverPort,
+  websocketHost,
+  websocketPort,
   deviceGroupsService,
   devicesService,
   deviceActionsService,
