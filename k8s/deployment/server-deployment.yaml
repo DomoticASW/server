@@ -26,8 +26,6 @@ spec:
               value: "27017"
             - name: SERVER_PORT
               value: "3000"
-            - name: WEBSOCKET_PORT
-              value: "3000"
             - name: DISCOVERY_PORT
               value: "30000"
             - name: JWT_SECRET
