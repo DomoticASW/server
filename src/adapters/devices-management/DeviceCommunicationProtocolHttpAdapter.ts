@@ -53,6 +53,7 @@ export class DeviceCommunicationProtocolHttpAdapter implements DeviceCommunicati
    */
   constructor(
     readonly serverPort: number,
+    readonly serverHost: string,
     readonly timeoutToReachDeviceMs: number = 5000
   ) {}
 
@@ -251,8 +252,13 @@ export class DeviceCommunicationProtocolHttpAdapter implements DeviceCommunicati
           try: () =>
             fetch(`http://${host}:${port}/register`, {
               method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ serverPort: this.serverPort }),
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                serverPort: this.serverPort,
+                serverHost: this.serverHost,
+              }),
             }),
           catch: (e) => CommunicationError((e as Error).message),
         })
