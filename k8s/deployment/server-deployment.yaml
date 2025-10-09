@@ -5,7 +5,7 @@ metadata:
   labels:
     app: server
 spec:
-  replicas: 3
+  replicas: 1
   selector:
     matchLabels:
       app: server
@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: server
-          image: ventus218/domoticasw-server@sha256:dabb6478b76b12eaf53f184b792196679873ce54ced9ea2bfd254056c9e41c5c
+          image: ventus218/domoticasw-server@sha256:0a25506fe81959b651ae4bf11f9810ab9b20372d0f01c969f80a85af594fd33b
           ports:
             - containerPort: 3000
           env:
@@ -28,6 +28,13 @@ spec:
               value: "3000"
             - name: DISCOVERY_PORT
               value: "30000"
+            - name: SERVER_HOST
+              value: "server"
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: jwt-secret
+                  key: JWT_SECRET
           readinessProbe:
             httpGet:
               path: /
