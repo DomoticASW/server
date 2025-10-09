@@ -56,10 +56,11 @@ const usersService: UsersService = new UsersServiceImpl(
 )
 
 const serverPort = parsePortEnvVar("SERVER_PORT", 3000)
+const serverHost = parseEnvVar("SERVER_HOST")
 const websocketHost = parseEnvVar("WEBSOCKET_HOST", "http://localhost")!
 const websocketPort = parsePortEnvVar("WEBSOCKET_PORT", 3000)
 const deviceCommunicationProtocol: DeviceCommunicationProtocol =
-  new DeviceCommunicationProtocolHttpAdapter(serverPort)
+  new DeviceCommunicationProtocolHttpAdapter(serverPort, serverHost ?? "localhost")
 
 const deviceRepository = new DeviceRepositoryMongoAdapter(mongoDBConnection)
 const deviceDiscoverer = new DeviceDiscovererUDPAdapter(
