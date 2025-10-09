@@ -1,3 +1,29 @@
+## [3.7.1](https://github.com/DomoticASW/server/compare/3.7.0...3.7.1) (2025-10-09)
+
+### Dependency updates
+
+* **core-deps:** the server now also sends its address to the devices in the payload of register ([c866468](https://github.com/DomoticASW/server/commit/c866468d93d0c82f90cad0d15e9acb767e20dc6c))
+* **deps:** update dependency cross-env to v10.1.0 ([#201](https://github.com/DomoticASW/server/issues/201)) ([dce4526](https://github.com/DomoticASW/server/commit/dce45261eb8bdd34b85d7d067a6747a5e81e0dbd))
+* **deps:** update dependency cross-env to v10.1.0 ([#201](https://github.com/DomoticASW/server/issues/201)) ([2a00483](https://github.com/DomoticASW/server/commit/2a0048355cffcf21da73c6b5b7924b99ba3cd52d))
+* **deps:** update dependency effect to v3.18.0 ([#203](https://github.com/DomoticASW/server/issues/203)) ([aec7f11](https://github.com/DomoticASW/server/commit/aec7f11b85e72a42d2b7339e2bbdd2a2f491216a))
+* **deps:** update dependency effect to v3.18.1 ([#204](https://github.com/DomoticASW/server/issues/204)) ([84002e4](https://github.com/DomoticASW/server/commit/84002e464fcad0ca3987cb65d622b732ef0fb70d))
+* **deps:** update dependency effect to v3.18.2 ([#208](https://github.com/DomoticASW/server/issues/208)) ([f25775a](https://github.com/DomoticASW/server/commit/f25775a97d32c8100b16d013641f972c1f9b1ba5))
+* **deps:** update dependency effect to v3.18.3 ([#210](https://github.com/DomoticASW/server/issues/210)) ([8137c30](https://github.com/DomoticASW/server/commit/8137c3070d2d1b0cdb3dae90ca9d1e36b1990739))
+* **deps:** update dependency effect to v3.18.4 ([#211](https://github.com/DomoticASW/server/issues/211)) ([dda21a1](https://github.com/DomoticASW/server/commit/dda21a12efb3b7b31a6e97f7d14318dfc7f64d78))
+* **deps:** update dependency mongoose to v8.18.3 ([#200](https://github.com/DomoticASW/server/issues/200)) ([07aa02c](https://github.com/DomoticASW/server/commit/07aa02c1d9d1794e8b6d8fd3dc1ea603ce0df31c))
+* **deps:** update dependency mongoose to v8.19.0 ([#206](https://github.com/DomoticASW/server/issues/206)) ([7656166](https://github.com/DomoticASW/server/commit/7656166fde0e60fe581da829464779bd99136cd1))
+* **deps:** update dependency mongoose to v8.19.1 ([#213](https://github.com/DomoticASW/server/issues/213)) ([6f9a0b4](https://github.com/DomoticASW/server/commit/6f9a0b4e0d417359c2b6ebb1c3b693636e0d31ab))
+* **deps:** update dependency semantic-release-export-data to v1.2.0 ([#209](https://github.com/DomoticASW/server/issues/209)) ([dc97bc9](https://github.com/DomoticASW/server/commit/dc97bc90e8e14c8334b42a08d7bff156eb9a11e1))
+* **deps:** update dependency semantic-release-export-data to v1.2.0 ([#209](https://github.com/DomoticASW/server/issues/209)) ([952b03e](https://github.com/DomoticASW/server/commit/952b03e5be72f4a998b9ab8c39f5d8901051dc26))
+* **deps:** update dependency semantic-release-preconfigured-conventional-commits to v1.1.147([#196](https://github.com/DomoticASW/server/issues/196)) ([643904e](https://github.com/DomoticASW/server/commit/643904ed822113f0f06987d4dea9d45daccf61f6))
+* **deps:** update dependency semantic-release-preconfigured-conventional-commits to v1.1.147([#196](https://github.com/DomoticASW/server/issues/196)) ([39f3e6c](https://github.com/DomoticASW/server/commit/39f3e6cb3d27deb0a74db11583625bc850c4e8cb))
+* **deps:** update dependency typescript to v5.9.3 ([#205](https://github.com/DomoticASW/server/issues/205)) ([4aa49b2](https://github.com/DomoticASW/server/commit/4aa49b209106470c74aad281a78b752cb813c829))
+* **deps:** update dependency typescript to v5.9.3 ([#205](https://github.com/DomoticASW/server/issues/205)) ([fc2d86e](https://github.com/DomoticASW/server/commit/fc2d86edb4d092fba55ad7088650e3856ed4d68a))
+* **deps:** update dependency typescript-eslint to v8.45.0 ([#202](https://github.com/DomoticASW/server/issues/202)) ([dbcaca1](https://github.com/DomoticASW/server/commit/dbcaca167184e4a662a661cc51ff14c5a053baae))
+* **deps:** update dependency typescript-eslint to v8.45.0 ([#202](https://github.com/DomoticASW/server/issues/202)) ([d4220f1](https://github.com/DomoticASW/server/commit/d4220f12f4675341215027c7b35fa6c173ee5e13))
+* **deps:** update eslint monorepo to v9.37.0 ([#207](https://github.com/DomoticASW/server/issues/207)) ([ac0754f](https://github.com/DomoticASW/server/commit/ac0754f0050d91b21821ae16e4fa1840b9a1729c))
+* **deps:** update eslint monorepo to v9.37.0 ([#207](https://github.com/DomoticASW/server/issues/207)) ([bc55d95](https://github.com/DomoticASW/server/commit/bc55d95d066b9a083b3c442487ce4a20a88cf58e))
+
 ## [3.7.0](https://github.com/DomoticASW/server/compare/3.6.1...3.7.0) (2025-09-27)
 
 ### Features
