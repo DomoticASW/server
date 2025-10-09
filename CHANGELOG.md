@@ -1,3 +1,15 @@
+## [3.5.2](https://github.com/DomoticASW/server/compare/3.5.1...3.5.2) (2025-09-22)
+
+### Bug Fixes
+
+* **deps:** update dependency mongoose to v8.18.2 ([#190](https://github.com/DomoticASW/server/issues/190)) ([0b27bc1](https://github.com/DomoticASW/server/commit/0b27bc16f3bbd3d5facd62ab79b0788979c3746f))
+
+## [3.5.1](https://github.com/DomoticASW/server/compare/3.5.0...3.5.1) (2025-09-20)
+
+### Bug Fixes
+
+* **deps:** update dependency effect to v3.17.14 ([#189](https://github.com/DomoticASW/server/issues/189)) ([1daf8fd](https://github.com/DomoticASW/server/commit/1daf8fd6af78f296cb21e05f4f6ec57d6e5a7ac8))
+
 ## [3.5.0](https://github.com/DomoticASW/server/compare/3.4.4...3.5.0) (2025-09-11)
 
 ### Features
