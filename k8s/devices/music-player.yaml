@@ -1,0 +1,59 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: music-player
+  labels:
+    app: music-player
+spec:
+  ports:
+    # 1. TCP Port for Comunication
+    - name: tcp-comunication
+      port: 3001
+      targetPort: 3001
+      protocol: TCP 
+
+    # 2. UDP Port for Discovery
+    - name: udp-discovery
+      port: 30000
+      targetPort: 30000
+      protocol: UDP
+      
+  selector:
+    app: music-player
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: music-player
+  labels:
+    app: music-player
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: music-player
+  template:
+    metadata:
+      labels:
+        app: music-player
+    spec:
+      containers:
+        - name: music-player
+          image: corradostortini2/domoticasw-music-player@sha256:cdf6a0c8cf1a7b65ec4f099289d68245b77f09fa97b8e96340cd71a17a4dd2c3
+          ports:
+            - containerPort: 3001 # TCP
+            - containerPort: 30000 # UDP
+          env:
+            - name: SERVER_DISCOVERY_PORT
+              value: "30000"
+            - name: DISCOVERY_BROADCAST_ADDR
+              value: "255.255.255.255"
+            - name: PORT
+              value: "3001"
+            - name: SERVER_ADDRESS
+              value: "server:3000"
+            # music-player-specific environment variables:
+            - name: MUSICS
+              value: "Back in Black-255,Must Have Been the Wind-243,Eye of the Tiger-246,Don't Stop Me Now-209,INVISIBLE-191"
+            - name: LAN_HOSTNAME
+              value: "music-player"
