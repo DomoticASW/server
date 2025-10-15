@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: already-registered-devices
+data:
+  # Server address needs to be set just if the devices are already registered in the server
+  SERVER_ADDRESS: "server:3000"
