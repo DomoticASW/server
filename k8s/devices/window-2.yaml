@@ -1,15 +1,15 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: thermometer-2
+  name: window-2
   labels:
-    app: thermometer-2
+    app: window-2
 spec:
   ports:
     # 1. TCP Port for Comunication
     - name: tcp-comunication
-      port: 3006
-      targetPort: 3006
+      port: 3009
+      targetPort: 3009
       protocol: TCP
 
     # 2. UDP Port for Discovery
@@ -19,37 +19,37 @@ spec:
       protocol: UDP
       
   selector:
-    app: thermometer-2
+    app: window-2
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: thermometer-2
+  name: window-2
   labels:
-    app: thermometer-2
+    app: window-2
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: thermometer-2
+      app: window-2
   template:
     metadata:
       labels:
-        app: thermometer-2
+        app: window-2
     spec:
       containers:
-        - name: thermometer-2
-          image: fracarluccii/domoticasw-thermometer@sha256:c59d35f81b3dc77f5f22ec295af5ad1deba1862de51eab6fd0a8a88adff55bbc
+        - name: window-2
+          image: marcoraggio/domoticasw-window@sha256:0a9eb6946164ff1fe122c6810d30a7ab5f1c2987d9c20388e92b30f9738ec029
           ports:
-            - containerPort: 3006 # TCP
+            - containerPort: 3009 # TCP
             - containerPort: 30000 # UDP
           env:
-            - name: DEVICE_PORT
-              value: "3006"
+            - name: DEVICE_SERVER_PORT
+              value: "3009"
             - name: LAN_HOSTNAME
-              value: "thermometer-2"
+              value: "window-2"
             - name: ID
-              value: "thermometer-2"
+              value: "window-2"
           envFrom:
           - configMapRef:
               name: devices-common

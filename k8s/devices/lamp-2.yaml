@@ -53,3 +53,5 @@ spec:
           envFrom:
           - configMapRef:
               name: devices-common
+          - configMapRef:
+              name: already-registered-devices

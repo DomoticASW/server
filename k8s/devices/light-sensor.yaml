@@ -48,6 +48,10 @@ spec:
               value: "3002"
             - name: LAN_HOSTNAME
               value: "light-sensor"
+            - name: UPDATE_RATE
+              value: "10000"
           envFrom:
             - configMapRef:
                 name: devices-common
+            - configMapRef:
+                name: already-registered-devices

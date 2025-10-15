@@ -7,4 +7,3 @@ data:
   # Some devices has this var name but the meaning is the same as DISCOVERY_BROADCAST_ADDR
   SERVER_DISCOVERY_ADDR: "255.255.255.255"
   SERVER_DISCOVERY_PORT: "30000"
-  # SERVER_ADDRESS: "server:3000"
