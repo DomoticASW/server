@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: devices-common
+data:
+  DISCOVERY_BROADCAST_ADDR: "255.255.255.255"
+  SERVER_DISCOVERY_PORT: "30000"
+  # SERVER_ADDRESS: "server:3000"

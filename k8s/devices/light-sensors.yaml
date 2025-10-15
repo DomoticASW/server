@@ -44,14 +44,11 @@ spec:
             - containerPort: 3002 # TCP
             - containerPort: 30000 # UDP
           env:
-            - name: SERVER_DISCOVERY_PORT
-              value: "30000"
-            - name: DISCOVERY_BROADCAST_ADDR
-              value: "255.255.255.255"
             - name: PORT
               value: "3002"
-            - name: SERVER_ADDRESS
-              value: "server:3000"
             # Light-sensor-specific environment variables:
             - name: LAN_HOSTNAME
               value: "light-sensor"
+          envFrom:
+            - configMapRef:
+                name: devices-common

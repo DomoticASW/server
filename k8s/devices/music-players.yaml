@@ -10,7 +10,7 @@ spec:
     - name: tcp-comunication
       port: 3001
       targetPort: 3001
-      protocol: TCP 
+      protocol: TCP
 
     # 2. UDP Port for Discovery
     - name: udp-discovery
@@ -44,16 +44,13 @@ spec:
             - containerPort: 3001 # TCP
             - containerPort: 30000 # UDP
           env:
-            - name: SERVER_DISCOVERY_PORT
-              value: "30000"
-            - name: DISCOVERY_BROADCAST_ADDR
-              value: "255.255.255.255"
             - name: PORT
               value: "3001"
-            - name: SERVER_ADDRESS
-              value: "server:3000"
             # music-player-specific environment variables:
             - name: MUSICS
               value: "Back in Black-255,Must Have Been the Wind-243,Eye of the Tiger-246,Don't Stop Me Now-209,INVISIBLE-191"
             - name: LAN_HOSTNAME
               value: "music-player"
+          envFrom:
+          - configMapRef:
+              name: devices-common
