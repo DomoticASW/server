@@ -1,0 +1,55 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: lamp-1
+  labels:
+    app: lamp-1
+spec:
+  ports:
+    # 1. TCP Port for Comunication
+    - name: tcp-comunication
+      port: 3003
+      targetPort: 3003
+      protocol: TCP
+
+    # 2. UDP Port for Discovery
+    - name: udp-discovery
+      port: 30000
+      targetPort: 30000
+      protocol: UDP
+      
+  selector:
+    app: lamp-1
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lamp-1
+  labels:
+    app: lamp-1
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: lamp-1
+  template:
+    metadata:
+      labels:
+        app: lamp-1
+    spec:
+      containers:
+        - name: lamp-1
+          image: fracarluccii/domoticasw-lamp@sha256:76c6d17523b9e998d1f4cec1312491570bbd5b15ac0f3a9e1cc6c5875e090858
+          ports:
+            - containerPort: 3003 # TCP
+            - containerPort: 30000 # UDP
+          env:
+            - name: DEVICE_PORT
+              value: "3003"
+            - name: LAN_HOSTNAME
+              value: "lamp-1"
+            - name: ID
+              value: "lamp-1"
+          envFrom:
+          - configMapRef:
+              name: devices-common

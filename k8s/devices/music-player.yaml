@@ -46,7 +46,6 @@ spec:
           env:
             - name: PORT
               value: "3001"
-            # music-player-specific environment variables:
             - name: MUSICS
               value: "Back in Black-255,Must Have Been the Wind-243,Eye of the Tiger-246,Don't Stop Me Now-209,INVISIBLE-191"
             - name: LAN_HOSTNAME
