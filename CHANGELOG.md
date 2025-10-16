@@ -1,3 +1,9 @@
+## [3.8.2](https://github.com/DomoticASW/server/compare/3.8.1...3.8.2) (2025-10-16)
+
+### Documentation
+
+* add server_host env variable to readme ([7b18a30](https://github.com/DomoticASW/server/commit/7b18a30c66f5d888af32c6517ab5d55d139f5218))
+
 ## [3.8.1](https://github.com/DomoticASW/server/compare/3.8.0...3.8.1) (2025-10-16)
 
 ### Bug Fixes
