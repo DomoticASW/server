@@ -405,7 +405,7 @@ export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscribe
         runFork(
           pipe(
             succeed(this.startedAutomations.set(automation.id, true)),
-            map(() => this.waitToStart(periodTrigger)),
+            flatMap(() => this.waitToStart(periodTrigger)),
             flatMap(() => forkDaemon(this.periodLoop(automation, periodTrigger))),
             tap((fiber) => sync(() => this.automationsFiberMap.set(automation.id, fiber)))
           )
@@ -415,7 +415,7 @@ export class ScriptsServiceImpl implements ScriptsService, DeviceEventsSubscribe
   }
 
   private waitToStart(periodTrigger: PeriodTrigger): Effect<void> {
-    const delay = periodTrigger.start.getMilliseconds() - new Date().getMilliseconds()
+    const delay = periodTrigger.start.valueOf() - new Date().valueOf()
     return delay > 0 ? sleep(millis(delay)) : succeed(null)
   }
 
