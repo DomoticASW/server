@@ -13,6 +13,7 @@ The following environment variables can be used to configure the server (the one
 | Variable       | Default   | Explanation                                | Format                |
 | -------------- | --------- | ------------------------------------------ | --------------------- |
 | SERVER_PORT    | 3000      | The port to which bind the web server      | Any valid port        |
+| SERVER_HOST    | localhost | The host of the server sent to the devices | Any valid host string |
 | DISCOVERY_PORT | 30000     | The port to listen to for device announces | Any valid port        |
 | MONGO_HOST     | localhost | The host on which to find mongodb          | Any valid host string |
 | MONGO_PORT     | 27017     | The port on which to find mongodb          | Any valid port        |
