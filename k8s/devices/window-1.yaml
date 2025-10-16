@@ -1,0 +1,57 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: window-1
+  labels:
+    app: window-1
+spec:
+  ports:
+    # 1. TCP Port for Comunication
+    - name: tcp-comunication
+      port: 3008
+      targetPort: 3008
+      protocol: TCP
+
+    # 2. UDP Port for Discovery
+    - name: udp-discovery
+      port: 30000
+      targetPort: 30000
+      protocol: UDP
+      
+  selector:
+    app: window-1
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: window-1
+  labels:
+    app: window-1
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: window-1
+  template:
+    metadata:
+      labels:
+        app: window-1
+    spec:
+      containers:
+        - name: window-1
+          image: marcoraggio/domoticasw-window@sha256:0a9eb6946164ff1fe122c6810d30a7ab5f1c2987d9c20388e92b30f9738ec029
+          ports:
+            - containerPort: 3008 # TCP
+            - containerPort: 30000 # UDP
+          env:
+            - name: DEVICE_SERVER_PORT
+              value: "3008"
+            - name: LAN_HOSTNAME
+              value: "window-1"
+            - name: ID
+              value: "window-1"
+          envFrom:
+          - configMapRef:
+              name: devices-common
+          - configMapRef:
+              name: already-registered-devices

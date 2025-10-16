@@ -1,0 +1,57 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: washing-machine
+  labels:
+    app: washing-machine
+spec:
+  ports:
+    # 1. TCP Port for Comunication
+    - name: tcp-comunication
+      port: 3007
+      targetPort: 3007
+      protocol: TCP
+
+    # 2. UDP Port for Discovery
+    - name: udp-discovery
+      port: 30000
+      targetPort: 30000
+      protocol: UDP
+      
+  selector:
+    app: washing-machine
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: washing-machine
+  labels:
+    app: washing-machine
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: washing-machine
+  template:
+    metadata:
+      labels:
+        app: washing-machine
+    spec:
+      containers:
+        - name: washing-machine
+          image: marcoraggio/domoticasw-washing-machine@sha256:92574d65a6739def1ea785ea2cac57e0427273056ec7d7f5341c4734c27111fd
+          ports:
+            - containerPort: 3007 # TCP
+            - containerPort: 30000 # UDP
+          env:
+            - name: PORT
+              value: "3007"
+            - name: LAN_HOSTNAME
+              value: "washing-machine"
+            - name: ID
+              value: "washing-machine"
+          envFrom:
+          - configMapRef:
+              name: devices-common
+          - configMapRef:
+              name: already-registered-devices

@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: server
+  labels:
+    app: server
+spec:
+  type: ClusterIP
+  ports:
+    - port: 3000        # Internal port for cluster communication
+      targetPort: 3000  # Port on the container
+  selector:
+    app: server

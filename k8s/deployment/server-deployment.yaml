@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: server
+  labels:
+    app: server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: server
+  template:
+    metadata:
+      labels:
+        app: server
+    spec:
+      containers:
+        - name: server
+          image: ventus218/domoticasw-server@sha256:0a25506fe81959b651ae4bf11f9810ab9b20372d0f01c969f80a85af594fd33b
+          ports:
+            - containerPort: 3000
+          env:
+            - name: MONGO_HOST
+              value: "mongo" # This uses the Kubernetes service name
+            - name: MONGO_PORT
+              value: "27017"
+            - name: SERVER_PORT
+              value: "3000"
+            - name: DISCOVERY_PORT
+              value: "30000"
+            - name: SERVER_HOST
+              value: "server"
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: jwt-secret
+                  key: JWT_SECRET
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 15
+            timeoutSeconds: 10

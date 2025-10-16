@@ -1,0 +1,57 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: thermometer-1
+  labels:
+    app: thermometer-1
+spec:
+  ports:
+    # 1. TCP Port for Comunication
+    - name: tcp-comunication
+      port: 3005
+      targetPort: 3005
+      protocol: TCP
+
+    # 2. UDP Port for Discovery
+    - name: udp-discovery
+      port: 30000
+      targetPort: 30000
+      protocol: UDP
+      
+  selector:
+    app: thermometer-1
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: thermometer-1
+  labels:
+    app: thermometer-1
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: thermometer-1
+  template:
+    metadata:
+      labels:
+        app: thermometer-1
+    spec:
+      containers:
+        - name: thermometer-1
+          image: fracarluccii/domoticasw-thermometer@sha256:c59d35f81b3dc77f5f22ec295af5ad1deba1862de51eab6fd0a8a88adff55bbc
+          ports:
+            - containerPort: 3005 # TCP
+            - containerPort: 30000 # UDP
+          env:
+            - name: DEVICE_PORT
+              value: "3005"
+            - name: LAN_HOSTNAME
+              value: "thermometer-1"
+            - name: ID
+              value: "thermometer-1"
+          envFrom:
+          - configMapRef:
+              name: devices-common
+          - configMapRef:
+              name: already-registered-devices

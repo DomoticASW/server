@@ -1,0 +1,57 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: light-sensor
+  labels:
+    app: light-sensor
+spec:
+  ports:
+    # 1. TCP Port for Comunication
+    - name: tcp-comunication
+      port: 3002
+      targetPort: 3002
+      protocol: TCP 
+
+    # 2. UDP Port for Discovery
+    - name: udp-discovery
+      port: 30000
+      targetPort: 30000
+      protocol: UDP
+      
+  selector:
+    app: light-sensor
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: light-sensor
+  labels:
+    app: light-sensor
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: light-sensor
+  template:
+    metadata:
+      labels:
+        app: light-sensor
+    spec:
+      containers:
+        - name: light-sensor
+          image: corradostortini2/domoticasw-light-sensor@sha256:62068ddc77ab5ed60784f1e30dd92b0377b432f25009fa329cbb1c871801f73b
+          ports:
+            - containerPort: 3002 # TCP
+            - containerPort: 30000 # UDP
+          env:
+            - name: PORT
+              value: "3002"
+            - name: LAN_HOSTNAME
+              value: "light-sensor"
+            - name: UPDATE_RATE
+              value: "10000"
+          envFrom:
+            - configMapRef:
+                name: devices-common
+            - configMapRef:
+                name: already-registered-devices
