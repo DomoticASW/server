@@ -1,3 +1,71 @@
+## [3.8.0](https://github.com/DomoticASW/server/compare/3.7.1...3.8.0) (2025-10-16)
+
+### Features
+
+* add kubernetes deployment of server and mongo ([931f24b](https://github.com/DomoticASW/server/commit/931f24b58fb7abf9ab434d6e555ebb594b0a469d))
+* add persistance to kubernetes deployment and replicas of server ([14c9f02](https://github.com/DomoticASW/server/commit/14c9f026f026034542a6708fa468aade8268fc9f))
+* **licence:** add licence to package.json ([723a110](https://github.com/DomoticASW/server/commit/723a110a32903407ea476c6fe5e63fe39c9fc179))
+* now it is possible to give a personalized websocket host and port ([7ac4a50](https://github.com/DomoticASW/server/commit/7ac4a5013d65f4ca3ae8086034a1e91b7a967b1e))
+* now kubernetes uses only 1 replica of the server ([53cd589](https://github.com/DomoticASW/server/commit/53cd589d3576ab527815340326893d877d7275a1))
+* use of ingress ([8440e51](https://github.com/DomoticASW/server/commit/8440e514937838ebc1fd55de481545e8c618ab20))
+
+### Dependency updates
+
+* **deps:** update actions/checkout action to v5 ([c28c8b8](https://github.com/DomoticASW/server/commit/c28c8b89091d9b81bc2d2ee4c29dd08def2ff022))
+* **deps:** update actions/setup-node action to v5 ([ad34dac](https://github.com/DomoticASW/server/commit/ad34dacff83f18a63ac1e234573327e5cd8b4f42))
+* **deps:** update dependency globals to v16.4.0 ([#181](https://github.com/DomoticASW/server/issues/181)) ([abefa01](https://github.com/DomoticASW/server/commit/abefa0131b2e3cddd2d8a4832448ce9d40dd7fcd))
+* **deps:** update dependency semantic-release-preconfigured-conventional-commits to v1.1.142([#176](https://github.com/DomoticASW/server/issues/176)) ([750ffce](https://github.com/DomoticASW/server/commit/750ffce7592f8a739dd25275f39847ba24f0fbec))
+* **deps:** update dependency semantic-release-preconfigured-conventional-commits to v1.1.143([#180](https://github.com/DomoticASW/server/issues/180)) ([6dee64e](https://github.com/DomoticASW/server/commit/6dee64e05cf014ecf79b472040e0bde20cde0aca))
+* **deps:** update dependency semantic-release-preconfigured-conventional-commits to v1.1.145([#183](https://github.com/DomoticASW/server/issues/183)) ([92d691f](https://github.com/DomoticASW/server/commit/92d691f97eb15484b493082eebba018dae480232))
+* **deps:** update dependency semantic-release-preconfigured-conventional-commits to v1.1.146([#192](https://github.com/DomoticASW/server/issues/192)) ([e95638f](https://github.com/DomoticASW/server/commit/e95638f4c2a792b15afd9978ff1c6110867c58b0))
+* **deps:** update dependency semantic-release-preconfigured-conventional-commits to v1.1.147([#196](https://github.com/DomoticASW/server/issues/196)) ([528e4f2](https://github.com/DomoticASW/server/commit/528e4f246175685f49a9ad38ed71df0dc32712e3))
+* **deps:** update dependency ts-jest to v29.4.2 ([#184](https://github.com/DomoticASW/server/issues/184)) ([5a84fac](https://github.com/DomoticASW/server/commit/5a84faca5a53436c6e69d6efb8d1039d12d3565d))
+* **deps:** update dependency ts-jest to v29.4.3 ([#186](https://github.com/DomoticASW/server/issues/186)) ([c458f86](https://github.com/DomoticASW/server/commit/c458f86328474e55d760daeba3b2466947dcf4e3))
+* **deps:** update dependency ts-jest to v29.4.4 ([#187](https://github.com/DomoticASW/server/issues/187)) ([36baab5](https://github.com/DomoticASW/server/commit/36baab5bd2355c65964ccfcea2836255c70324c9))
+* **deps:** update dependency ts-jest to v29.4.5 ([#218](https://github.com/DomoticASW/server/issues/218)) ([0d4b615](https://github.com/DomoticASW/server/commit/0d4b615777c7b7cbc2b6db2afb4f786d1f3e2d58))
+* **deps:** update dependency typescript-eslint to v8.43.0 ([#178](https://github.com/DomoticASW/server/issues/178)) ([08d99d0](https://github.com/DomoticASW/server/commit/08d99d056c9f3759829a66bc5ab21afc69127adf))
+* **deps:** update dependency typescript-eslint to v8.44.0 ([#185](https://github.com/DomoticASW/server/issues/185)) ([5390c50](https://github.com/DomoticASW/server/commit/5390c50bd6debb737054e1175dbfc94b797f4bc4))
+* **deps:** update dependency typescript-eslint to v8.44.1 ([#191](https://github.com/DomoticASW/server/issues/191)) ([6fbd77e](https://github.com/DomoticASW/server/commit/6fbd77e38a7eb66a6d27155a47fe3588e5a319b2))
+* **deps:** update dependency typescript-eslint to v8.46.1 ([#217](https://github.com/DomoticASW/server/issues/217)) ([fab14e9](https://github.com/DomoticASW/server/commit/fab14e9de1f198999467e708d58815028bf169dd))
+* **deps:** update eslint monorepo to v9.36.0 ([#188](https://github.com/DomoticASW/server/issues/188)) ([e0e8e07](https://github.com/DomoticASW/server/commit/e0e8e079e0fec6e05f5ff4b6489e8048cc452d3c))
+
+### Bug Fixes
+
+* **deps:** update dependency effect to v3.17.10 ([#164](https://github.com/DomoticASW/server/issues/164)) ([51e9481](https://github.com/DomoticASW/server/commit/51e9481a030e2f86e39a7595649f605f41fe6d4c))
+* **deps:** update dependency effect to v3.17.11 ([#170](https://github.com/DomoticASW/server/issues/170)) ([2dce03f](https://github.com/DomoticASW/server/commit/2dce03f790f255515d152c6f795f0acd15acf5fe))
+* **deps:** update dependency effect to v3.17.13 ([#171](https://github.com/DomoticASW/server/issues/171)) ([3ddaf29](https://github.com/DomoticASW/server/commit/3ddaf29cc43d999e76ece5654265e6673559c45f))
+* **deps:** update dependency effect to v3.17.14 ([#189](https://github.com/DomoticASW/server/issues/189)) ([35be16b](https://github.com/DomoticASW/server/commit/35be16baec68e47df57bf0c08dacf54b8877daa7))
+* **deps:** update dependency mongoose to v8.18.1 ([#177](https://github.com/DomoticASW/server/issues/177)) ([8fd360f](https://github.com/DomoticASW/server/commit/8fd360f3a0969f8fca44cf37bfafd0467e022352))
+* **deps:** update dependency mongoose to v8.18.2 ([#190](https://github.com/DomoticASW/server/issues/190)) ([c7ab4e9](https://github.com/DomoticASW/server/commit/c7ab4e9b2046be41cc3d114a114d1eb00383be09))
+* remove env variable that should not be in production ([9fd9444](https://github.com/DomoticASW/server/commit/9fd94445781adfb6ae5b39097d8c7a9e2fc1d6b4))
+* renovate ignores devDeps on main ([07d1771](https://github.com/DomoticASW/server/commit/07d177127eba5df29b6327e2b2f228ffdecf50a1))
+
+### General maintenance
+
+* add Kubernetes configuration for MongoDB and server ([7d2db1b](https://github.com/DomoticASW/server/commit/7d2db1ba335c2e6532bfda73c3710f4f8210570c))
+* add lamps and thermometers ([a6bff7c](https://github.com/DomoticASW/server/commit/a6bff7cfd209853fef39dad20c04c8c70c87cc5a))
+* add LGPL licence ([d0dae5d](https://github.com/DomoticASW/server/commit/d0dae5d981996c5823a97f3b08454fd87b46fde9))
+* add light-sensor service and deployment ([20bcdbf](https://github.com/DomoticASW/server/commit/20bcdbfed84de61c3e491619fa2de3f012b1c94d))
+* add of music player device as kubernetes service ([fa3d6c3](https://github.com/DomoticASW/server/commit/fa3d6c3160807832e75e01645a05cff57be6be55))
+* add washing machine service and deployment ([d25e2c4](https://github.com/DomoticASW/server/commit/d25e2c4626ab022af9a2dd2cdd6c1c6ee89b52ff))
+* add windows devices services and deployments ([083daef](https://github.com/DomoticASW/server/commit/083daef124989bab3229afc1ce4939b941334ccb))
+* get jwt_secret from a real secret and add server host env variable ([a2306c3](https://github.com/DomoticASW/server/commit/a2306c3f6d3db7a692ec960b4749bece678f8924))
+* **release:** 3.3.0 [skip ci] ([ffe0e86](https://github.com/DomoticASW/server/commit/ffe0e86e2666583298e90db934a6ce115996c9e8))
+* **release:** 3.3.1 [skip ci] ([2dc5de9](https://github.com/DomoticASW/server/commit/2dc5de9d48c821763fe3acbeced93a0718f74564))
+* **release:** 3.4.0 [skip ci] ([92625df](https://github.com/DomoticASW/server/commit/92625df92eabd1eeba262a4a9e2ede7410847f8a)), closes [#161](https://github.com/DomoticASW/server/issues/161)
+* **release:** 3.4.1 [skip ci] ([a84dc26](https://github.com/DomoticASW/server/commit/a84dc265a79002887fb9d7d01061da81112dbb80)), closes [#164](https://github.com/DomoticASW/server/issues/164)
+* **release:** 3.4.2 [skip ci] ([dc7ad23](https://github.com/DomoticASW/server/commit/dc7ad23d9b899e306c081ae80201d49dbc4ac169)), closes [#170](https://github.com/DomoticASW/server/issues/170)
+* **release:** 3.4.3 [skip ci] ([100cd40](https://github.com/DomoticASW/server/commit/100cd40017e93e6bc8006dbbac016accf20126ce)), closes [#171](https://github.com/DomoticASW/server/issues/171)
+* **release:** 3.4.4 [skip ci] ([736db82](https://github.com/DomoticASW/server/commit/736db82be2604baaa07d97e7b344b31d3514d286)), closes [#177](https://github.com/DomoticASW/server/issues/177)
+* **release:** 3.5.0 [skip ci] ([0e6a0a5](https://github.com/DomoticASW/server/commit/0e6a0a5572109f6511423d8a12ec2929adc71a54))
+* **release:** 3.5.1 [skip ci] ([b97e230](https://github.com/DomoticASW/server/commit/b97e23079de873bd57c20c7360a7e89dffb0517b)), closes [#189](https://github.com/DomoticASW/server/issues/189)
+* **release:** 3.5.2 [skip ci] ([cfba6c4](https://github.com/DomoticASW/server/commit/cfba6c47f4b01c9f32a4cc1d3373a559ed9a6bfb)), closes [#190](https://github.com/DomoticASW/server/issues/190)
+* remove websocket port env variable from deployment ([9a13abf](https://github.com/DomoticASW/server/commit/9a13abfabe2e8009a8104e72666249ff289dcb3b))
+
+### Refactoring
+
+* create config map for env-variables common to all devices ([9d25184](https://github.com/DomoticASW/server/commit/9d25184426edd2f77766ab849b7507730f96684c))
+
 ## [3.7.1](https://github.com/DomoticASW/server/compare/3.7.0...3.7.1) (2025-10-09)
 
 ### Dependency updates
