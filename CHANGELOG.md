@@ -1,3 +1,9 @@
+## [3.8.1](https://github.com/DomoticASW/server/compare/3.8.0...3.8.1) (2025-10-16)
+
+### Bug Fixes
+
+* now the start date of the period trigger works as expected ([d8ecd6a](https://github.com/DomoticASW/server/commit/d8ecd6aba31100929e6229551f98a70617423f54))
+
 ## [3.8.0](https://github.com/DomoticASW/server/compare/3.7.1...3.8.0) (2025-10-16)
 
 ### Features
