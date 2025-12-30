@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-FROM node:23-alpine AS builder
+FROM node:24-alpine AS builder
 
 WORKDIR /app
 
@@ -20,7 +20,7 @@ RUN npx tsc
 RUN npm run build-client
 
 
-FROM node:23-alpine AS runtime
+FROM node:24-alpine AS runtime
 
 WORKDIR /app
 
